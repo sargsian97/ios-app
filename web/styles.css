@@ -832,3 +832,87 @@ table th{font-weight:700}
 .mstrip .m1{--mc:var(--m-p)} .mstrip .m2{--mc:var(--m-f)} .mstrip .m3{--mc:var(--m-c)} .mstrip .m4{--mc:var(--m-fi)}
 .ri-btns{flex-wrap:wrap;max-width:100%;gap:6px}
 @media (max-width:360px){.ri-btns button{width:34px;height:34px}.ri-btns .ri-go{height:34px;padding:0 12px}.restin{padding:12px}}
+
+/* =====================================================================
+   v16: новая оболочка — 5 вкладок с «+», списки как в настройках iOS,
+   обзор, шторка «Добавить». Экраны в web/src/ui.
+   ===================================================================== */
+.i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.tab .i{width:25px;height:25px}
+.tab.on .i{fill:currentColor;fill-opacity:.22;stroke-width:2}
+.tab.plus{flex:0 0 72px;background:transparent}
+.tab.plus:active{filter:none}
+.plusc{width:52px;height:52px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 85%,#fff),var(--accent));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 20px color-mix(in srgb,var(--accent) 45%,transparent);transition:transform .15s}
+.tab.plus:active .plusc{transform:scale(.92)}
+.plusc .i{width:26px;height:26px;stroke-width:2.4}
+
+/* шапка экрана */
+.page .top h1{display:flex;align-items:center}
+.tbadge .i{width:20px;height:20px;color:#fff}
+.navbar{display:flex;align-items:center;margin:6px 0 -4px}
+.navbar-wrap{padding-bottom:0}
+.legacy-host .navbar-wrap{padding-top:0}
+.legacy-host #app{padding-top:0}
+.back{background:none;box-shadow:none;color:var(--accent);height:36px;padding:0 8px 0 0;display:inline-flex;align-items:center;gap:2px;font-weight:600;font-size:17px}
+.back .i{width:22px;height:22px;stroke-width:2.2}
+.dsub{margin:-8px 0 14px 2px;font-size:15px;font-weight:600;text-align:left}
+.dsub::first-letter{text-transform:uppercase}
+.stack{display:flex;flex-direction:column;gap:8px}
+
+/* списки как в настройках iOS */
+.ltitle{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em !important;margin:20px 6px 8px}
+.list{background:var(--card);background-image:var(--sheen);border-radius:var(--r-xl);box-shadow:var(--edge),var(--lift);margin:0 0 var(--gap);overflow:hidden}
+.lfoot{font-size:13px;line-height:1.4;color:var(--muted);margin:-4px 8px var(--gap)}
+.lrow{display:flex;align-items:center;gap:13px;width:100%;min-height:54px;height:auto;padding:10px 14px 10px 16px;background:none;border-radius:0;box-shadow:none;text-align:left;font-weight:500;position:relative}
+.lrow+.lrow:before{content:'';position:absolute;top:0;right:0;left:59px;border-top:.5px solid var(--line)}
+.lrow:active:not(:disabled){background:color-mix(in srgb,var(--ink) 6%,transparent);filter:none}
+.lrow.off{opacity:.55}
+.lrow:disabled{opacity:.55}
+.lico{width:30px;height:30px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#fff;background:var(--cc);flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+.lico .i{width:18px;height:18px;stroke-width:2}
+.ltext{display:flex;flex-direction:column;min-width:0;flex:1}
+.ll{font-size:16px;font-weight:600;color:var(--ink)}
+.ls{font-size:13px;color:var(--muted);font-weight:500;margin-top:1px}
+.lv{color:var(--muted);font-weight:500;font-size:15px;white-space:nowrap}
+.lbadge,.soon{font-size:12px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--input);color:var(--muted);white-space:nowrap}
+.chev{width:17px;height:17px;color:var(--muted);opacity:.55;stroke-width:2.2}
+
+/* поля */
+.fld{display:flex;flex-direction:column;min-width:0}
+.ferr{font-size:13px;color:var(--warn);margin-top:6px;font-weight:500}
+.segw+.segw{margin-top:14px}
+.segw .pills{margin-top:0}
+.ustack{margin-top:14px}
+
+/* обзор */
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin:0 0 var(--gap)}
+.dtile{display:flex;flex-direction:column;align-items:stretch;text-align:left;height:auto;min-height:136px;padding:14px 14px 13px;border-radius:var(--r-xl);
+  background-color:var(--card);background-image:radial-gradient(140% 120% at 0% 0%,color-mix(in srgb,var(--cc) 14%,transparent),transparent 58%),var(--sheen);
+  box-shadow:var(--edge),var(--lift);font-weight:500;color:var(--ink)}
+.dtile:active{filter:none;opacity:var(--press)}
+.dt-h{display:flex;align-items:center;gap:8px}
+.dt-h .hci{color:var(--cc)}
+.dt-h .hci .i{width:17px;height:17px;stroke-width:2}
+.dt-l{font-size:14px;font-weight:700;color:var(--cc);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dt-v{margin-top:auto;padding-top:12px;display:flex;align-items:baseline;gap:4px}
+.dt-v b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:30px;font-weight:700;line-height:1.05}
+.dt-v small{font-size:14px;font-weight:600;color:var(--muted)}
+.dt-s{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.3}
+.dnote{margin:0 4px 12px}
+
+/* шторка «Добавить» */
+.plusgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.pbtn{color:var(--ink);display:flex;flex-direction:column;align-items:flex-start;gap:4px;height:auto;min-height:104px;padding:14px;border-radius:var(--r-lg);background:var(--input);box-shadow:var(--field-edge);text-align:left}
+.pbtn .hci{background:color-mix(in srgb,var(--cc) 18%,transparent);color:var(--cc);margin-bottom:6px;width:34px;height:34px;border-radius:10px}
+.pbtn .hci .i{width:20px;height:20px;stroke-width:2}
+.pbtn b{font-size:15px;font-weight:700}
+.pbtn small{font-size:12.5px;color:var(--muted);font-weight:500}
+.pbtn.off{opacity:.5}
+.pbtn:disabled{opacity:.5}
+
+/* о приложении */
+.about-p{margin:0 0 10px;font-size:15px;line-height:1.45}
+.src{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:.5px solid var(--line);font-size:15px}
+.src span{color:var(--muted)}

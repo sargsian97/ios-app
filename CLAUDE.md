@@ -36,4 +36,10 @@ npm test          # юнит-тесты, Node 22+, без зависимосте
 npm run serve     # http://localhost:8000 — приложение из web/
 ```
 
-Проверка в браузере — Playwright с профилем iPhone (в облачной сессии он уже установлен в `/opt/node-tools`).
+Проверка в браузере — Playwright с профилем iPhone (в облачной сессии он уже установлен в `/opt/node-tools`):
+
+```sh
+node tests/e2e/shell.e2e.mjs light   # или dark; снимки — в .e2e-shots/
+```
+
+Для проверок используй выдуманную копию `tests/fixtures/backup-sample.json`; личные данные пользователя в git не кладём.

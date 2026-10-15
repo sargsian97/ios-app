@@ -1,20 +1,44 @@
 /* Service worker: приложение открывается без интернета.
    При каждом выпуске новой версии меняй VERSION — тогда телефон предложит обновиться. */
-const VERSION = '2026-10-16.1';
+const VERSION = '2026-10-16.2';
 const CACHE = 'journal-' + VERSION;
 const SHELL = [
   './',
   'index.html',
   'styles.css',
   'app.js',
-  'store.js',
   'ai.js',
-  'vendor/anthropic-0.131.0.mjs',
   'manifest.webmanifest',
   'icons/apple-touch-icon.png',
   'icons/icon-192.png',
   'icons/icon-512.png',
-  'icons/icon-maskable-512.png'
+  'icons/icon-maskable-512.png',
+  'vendor/anthropic-0.131.0.mjs',
+  'vendor/preact-htm-10.29.8.mjs',
+  /* новая оболочка */
+  'src/main.js',
+  'src/version.js',
+  'src/i18n/index.js',
+  'src/i18n/ru.js',
+  'src/data/store.js',
+  'src/data/schema.js',
+  'src/data/repo.js',
+  'src/data/ids.js',
+  'src/data/migrations.js',
+  'src/data/legacy.js',
+  'src/data/models/profile.js',
+  'src/data/repos/index.js',
+  'src/services/sync.js',
+  'src/domain/units.js',
+  'src/ui/core.js',
+  'src/ui/icons.js',
+  'src/ui/kit.js',
+  'src/ui/app.js',
+  'src/ui/screens/dashboard.js',
+  'src/ui/screens/backup.js',
+  'src/ui/screens/profile.js',
+  'src/ui/screens/settings.js',
+  'src/ui/screens/more.js'
 ];
 
 self.addEventListener('install', (e) => {

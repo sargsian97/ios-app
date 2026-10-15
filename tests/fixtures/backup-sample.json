@@ -1,0 +1,171 @@
+{
+ "app": "journal",
+ "format": 1,
+ "exportedAt": "2026-10-15T10:00:00.000Z",
+ "data": {
+  "workouts": {
+   "2026-10-12": {
+    "date": "2026-10-12",
+    "day": "B",
+    "exercises": [
+     {
+      "name": "Присед со штангой",
+      "reps": "12",
+      "target": "3×12",
+      "sets": [
+       {
+        "done": true,
+        "r": 12,
+        "w": 60
+       },
+       {
+        "done": true,
+        "r": 12,
+        "w": 60
+       },
+       {
+        "done": true,
+        "r": 10,
+        "w": 60
+       }
+      ]
+     }
+    ]
+   },
+   "2026-10-14": {
+    "date": "2026-10-14",
+    "day": "C",
+    "exercises": [
+     {
+      "name": "Жим лёжа",
+      "reps": "8",
+      "target": "3×8",
+      "sets": [
+       {
+        "done": true,
+        "r": 8,
+        "w": 50
+       },
+       {
+        "done": true,
+        "r": 8,
+        "w": 50
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "body": {
+   "2026-10-07": {
+    "weight": 82.4
+   },
+   "2026-10-10": {
+    "weight": 82.1,
+    "waist": 84
+   },
+   "2026-10-14": {
+    "weight": 81.8
+   }
+  },
+  "templates": {
+   "A": {
+    "name": "День A",
+    "weekday": 1,
+    "exercises": [
+     {
+      "name": "Присед со штангой",
+      "reps": "12",
+      "sets": 3,
+      "weight": 60
+     }
+    ]
+   },
+   "B": {
+    "name": "День B",
+    "weekday": 3,
+    "exercises": [
+     {
+      "name": "Тяга верхнего блока",
+      "reps": "12",
+      "sets": 3,
+      "weight": 50
+     }
+    ]
+   },
+   "C": {
+    "name": "День C",
+    "weekday": 5,
+    "exercises": [
+     {
+      "name": "Жим лёжа",
+      "reps": "8",
+      "sets": 3,
+      "weight": 50
+     }
+    ]
+   }
+  },
+  "days": {
+   "2026-10-14": {
+    "date": "2026-10-14",
+    "steps": "8500",
+    "cardio": [],
+    "cardioOn": false,
+    "lifted": true,
+    "trainKcal": ""
+   }
+  },
+  "food": {
+   "2026-10-14": {
+    "date": "2026-10-14",
+    "entries": [
+     {
+      "id": "e1",
+      "name": "Овсянка",
+      "grams": 60,
+      "kcal": 214,
+      "p": 7.5,
+      "f": 3.8,
+      "c": 38,
+      "fib": 6,
+      "pa": 0,
+      "pv": 7.5,
+      "meal": "b"
+     },
+     {
+      "id": "e2",
+      "name": "Куриная грудка",
+      "grams": 150,
+      "kcal": 165,
+      "p": 34.5,
+      "f": 2,
+      "c": 0,
+      "fib": 0,
+      "pa": 34.5,
+      "pv": 0,
+      "meal": "l"
+     }
+    ]
+   }
+  },
+  "foods": {
+   "f1": {
+    "name": "Овсянка",
+    "kcal": 356,
+    "p": 12.5,
+    "f": 6.3,
+    "c": 63,
+    "fib": 10,
+    "pa": 0,
+    "pv": 12.5
+   }
+  },
+  "settings": {
+   "main": {
+    "lang": "ru",
+    "height": 178
+   }
+  }
+ }
+}

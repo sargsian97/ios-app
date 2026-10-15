@@ -37,3 +37,10 @@ test('VERSION задан', () => {
   const src = readFileSync(join(WEB, 'sw.js'), 'utf8');
   assert.match(src, /const VERSION = '\d{4}-\d{2}-\d{2}\.\d+';/);
 });
+
+test('VERSION в sw.js совпадает с APP_VERSION', async () => {
+  const src = readFileSync(join(WEB, 'sw.js'), 'utf8');
+  const v = src.match(/const VERSION = '([^']+)'/)[1];
+  const { APP_VERSION } = await import('../web/src/version.js');
+  assert.equal(APP_VERSION, v);
+});
