@@ -1972,6 +1972,7 @@ function langCard(){
 
 /* ---------- приложение на iPhone: ключ Claude, резервные копии ---------- */
 var KEY_LS='journal.apiKey';
+var PREVIEW=window.JOURNAL_PREVIEW||null;
 function getKey(){try{return localStorage.getItem(KEY_LS)||'';}catch(e){return '';}}
 function setKey(k){try{if(k)localStorage.setItem(KEY_LS,k);else localStorage.removeItem(KEY_LS);}catch(e){}}
 function setupAI(){
@@ -2002,6 +2003,7 @@ function keySave(){
 }
 function aiCard(){
   var k=getKey(),h='<div class="card pad">'+h2i('spark','var(--k-plan)','Claude: фото и автозаполнение');
+  if(PREVIEW)h+='<div class="hint io" style="margin:0 0 10px">Это предпросмотр внутри Claude: здесь фото и автозаполнение не работают. В приложении на телефоне они заработают с ключом.</div>';
   if(k){
     h+='<div class="kv"><span>Ключ</span><span class="mono">'+esc(k.slice(0,10)+'…'+k.slice(-4))+'</span></div>'
       +'<div class="row" style="margin-top:8px"><button class="grow" data-act="keyTest">Проверить</button><button class="danger" data-act="keyDel">Удалить ключ</button></div>';
@@ -2014,6 +2016,7 @@ function aiCard(){
 function backupCard(){
   var c=S.db?S.db.counts():{workouts:0,food:0,body:0,foods:0};
   return '<div class="card pad">'+h2i('save','var(--k-cal)','Резервная копия')
+    +(PREVIEW?'<div class="hint io" style="margin:0 0 10px">В предпросмотре данные живут только здесь и не связаны с приложением на телефоне.</div>':'')
     +'<div class="hint" style="margin:0 0 10px">Все данные хранятся на этом iPhone. Раз в неделю сохраняй копию в «Файлы» или iCloud Drive, тогда при смене телефона ничего не пропадёт.</div>'
     +'<div class="grid2"><button data-act="exp">Сохранить копию</button><button data-act="imp">Загрузить из файла</button></div>'
     +(S.ioMsg?'<div class="hint io">'+esc(S.ioMsg)+'</div>':'')
@@ -2087,6 +2090,8 @@ async function init(){
   try{db=await openStore();}catch(e){db=null;}
   if(!db){S.error='Не удалось открыть хранилище на телефоне. Проверь, что в Safari выключен «Частный доступ», и перезапусти приложение.';render(true);return;}
   S.db=db;
+  /* предпросмотр внутри Claude: подставляем данные журнала при первом открытии */
+  if(PREVIEW&&PREVIEW.data&&db.isEmpty()){try{await db.importAll(PREVIEW.data);}catch(e){}}
   try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
   setupAI();
   sub('workouts','w',function(m){S.workouts=m;if(S.draft&&!pend.w&&!S.draftDirty)loadDraft();});
@@ -2126,7 +2131,7 @@ document.addEventListener('visibilitychange',function(){
   if(t!==today){var old=today;today=t;if(S.histSel===old)S.histSel=t;if(S.bodyDate===old&&!S.bodyDirtyForm){S.bodyDate=t;S.bodyMonth=t.slice(0,7);loadBodyForm();}if(S.date===old&&allReady())setDate(t);else render(true);}
   if(S.rest&&S.rest.on)wakeOn();
 });
-if('serviceWorker' in navigator){
+if('serviceWorker' in navigator&&!window.JOURNAL_PREVIEW){
   navigator.serviceWorker.register('./sw.js').then(function(reg){
     function watch(w){w.addEventListener('statechange',function(){if(w.state==='installed'&&navigator.serviceWorker.controller){S.update=w;render();}});}
     if(reg.waiting&&navigator.serviceWorker.controller)S.update=reg.waiting;
