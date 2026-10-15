@@ -14,7 +14,22 @@ const SHELL = [
   'icons/apple-touch-icon.png',
   'icons/icon-192.png',
   'icons/icon-512.png',
-  'icons/icon-maskable-512.png'
+  'icons/icon-maskable-512.png',
+  /* расчёты */
+  'src/domain/calc/constants.js',
+  'src/domain/calc/util.js',
+  'src/domain/calc/dates.js',
+  'src/domain/calc/trend_weight.js',
+  'src/domain/calc/bmr.js',
+  'src/domain/calc/tdee.js',
+  'src/domain/calc/macros.js',
+  'src/domain/calc/micro_goals.js',
+  'src/domain/calc/e1rm.js',
+  'src/domain/calc/progression.js',
+  'src/domain/calc/warmup.js',
+  'src/domain/calc/plate_calculator.js',
+  'src/domain/calc/volume.js',
+  'src/domain/calc/index.js'
 ];
 
 self.addEventListener('install', (e) => {
