@@ -1339,12 +1339,14 @@ function renderPlan(){
   h+='<div class="card pad"><div class="pills" style="margin-top:0">'+['A','B','C'].map(function(x){return '<button class="pill'+(S.planDay===x?' on':'')+'" data-act="planDay" data-d="'+x+'">'+x+'</button>';}).join('')+'</div>'
     +'<div class="hint">Шаблон подставляется в новую тренировку этого дня. Уже записанные тренировки не меняются.</div></div>';
   var p=planOf(S.planDay),ex=p.exercises||[];
-  h+='<div class="card pad"><div class="planh"><span>Упражнение</span><span>Подх.</span><span>Повт.</span><span>Вес</span></div>';
+  h+='<div class="card pad">';
   if(!ex.length)h+='<div class="empty">Пусто. Добавь первое упражнение.</div>';
   ex.forEach(function(e,i){
-    h+='<div class="planrow"><input data-f="p_name" data-i="'+i+'" value="'+esc(e.name)+'"><input data-f="p_sets" data-i="'+i+'" inputmode="numeric" value="'+esc(e.sets)+'">'
-      +'<input data-f="p_reps" data-i="'+i+'" value="'+esc(e.reps)+'"><input data-f="p_weight" data-i="'+i+'" inputmode="decimal" placeholder="—" value="'+esc(e.weight)+'"></div>'
-      +'<div class="planact"><button class="small" data-act="pUp" data-i="'+i+'"'+(i===0?' disabled':'')+'>↑</button><button class="small" data-act="pDown" data-i="'+i+'"'+(i===ex.length-1?' disabled':'')+'>↓</button><button class="small danger" data-act="pDel" data-i="'+i+'">Удалить</button></div>';
+    h+='<div class="prow2"><div class="prh"><span class="pidx">'+(i+1)+'</span><input class="pn" data-f="p_name" data-i="'+i+'" value="'+esc(e.name)+'" placeholder="Упражнение"></div>'
+      +'<div class="pnums"><label><span>Подходы</span><input data-f="p_sets" data-i="'+i+'" inputmode="numeric" value="'+esc(e.sets)+'"></label>'
+      +'<label><span>Повторы</span><input data-f="p_reps" data-i="'+i+'" value="'+esc(e.reps)+'"></label>'
+      +'<label><span>Вес, кг</span><input data-f="p_weight" data-i="'+i+'" inputmode="decimal" placeholder="—" value="'+esc(e.weight)+'"></label></div>'
+      +'<div class="planact"><button class="small icn" data-act="pUp" data-i="'+i+'"'+(i===0?' disabled':'')+' aria-label="Выше">↑</button><button class="small icn" data-act="pDown" data-i="'+i+'"'+(i===ex.length-1?' disabled':'')+' aria-label="Ниже">↓</button><button class="small danger" data-act="pDel" data-i="'+i+'">Удалить</button></div></div>';
   });
   h+='<button class="primary" style="width:100%" data-act="pAdd">+ Упражнение</button></div>';
   return h;
