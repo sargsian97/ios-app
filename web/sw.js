@@ -1,6 +1,6 @@
 /* Service worker: приложение открывается без интернета.
    При каждом выпуске новой версии меняй VERSION — тогда телефон предложит обновиться. */
-const VERSION = '2026-10-16.7';
+const VERSION = '2026-10-16.8';
 const CACHE = 'journal-' + VERSION;
 const SHELL = [
   './',
@@ -108,6 +108,7 @@ const SHELL = [
   'src/ui/screens/food/diary.js',
   'src/ui/screens/food/editor.js',
   'src/ui/screens/food/library.js',
+  'src/ui/screens/food/nutrients.js',
   'src/ui/screens/food/recipes.js',
   'src/ui/screens/food/scanner.js',
   'src/ui/screens/train/gyms.js',

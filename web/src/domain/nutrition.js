@@ -202,3 +202,39 @@ export function explodeRecipeEntry(entry, resolve, seen = new Set()) {
   });
   return out;
 }
+
+/* Отчёт по нутриентам за период: среднее в день по дням с записями, цели (min / target / max), статус
+   и топ-3 источника (по сумме за период). goals — { ключ: { min, target, max } }; keys — какие нутриенты.
+   Возвращает { days, rows: [{ key, value, min, target, max, pct, status: 'low' | 'ok' | 'high' | 'none', top: [{ name, value, share }] }] } */
+export function nutrientReport(entries, goals, keys, { days = null } = {}) {
+  const list = entries || [];
+  const nDays = days || new Set(list.map((e) => e.date)).size || 1;
+  const rows = keys.map((key) => {
+    const by = new Map();
+    let sum = 0;
+    list.forEach((e) => {
+      const v = Number(e.nutrients && e.nutrients[key]) || 0;
+      if (!v) return;
+      sum += v;
+      const k = entryKey(e);
+      const cur = by.get(k) || { name: e.name, value: 0 };
+      cur.value += v;
+      by.set(k, cur);
+    });
+    const value = sum / nDays;
+    const g = (goals && goals[key]) || {};
+    const min = g.min > 0 ? g.min : null, target = g.target > 0 ? g.target : null, max = g.max > 0 ? g.max : null;
+    const status = max != null && value > max ? 'high' : (min != null && value < min) || (min == null && target != null && value < target) ? 'low' : target != null || min != null ? 'ok' : 'none';
+    const top = [...by.values()].sort((a, b) => b.value - a.value).slice(0, 3).map((x) => ({ name: x.name, value: x.value / nDays, share: sum ? x.value / sum : 0 }));
+    return { key, value, min, target, max, pct: target ? value / target : null, status, top };
+  });
+  return { days: nDays, rows };
+}
+
+/* Оценка полноты рациона, 0–100: среднее по нутриентам с целью доли min(1, значение / цель).
+   Своё определение (точная формула оригинальных приложений не опубликована). */
+export function completenessScore(report) {
+  const r = (report && report.rows || []).filter((x) => x.target > 0);
+  if (!r.length) return null;
+  return Math.round(r.reduce((a, x) => a + Math.min(1, x.value / x.target), 0) / r.length * 100);
+}

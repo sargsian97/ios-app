@@ -12,6 +12,7 @@ import { FoodAdd } from './screens/food/add.js';
 import { FoodEditor } from './screens/food/editor.js';
 import { Recipes, RecipeEditor } from './screens/food/recipes.js';
 import { FoodLibrary, FoodSettings, FoodDays } from './screens/food/library.js';
+import { Nutrients } from './screens/food/nutrients.js';
 import { Body } from './screens/body/body.js';
 import { Photos } from './screens/body/photos.js';
 import { BodyHistory } from './screens/body/history.js';
@@ -47,6 +48,7 @@ const ROUTES = [
   ['/food/library', FoodLibrary],
   ['/food/settings', FoodSettings],
   ['/food/days', FoodDays],
+  ['/food/nutrients', Nutrients],
   ['/train', TrainHome],
   ['/train/session', TrainSession],
   ['/train/library', ExerciseLibrary],

@@ -41,3 +41,25 @@ test('разложить рецепт на продукты в той же до�
   assert.equal(Math.round(parts.reduce((a, p) => a + p.nutrients.kcal, 0)), Math.round(tot.nutrients.kcal / 2));
   assert.deepEqual(explodeRecipeEntry({ ref: { kind: 'food', id: 'rice' } }, resolve), []);
 });
+
+test('отчёт по нутриентам: среднее в день, статусы, топ-3 источника, полнота', async () => {
+  const { nutrientReport, completenessScore } = await import('../web/src/domain/nutrition.js');
+  const es = [
+    { date: 'a', name: 'Творог', ref: { kind: 'food', id: 't' }, nutrients: { calcium: 600, iron: 1 } },
+    { date: 'a', name: 'Молоко', ref: { kind: 'food', id: 'm' }, nutrients: { calcium: 300 } },
+    { date: 'b', name: 'Творог', ref: { kind: 'food', id: 't' }, nutrients: { calcium: 600, iron: 1 } },
+    { date: 'b', name: 'Шпинат', ref: { kind: 'food', id: 's' }, nutrients: { iron: 3, sodium: 6000 } }
+  ];
+  const goals = { calcium: { min: 800, target: 1000, max: 2500 }, iron: { min: 7, target: 8, max: 45 }, sodium: { target: 1500, max: 2300 } };
+  const r = nutrientReport(es, goals, ['calcium', 'iron', 'sodium', 'vitamin_c']);
+  const by = Object.fromEntries(r.rows.map((x) => [x.key, x]));
+  assert.equal(r.days, 2);
+  assert.equal(by.calcium.value, 750);
+  assert.equal(by.calcium.status, 'low');
+  assert.deepEqual(by.calcium.top.map((x) => x.name), ['Творог', 'Молоко']);
+  assert.equal(Math.round(by.calcium.top[0].share * 100), 80);
+  assert.equal(by.sodium.status, 'high');
+  assert.equal(by.vitamin_c.status, 'none');
+  assert.equal(completenessScore(r), Math.round(((750 / 1000) + (2.5 / 8) + 1) / 3 * 100));
+  assert.equal(completenessScore({ rows: [] }), null);
+});

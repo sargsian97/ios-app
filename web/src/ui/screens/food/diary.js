@@ -334,6 +334,7 @@ function DayMenu({ open, onClose, date, entries, onCopyDay, onClear, onManual })
     <div class="list menu">
       <button class="lrow" onClick=${() => go('/food/library')}><span class="ll">${t('food.library')}</span></button>
       <button class="lrow" onClick=${() => go('/food/recipes')}><span class="ll">${t('food.recipes')}</span></button>
+      <button class="lrow" onClick=${() => go('/food/nutrients?d=' + date)}><span class="ll">${t('food.nut.title')}</span></button>
       <button class="lrow" onClick=${() => go('/food/days')}><span class="ll">${t('food.days')}</span></button>
       <button class="lrow" onClick=${() => go('/food/settings')}><span class="ll">${t('food.settings')}</span></button>
     </div>

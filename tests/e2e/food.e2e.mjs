@@ -200,6 +200,14 @@ const hist = await p.locator('#app').innerText();
 check('история журнала показывает питание из новой модели', /Овсянка|ккал/.test(hist));
 await shot('12-history');
 
+/* нутриенты: оценка полноты и строки по группам */
+await go('#/food/nutrients');
+check('нутриенты: есть оценка полноты', await p.locator('.nut-big b').count() === 1);
+check('нутриенты: строки нутриентов', await p.locator('.nut-row').count() >= 4);
+await p.locator('.nut-row').first().click();
+await wait(200);
+await shot('12b-nutrients');
+
 /* библиотека и настройки ключей */
 await go('#/food/library');
 check('мои продукты: есть батончик', await p.locator('.lrow', { hasText: 'Тестовый батончик' }).count() === 1);
