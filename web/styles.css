@@ -1379,3 +1379,22 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 .nut-bar em.tg{opacity:.9}
 .nut-bar em.mx{background:var(--k-steps);opacity:.8}
 .nut-top{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:13px;color:var(--ink2)}
+.wk-fix{display:flex;align-items:center;gap:10px;margin:8px 0 2px;padding:8px 10px;border-radius:12px;background:color-mix(in srgb,#FFCC00 18%,var(--card));font-size:13px;color:var(--ink2)}
+.wk-fix .wand{width:4px;height:22px;border-radius:2px;background:#FFCC00;transform:rotate(20deg);flex:none}
+.mm-l0{fill:color-mix(in srgb,var(--muted) 26%,transparent)}
+.mm-l1{fill:color-mix(in srgb,var(--k-str) 25%,var(--card))}
+.mm-l2{fill:color-mix(in srgb,var(--k-str) 50%,var(--card))}
+.mm-l3{fill:color-mix(in srgb,var(--k-str) 75%,var(--card))}
+.mm-l4{fill:var(--k-str)}
+.mm svg [class^="mm-l"]{stroke:var(--card);stroke-width:.8}
+.mm-hit{cursor:pointer}
+.mm figcaption i[class^="mm-l"]{display:inline-block}
+.mm figcaption i.mm-l0{background:color-mix(in srgb,var(--muted) 26%,transparent)}
+.mm figcaption i.mm-l1{background:color-mix(in srgb,var(--k-str) 25%,var(--card))}
+.mm figcaption i.mm-l2{background:color-mix(in srgb,var(--k-str) 50%,var(--card))}
+.mm figcaption i.mm-l3{background:color-mix(in srgb,var(--k-str) 75%,var(--card))}
+.mm figcaption i.mm-l4{background:var(--k-str)}
+.lv-row .lv b{font-family:var(--num)}
+.lv-dots{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}
+.lv-dots i{width:6px;height:6px;border-radius:3px;background:var(--input)}
+.lv-dots i.on{background:var(--k-str)}

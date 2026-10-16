@@ -9,11 +9,12 @@ import { isCardio } from '../../../domain/exercises.js';
 import { toDisplay, fromDisplay, unitKey } from '../../../domain/units.js';
 import { uid } from '../../../data/ids.js';
 import { useCatalog, exName, fmtSet, fmtClock, setTypeShort, weightUnit } from '../../train/catalog.js';
-import { plateLoadout, warmupSetsForEntry, workingWeightOf, availableInGym, loadKind } from '../../../domain/gym.js';
+import { plateLoadout, warmupSetsForEntry, workingWeightOf, availableInGym, loadKind, progressionFor } from '../../../domain/gym.js';
 import { ExercisePicker } from '../../train/picker.js';
 import { RestBar, useNow, unlockAudio, useWakeLock } from '../../train/timer.js';
 import { NumIn, RirSheet, SetSheet } from '../../train/inputs.js';
 
+const progReason = (r) => t(r === 'lightest_too_heavy' ? 'train.prog.r.heavy' : r === 'expanded_below_range' ? 'train.prog.r.below' : 'train.prog.r.above');
 const GROUPS = 'ABCDEFGH';
 
 /* Колонки подхода по метрикам упражнения */
@@ -83,7 +84,7 @@ export function TrainSession() {
     const cur = get();
     const set = cur.exercises[ei].sets[si];
     if (set.done) save(uncompleteSet(cur, ei, si));
-    else save(completeSet(cur, ei, si, { now: new Date().toISOString(), catalog: cat.byId, configs, profile }));
+    else save(completeSet(cur, ei, si, { now: new Date().toISOString(), catalog: cat.byId, configs, profile, progression: profile.autofill ? progressionFor(profile, gym, configs) : null }));
   }
 
   function addExercise(ex) {
@@ -276,6 +277,9 @@ function ExerciseCard({ e, ei, s, ex, byId, prev, units, profile, showNote, show
       </div>
       <button class="small icn" aria-label=${t('train.ex.menu')} onClick=${onMenu}><${Icon} name="more"/></button>
     </div>
+    ${!e.skipped && e.exerciseId && e.sets.some((x) => !x.done && x.target && x.target.expanded) ? html`<div class="wk-fix" role="note"><span class="wand" aria-hidden="true"></span>
+      <span class="grow">${t('train.prog.fixText', { reason: progReason((e.sets.find((x) => !x.done && x.target && x.target.expanded).target || {}).reason) })}</span>
+      <button class="small" onClick=${() => navigate('/train/exercise/' + encodeURIComponent(e.exerciseId))}>${t('train.prog.fix')}</button></div>` : null}
     ${prev ? html`<div class="wk-prev">${t('train.prev', { d: fmtDate(prev.date) })}: ${prev.sets.filter((x) => x.type !== 'warmup').map((x) => fmtSet(x, units, { cardio })).join(' · ')}</div>` : null}
     ${e.skipped ? html`<div class="hint">${t('train.ex.skipped')}</div>` : html`
     <div class="wk-cols" style=${'grid-template-columns:' + grid}><span>${t('train.col.set')}</span>${cols.map((c) => html`<span>${colLabel(c)}</span>`)}${rir ? html`<span>RIR</span>` : null}<span></span></div>

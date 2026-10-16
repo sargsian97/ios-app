@@ -90,6 +90,7 @@ export const WorkoutProfile = model({
     warmupOnlyIfNotWorked: f.bool({ def: true }),
     simplifyWarmupPlates: f.bool({ def: true }),
     autofill: f.bool({ def: true }),
+    smartProgression: f.bool({ def: true }),
     preferPrevWeight: f.bool(),
     expandRepRange: f.bool(),
     previousFrom: f.enum(['any', 'program']),

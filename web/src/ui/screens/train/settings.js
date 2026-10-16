@@ -28,6 +28,12 @@ export function TrainSettings() {
       <${Toggle} on=${p.bodyweightFromTrend} onChange=${(v) => upd({ bodyweightFromTrend: v })} label=${t('train.set.bw')} hint=${t('train.set.bwHint')}/>
       <div style="margin-top:10px"><${Segmented} label=${t('train.set.prev')} value=${p.previousFrom} onChange=${(v) => upd({ previousFrom: v })} options=${[['any', t('train.set.prev.any')], ['program', t('train.set.prev.program')]]}/></div>
     <//>
+    <${Card} title=${t('train.prog.title')} icon="up" color="var(--k-str)" cls="wk-togs">
+      <${Toggle} on=${p.smartProgression} onChange=${(v) => upd({ smartProgression: v })} label=${t('train.prog.smart')} hint=${t('train.prog.smartHint')}/>
+      <${Toggle} on=${p.autofill} onChange=${(v) => upd({ autofill: v })} label=${t('train.prog.autofill')} hint=${t('train.prog.autofillHint')}/>
+      <${Toggle} on=${p.expandRepRange} onChange=${(v) => upd({ expandRepRange: v })} label=${t('train.prog.expand')} hint=${t('train.prog.expandHint')}/>
+      <${Toggle} on=${p.preferPrevWeight} onChange=${(v) => upd({ preferPrevWeight: v })} label=${t('train.prog.prev')} hint=${t('train.prog.prevHint')}/>
+    <//>
     <${Card} title=${t('train.wu.title')} icon="flame" color="#FF9500" cls="wk-togs">
       <${Toggle} on=${p.autoWarmup} onChange=${(v) => upd({ autoWarmup: v })} label=${t('train.wu.auto')} hint=${t('train.wu.autoHint')}/>
       <${Toggle} on=${p.warmupOnlyIfNotWorked} onChange=${(v) => upd({ warmupOnlyIfNotWorked: v })} label=${t('train.wu.onlyNew')} hint=${t('train.wu.onlyNewHint')}/>

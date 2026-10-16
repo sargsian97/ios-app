@@ -51,7 +51,7 @@ check('шаги перенесены', (await idbList('stepsEntries')).some((s) 
 /* вкладка */
 await go('#/train');
 check('вкладка: карточка «сегодня»', await p.locator('.wk-today').count() === 1);
-check('вкладка: неделя и действия', await p.locator('.wk-actions .scbtn').count() === 6);
+check('вкладка: неделя и действия', await p.locator('.wk-actions .scbtn').count() === 7);
 await shot('01-home');
 
 /* тренировка по шаблону */
@@ -62,7 +62,9 @@ const firstEx = p.locator('.wk-ex').first();
 check('упражнение из шаблона', /Присед со штангой/.test(await firstEx.innerText()));
 const warm = firstEx.locator('.wk-set.warm');
 check('разминка добавлена автоматически', await warm.count() === 3, await warm.count());
-check('разминка без зала: 22,5 / 35 / 47,5 к 60 кг', (await warm.nth(0).locator('input').first().getAttribute('placeholder')) === '22,5' && (await warm.nth(2).locator('input').first().getAttribute('placeholder')) === '47,5');
+const wph0 = await warm.evaluateAll((els) => els.map((e) => e.querySelector('input').getAttribute('placeholder')));
+check('разминка без зала от рабочего веса умной прогрессии', wph0.length === 3, wph0);
+console.log('разминка без зала:', wph0.join(' / '));
 const work1 = firstEx.locator('.wk-set:not(.warm)').first();
 const wIn = work1.locator('input').first();
 check('вес из прошлого раза или шаблона — подсказкой', (await wIn.getAttribute('placeholder')) !== '', await wIn.getAttribute('placeholder'));
@@ -219,7 +221,7 @@ await p.getByRole('button', { name: 'Другая' }).click(); await wait(500);
 await p.locator('.sheet .lrow', { hasText: 'День A' }).click(); await wait(900);
 const ex1 = p.locator('.wk-ex').first();
 const wph = await ex1.locator('.wk-set.warm').evaluateAll((els) => els.map((e) => e.querySelector('input').getAttribute('placeholder')));
-check('разминка по блинам зала (упрощённо, шаг 10 кг)', wph.join('|') === '20|30|40', wph);
+check('разминка по блинам зала (упрощённо, шаг 10 кг) к 62,5 кг', wph.join('|') === '20|30|50', wph);
 check('зал в заголовке тренировки', /Мой гараж/.test(await p.locator('.wk-sub').innerText()));
 await ex1.locator('.wk-set:not(.warm) .wk-sn').first().click(); await wait(500);
 check('в подходе — раскладка блинов', await p.locator('.sheet .bp .bp-plate').count() > 0);
@@ -230,6 +232,17 @@ await p.locator('.sheet .lrow', { hasText: 'Заменить упражнени�
 check('замена: похожие упражнения и фильтр зала', await p.locator('.sheet .ltitle', { hasText: 'Похожие' }).count() === 1 && await p.locator('.sheet .wk-onlygym').count() === 1);
 await shot('15-replace', false);
 await p.locator('.sheet .sh-top button').click(); await wait(300);
+
+const cur = (await idbList('workoutSessions')).find((x) => x.id === 'current');
+const tg = cur ? cur.exercises.map((e) => e.sets.filter((x) => x.type !== 'warmup').map((x) => x.target && (x.target.weight + '×' + x.target.reps + ':' + x.target.reason))) : null;
+console.log('цели прогрессии:', JSON.stringify(tg));
+
+/* уровни */
+await go('#/train/levels');
+check('уровни: карта и 20 мышц', await p.locator('.mm-lv svg').count() === 1 && await p.locator('.lv-row').count() === 20);
+await p.locator('.lv-row').first().click(); await wait(300);
+check('уровни: вклад упражнений', await p.locator('.lv-row[aria-expanded="true"] .nut-top span').count() >= 1);
+await shot('16-levels');
 
 
 await go('#/train');

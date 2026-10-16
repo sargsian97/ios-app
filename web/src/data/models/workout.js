@@ -162,7 +162,8 @@ const SetLog = f.shape({
   doneAt: f.timestamp(),
   restSec: f.number({ min: 0, max: 86400 }),
   durSec: f.number({ min: 0, max: 86400 }),
-  target: f.shape({ weight: f.number({ min: 0 }), reps: f.number({ min: 0 }), rir: f.number({ min: 0 }) }, { nullable: true })
+  /* цель: что предложено; expanded / reason — от умной прогрессии (повторы вне диапазона и почему) */
+  target: f.shape({ weight: f.number({ min: 0 }), reps: f.number({ min: 0 }), rir: f.number({ min: 0 }), timeSec: f.number({ min: 0 }), distanceM: f.number({ min: 0 }), assist: f.number({ min: 0 }), expanded: f.bool(), reason: f.string({ def: '' }) }, { nullable: true })
 });
 
 /* Кардио-сессия: время и дистанция — в подходе, остальное здесь */

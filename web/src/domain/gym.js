@@ -229,3 +229,14 @@ export function addWarmups(session, opts) {
   });
   return Object.assign({}, session, { exercises, cursor: exercises.length ? { ei: 0, si: 0 } : null });
 }
+
+/* Настройки умной прогрессии для сессии: доступные веса — из зала и своих весов упражнения */
+export function progressionFor(profile, gym, configs = {}) {
+  const p = profile || {};
+  return {
+    enabled: p.smartProgression !== false,
+    expandRange: !!p.expandRepRange,
+    preferPrevWeight: !!p.preferPrevWeight,
+    loadsFor: (exercise) => availableLoads(exercise, gym, exercise ? configs[exercise.id] : null)
+  };
+}

@@ -1,7 +1,7 @@
 /* Тренировка: сборка сессии из шаблона, предыдущие значения, цели подходов, отдых, переходы
    (суперсеты), завершение, итоги и рекорды, выбор тренировки на сегодня, кардио журнала.
    Чистые функции: время и id передаются параметрами. Веса — в кг, время — в секундах, дистанция — в метрах. */
-import { e1rm, isWorkingSet, addDays } from './calc/index.js';
+import { e1rm, isWorkingSet, addDays, nextSetTarget, DEFAULT_TARGET_RIR } from './calc/index.js';
 import { isCardio } from './exercises.js';
 
 const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
@@ -54,21 +54,84 @@ export function targetFor(item, prevSet) {
   return { weight: num(it.weight), reps: num(it.repMax) != null ? it.repMax : num(it.repMin), rir: num(it.rir), timeSec: num(it.timeSec), distanceM: num(it.distanceM), assist: null };
 }
 
+/* Умная прогрессия (раздел 2.4): упражнение «вес × повторы», не кардио и не с помощью гравитрона */
+export function progressable(exercise) {
+  const ex = exercise || {};
+  const m = ex.metrics || ['weight', 'reps'];
+  return !isCardio(ex) && m.includes('weight') && m.includes('reps') && !m.includes('assist');
+}
+
+/* Диапазон повторов цели: [min, max]; задан только один край — диапазон из одного числа; нет — null */
+export function repRangeOf(item) {
+  const a = num(item && item.repMin), b = num(item && item.repMax);
+  if ((a == null || a <= 0) && (b == null || b <= 0)) return null;
+  const lo = Math.max(1, Math.round(a != null && a > 0 ? a : b));
+  return [lo, Math.max(lo, Math.round(b != null && b > 0 ? b : lo))];
+}
+
+/* Цель рабочего подхода index по умной прогрессии или null (нет диапазона, истории, упражнение не подходит).
+   Сегодня уже есть выполненные рабочие подходы — считаем от последнего из них (он уже несёт усталость,
+   добавляется только за подходы после него), иначе — от прошлого раза (history) с усталостью за index подходов.
+   progression: { enabled, expandRange, preferPrevWeight, available, version }. */
+export function smartTarget({ item, exercise, history = [], today = [], index = 0, progression = null }) {
+  if (!progression || !progression.enabled || !progressable(exercise)) return null;
+  const repRange = repRangeOf(item);
+  if (!repRange) return null;
+  const work = (xs) => (xs || []).filter((x) => x && x.type !== 'warmup' && isWorkingSet(x) && e1rm(x) > 0);
+  const doneToday = (today || []).map((x, k) => ({ x, k })).filter(({ x }) => x && x.done && work([x]).length);
+  const last = doneToday.length ? doneToday[doneToday.length - 1] : null;
+  const sets = last ? [last.x] : work(history);
+  if (!sets.length) return null;
+  const rir = num(item.rir) != null ? item.rir : DEFAULT_TARGET_RIR;
+  const r = nextSetTarget({
+    sets, repRange, targetRir: rir, setIndex: last ? Math.max(0, index - last.k) : index,
+    available: progression.available || undefined, expandRange: !!progression.expandRange,
+    preferPrevWeight: !!progression.preferPrevWeight, version: progression.version || 'v1'
+  });
+  if (!r) return null;
+  return { weight: r.weight, reps: r.reps, rir: r.rir, timeSec: null, distanceM: null, assist: null, expanded: !!r.expanded, reason: r.reason };
+}
+
+const withLoads = (progression, exercise) => (progression ? Object.assign({}, progression, { available: progression.loadsFor ? progression.loadsFor(exercise) : progression.available }) : null);
+
+/* После выполненного подхода — пересчитать цели оставшихся рабочих подходов упражнения по сделанным сегодня.
+   Подходы, в которые уже что-то введено (вес или повторы), не трогаем. */
+export function retargetEntry(entry, { exercise, progression }) {
+  if (!entry || !entry.target || !progression || !progression.enabled) return entry;
+  const prog = withLoads(progression, exercise);
+  const working = entry.sets.filter((x) => x.type !== 'warmup');
+  let changed = false;
+  const sets = entry.sets.map((x) => {
+    if (x.done || x.type === 'warmup' || x.weight != null || x.reps != null) return x;
+    const idx = working.indexOf(x);
+    const tg = smartTarget({ item: entry.target, exercise, today: working, index: idx, progression: prog });
+    if (!tg) return x;
+    changed = true;
+    return Object.assign({}, x, { target: tg });
+  });
+  return changed ? Object.assign({}, entry, { sets }) : entry;
+}
+
 export function blankSet(id, type, target, perSide) {
   return { id, type: type || 'normal', weight: null, assist: null, reps: null, partials: null, timeSec: null, distanceM: null, rir: null, side: 'both', perSide: !!perSide, done: false, doneAt: null, restSec: null, durSec: null, target };
 }
 
 /* Упражнение в сессии: подходы с целями по прошлому разу или шаблону */
-export function exerciseEntry({ exercise, item = null, prev = null, newId, exerciseId }) {
+export function exerciseEntry({ exercise, item = null, prev = null, newId, exerciseId, progression = null }) {
   const it = item || {};
   const ex = exercise || {};
   const cardio = isCardio(ex);
   const prevWorking = prev ? prev.sets.filter((s) => s.type !== 'warmup') : [];
   const n = Math.max(1, num(it.sets) || (prevWorking.length || (cardio ? 1 : 3)));
+  const prog = item ? withLoads(progression, exercise) : null;
   const sets = [];
   for (let i = 0; i < n; i++) {
     const p = prevWorking.length ? prevWorking[Math.min(i, prevWorking.length - 1)] : null;
-    sets.push(blankSet(newId(), it.setType, targetFor(it, p), ex.perSide));
+    let smart = smartTarget({ item: it, exercise, history: prevWorking, index: i, progression: prog });
+    /* усталость только снижает: подход не тяжелее предыдущего (запасная «линейная прогрессия» её не учитывает) */
+    const before = sets.length && sets[sets.length - 1].target;
+    if (smart && before && before.reason && before.weight != null && smart.weight > before.weight) smart = Object.assign({}, before);
+    sets.push(blankSet(newId(), it.setType, smart || targetFor(it, p), ex.perSide));
   }
   return {
     id: newId(),
@@ -86,12 +149,12 @@ export function exerciseEntry({ exercise, item = null, prev = null, newId, exerc
 }
 
 /* Новая сессия: из шаблона (с выбором варианта упражнения) или пустая */
-export function buildSession({ plan = null, catalog = {}, logs = [], date, now, bodyweightKg = null, programId = null, previousFrom = 'any', newId, name = '', gymId = null }) {
+export function buildSession({ plan = null, catalog = {}, logs = [], date, now, bodyweightKg = null, programId = null, previousFrom = 'any', newId, name = '', gymId = null, progression = null }) {
   const exercises = planItems(plan).map((it) => {
     const id = pickAlternative(it, logs);
     const ex = catalog[id] || null;
     const prev = previousSets(logs, id, { programId: previousFrom === 'program' ? (programId || (plan && plan.programId)) : null, before: null });
-    const entry = exerciseEntry({ exercise: ex, item: it, prev, newId, exerciseId: id });
+    const entry = exerciseEntry({ exercise: ex, item: it, prev, newId, exerciseId: id, progression });
     if (!ex && it.alternatives && it.alternatives.length > 1) entry.name = it.name;
     return entry;
   });
@@ -171,7 +234,7 @@ export function fillFromTarget(set) {
 }
 
 /* Отметить подход выполненным: заполнить из цели, засечь фактический отдых, передвинуть курсор, начать отдых */
-export function completeSet(session, ei, si, { now, catalog = {}, configs = {}, profile = null }) {
+export function completeSet(session, ei, si, { now, catalog = {}, configs = {}, profile = null, progression = null }) {
   const exs = session.exercises.map((e) => Object.assign({}, e, { sets: e.sets.slice() }));
   const entry = exs[ei];
   if (!entry || !entry.sets[si]) return session;
@@ -182,6 +245,7 @@ export function completeSet(session, ei, si, { now, catalog = {}, configs = {}, 
   set.doneAt = now;
   if (lastDone && t - lastDone < 3600e3) set.restSec = Math.round((t - lastDone) / 1000);
   entry.sets[si] = set;
+  if (progression && set.type !== 'warmup') exs[ei] = retargetEntry(entry, { exercise: catalog[entry.exerciseId] || null, progression });
   const next = Object.assign({}, session, { exercises: exs });
   const np = nextPointer(next, ei, si);
   const exercise = catalog[entry.exerciseId] || null;

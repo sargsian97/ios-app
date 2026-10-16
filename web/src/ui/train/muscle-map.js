@@ -2,6 +2,7 @@
 import { html } from '../core.js';
 import { t } from '../../i18n/index.js';
 import { muscleLabel } from './catalog.js';
+import { VOLUME_LEVEL_SETS } from '../../domain/calc/constants.js';
 
 const E = (cx, cy, rx, ry) => ({ e: [cx, cy, rx, ry] });
 const R = (x, y, w, h, r = 3) => ({ r: [x, y, w, h, r] });
@@ -47,11 +48,24 @@ function shape(s, cls, key) {
   return html`<path key=${key} class=${cls} d=${s.p}/>`;
 }
 
-function Figure({ map, dx, primary, secondary }) {
+function Figure({ map, dx, primary, secondary, levels, onPick }) {
+  const cls = (m) => (levels ? 'mm-l' + (levels[m] || 0) : primary.includes(m) ? 'mm-p' : secondary.includes(m) ? 'mm-s' : 'mm-i');
   return html`<g transform=${'translate(' + dx + ' 0)'}>
     ${BASE.map((s, i) => shape(s, 'mm-base', 'b' + i))}
-    ${Object.keys(map).flatMap((m) => map[m].map((s, i) => shape(s, primary.includes(m) ? 'mm-p' : secondary.includes(m) ? 'mm-s' : 'mm-i', m + i)))}
+    ${Object.keys(map).map((m) => html`<g key=${m} class=${onPick ? 'mm-hit' : ''} onClick=${onPick ? () => onPick(m) : null}>${map[m].map((s, i) => shape(s, cls(m), m + i))}</g>`)}
   </g>`;
+}
+
+
+/* Карта уровней: levels { мышца: 0…4 }, по тапу — onPick(мышца) */
+export function LevelMap({ levels = {}, onPick = null, label = '' }) {
+  return html`<figure class="mm mm-lv">
+    <svg viewBox="0 0 200 190" role="img" aria-label=${label}>
+      <${Figure} map=${FRONT} dx=${0} primary=${[]} secondary=${[]} levels=${levels} onPick=${onPick}/>
+      <${Figure} map=${BACK} dx=${100} primary=${[]} secondary=${[]} levels=${levels} onPick=${onPick}/>
+    </svg>
+    <figcaption>${[0].concat(VOLUME_LEVEL_SETS).map((n, l) => html`<span><i class=${'mm-l' + l}></i>${l ? n + '+' : t('lv.l0')}</span>`)}</figcaption>
+  </figure>`;
 }
 
 export function MuscleMap({ primary = [], secondary = [] }) {

@@ -8,7 +8,7 @@ import { buildSession, suggestPlan, planItems, sortLogs, workoutSummary, cardioE
 import { addDays, weekStart, workoutsBetween } from '../../../data/legacy.js';
 import { toDisplay, fromDisplay, unitKey } from '../../../domain/units.js';
 import { uid } from '../../../data/ids.js';
-import { defaultGym, addWarmups } from '../../../domain/gym.js';
+import { defaultGym, addWarmups, progressionFor } from '../../../domain/gym.js';
 import { MiniBars } from '../../chart.js';
 import { useCatalog, whyLabel, cardioTypeLabel, fmtClock, currentBodyweight, weightUnit, wdLabel, wdShort } from '../../train/catalog.js';
 import { useNow } from '../../train/timer.js';
@@ -20,10 +20,10 @@ export async function startWorkout(app, { plan = null, date, catalog }) {
   const profile = repos.workoutProfile.get();
   const logs = repos.workout.list();
   const gym = defaultGym(repos.gym.list(), profile);
-  let s = buildSession({ plan, catalog, logs, date, now: new Date().toISOString(), bodyweightKg: profile.bodyweightFromTrend ? currentBodyweight(repos) : null, previousFrom: profile.previousFrom, newId: uid, gymId: gym ? gym.id : null });
+  const configs = {};
+  repos.userExerciseConfig.list().forEach((c) => { configs[c.id] = c; });
+  let s = buildSession({ plan, catalog, logs, date, now: new Date().toISOString(), bodyweightKg: profile.bodyweightFromTrend ? currentBodyweight(repos) : null, previousFrom: profile.previousFrom, newId: uid, gymId: gym ? gym.id : null, progression: progressionFor(profile, gym, configs) });
   if (profile.autoWarmup) {
-    const configs = {};
-    repos.userExerciseConfig.list().forEach((c) => { configs[c.id] = c; });
     s = addWarmups(s, { catalog, gym, configs, profile, newId: uid });
   }
   await repos.workoutSession.save(s);
@@ -80,7 +80,7 @@ export function TrainHome({ route }) {
     ${dayLogs.length ? html`<div class="ltitle">${isToday ? t('train.doneToday') : t('train.dayLogs')}</div><div class="list">${dayLogs.map((w) => html`<${LogRow} w=${w} byId=${cat.byId} units=${units}/>`)}</div>` : !isToday ? html`<div class="card empty">${t('train.dayEmpty')}</div>` : null}
 
     <div class="scgrid wk-actions">
-      ${[['heart', 'train.act.cardio', () => setCardio(true)], ['search', 'train.act.library', () => navigate('/train/library')], ['list', 'train.act.plans', () => navigate('/train/plans')], ['cal', 'train.act.history', () => navigate('/train/history')], ['plate', 'train.act.plates', () => navigate('/train/plates')], ['gym', 'train.act.gyms', () => navigate('/train/gyms')]].map(([ic, l, fn]) => html`<button class="scbtn" onClick=${fn}><${Icon} name=${ic}/><span>${t(l)}</span></button>`)}
+      ${[['heart', 'train.act.cardio', () => setCardio(true)], ['search', 'train.act.library', () => navigate('/train/library')], ['list', 'train.act.plans', () => navigate('/train/plans')], ['cal', 'train.act.history', () => navigate('/train/history')], ['target', 'train.act.levels', () => navigate('/train/levels')], ['plate', 'train.act.plates', () => navigate('/train/plates')], ['gym', 'train.act.gyms', () => navigate('/train/gyms')]].map(([ic, l, fn]) => html`<button class="scbtn" onClick=${fn}><${Icon} name=${ic}/><span>${t(l)}</span></button>`)}
     </div>
 
     ${isToday ? html`<${Card} title=${t('train.week')} icon="train" color="var(--k-str)">
