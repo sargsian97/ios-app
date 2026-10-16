@@ -1,6 +1,6 @@
 /* Service worker: приложение открывается без интернета.
    При каждом выпуске новой версии меняй VERSION — тогда телефон предложит обновиться. */
-const VERSION = '2026-10-16.10';
+const VERSION = '2026-10-16.11';
 const CACHE = 'journal-' + VERSION;
 const SHELL = [
   './',
@@ -129,7 +129,7 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))));
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
@@ -149,6 +149,10 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; /* api.anthropic.com идёт мимо кэша */
+  if (req.mode === 'navigate') { /* страница — сначала из сети, чтобы новая версия подхватывалась сразу */
+    e.respondWith(fetch(req, { cache: 'no-store' }).catch(() => caches.match('index.html')));
+    return;
+  }
   e.respondWith(
     caches.match(req, { ignoreSearch: true }).then((hit) => {
       if (hit) return hit;
