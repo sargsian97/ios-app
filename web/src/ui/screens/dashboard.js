@@ -33,7 +33,6 @@ export function Dashboard() {
   const trainings = workoutsBetween(store, ws, addDays(ws, 6)).length;
   const steps = stepsOn(store, today);
   const energy = toDisplay('energy', food.kcal, units);
-  const needProfile = !profile.sex || !profile.birthDate || !profile.heightCm;
 
   let wSub = null;
   if (w && w.change != null) {
@@ -44,9 +43,9 @@ export function Dashboard() {
   return html`<${Page} title=${t('dash.title')} icon="home" color="linear-gradient(135deg,#5AB0FF,#0A84FF)">
     <div class="hsub dsub">${fmtDate(today, 'long')}</div>
     <${ImportCard}/>
-    ${needProfile ? html`<${Card} cls="welcome" title=${t('dash.profile.title')} icon="user" color="var(--k-plan)">
-      <div class="hint" style="margin:0 0 12px">${t('dash.profile.text')}</div>
-      <button class="primary" style="width:100%" onClick=${() => navigate('/more/profile')}>${t('dash.profile.go')}</button>
+    ${!profile.onboardedAt ? html`<${Card} cls="welcome" title=${t('dash.setup.title')} icon="target" color="var(--k-plan)">
+      <div class="hint" style="margin:0 0 12px">${t('dash.setup.text')}</div>
+      <button class="primary" style="width:100%" onClick=${() => navigate('/onboarding')}>${t('dash.setup.go')}</button>
     <//>` : null}
     <div class="dgrid">
       <${Tile} icon="food" color="var(--k-food)" label=${t('dash.food')} value=${fmtNum(energy)} unit=${t(unitKey('energy', units))}

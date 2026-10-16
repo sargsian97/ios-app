@@ -23,6 +23,9 @@ export function More() {
     <${List}>
       <${Row} icon="user" color="#5856D6" label=${p.name || t('profile.title')} sub=${bits.length ? bits.join(' · ') : t('more.profile.empty')} href="/more/profile"/>
     <//>
+    <${List}>
+      <${Row} icon="target" color="#0A84FF" label=${t('goal.title')} sub=${t('more.goal.sub')} href="/more/goal"/>
+    <//>
     <${List} title=${t('more.journal')}>
       <${Row} icon="scale" color="#AF52DE" label=${t('more.body')} href="/more/body"/>
       <${Row} icon="cal" color="#14B8A6" label=${t('more.history')} href="/more/history"/>

@@ -185,3 +185,11 @@ export const CYCLE_PERIOD_GAP_DAYS = 2;        // разрыв больше — 
 export const CYCLE_HISTORY = 6;                // среднее по последним N циклам
 export const CYCLE_MIN_LENGTH = 15;            // короче или длиннее — не учитываем в среднем (вероятно, пропуск записей)
 export const CYCLE_MAX_LENGTH = 60;
+
+/* ── Цель: варианты темпа в мастере ──
+   Временное значение, уточнится в части 2 спецификации. */
+export const GOAL_RATES = freeze({             // % массы тела в неделю
+  lose: [0.25, 0.5, 0.75, 1.0],
+  gain: [0.1, 0.25, 0.5]
+});
+export const GOAL_RATE_DEFAULT = freeze({ lose: 0.5, gain: 0.25, maintain: 0 });

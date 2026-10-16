@@ -16,6 +16,8 @@ import { Body } from './screens/body/body.js';
 import { Photos } from './screens/body/photos.js';
 import { BodyHistory } from './screens/body/history.js';
 import { Cycle } from './screens/body/cycle.js';
+import { Onboarding } from './screens/onboarding.js';
+import { GoalScreen, MicroGoals } from './screens/goal.js';
 
 /* Экраны старого журнала: адрес → [вкладка журнала, вид плана, путь «назад»] */
 const LEGACY = {
@@ -37,6 +39,9 @@ const ROUTES = [
   ['/food/settings', FoodSettings],
   ['/food/days', FoodDays],
   ['/more', More],
+  ['/onboarding', Onboarding],
+  ['/more/goal', GoalScreen],
+  ['/more/micro', MicroGoals],
   ['/more/profile', Profile],
   ['/more/body', Body],
   ['/more/body/photos', Photos],
@@ -152,7 +157,7 @@ export function App() {
   return html`<${Theme}/>
     <${UpdateBanner}/>
     ${body}
-    <${TabBar} path=${path} onPlus=${() => setPlus(true)}/>
+    ${path.startsWith('/onboarding') ? null : html`<${TabBar} path=${path} onPlus=${() => setPlus(true)}/>`}
     <${PlusSheet} open=${plus} onClose=${() => setPlus(false)}/>`;
 }
 
