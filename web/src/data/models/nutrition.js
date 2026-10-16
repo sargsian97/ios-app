@@ -90,6 +90,7 @@ export const FoodEntry = model({
     ref: ref(['food', 'recipe', 'quick']),
     name: f.string({ def: '', max: 200 }),
     amount: f.number({ min: 0, max: 100000 }), /* граммы или мл */
+    unit: f.enum(['g', 'ml']),
     servingId: f.string({ def: '' }),
     quantity: f.number({ min: 0 }),
     /* снимок итоговых нутриентов записи — дневник не меняется, если продукт потом поправили */

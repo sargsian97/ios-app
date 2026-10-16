@@ -108,7 +108,7 @@ check('тема снова системная', (await p.evaluate(() => document
 await p.locator('.tabs .tab.plus').click(); await wait(600);
 await shot('15-plus', false);
 await p.locator('.pbtn', { hasText: 'Еда' }).click(); await wait(600);
-check('«+ → Еда» открывает добавление еды', await p.locator('#app .sheet').count() > 0 && (await p.evaluate(() => location.hash)) === '#/food');
+check('«+ → Еда» открывает поиск еды', await p.locator('.searchbox').count() > 0 && (await p.evaluate(() => location.hash)).startsWith('#/food/add'));
 await shot('16-food-add', false);
 
 /* после перезагрузки: офлайн-кэш и данные */

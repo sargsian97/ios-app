@@ -4,7 +4,9 @@ import { migrate } from './data/migrations.js';
 import { createRepos } from './data/repos/index.js';
 import { pickSyncProvider } from './services/sync.js';
 import { setLang, t } from './i18n/index.js';
-import { startLegacy, showLegacy, legacyOpenAdd, legacyPersist } from '../app.js';
+import { startLegacy, showLegacy, legacyOpenAdd, legacyPersist, legacyBudget, legacyWeekStats } from '../app.js';
+import { foodForLegacy } from './data/legacy.js';
+import { mealOf } from './domain/nutrition.js';
 import { mountApp } from './ui/app.js';
 
 const PREVIEW = window.JOURNAL_PREVIEW || null;
@@ -62,13 +64,20 @@ async function boot() {
   container.className = 'wrap';
   container.id = 'app';
   const afterImport = () => migrate(store);
-  startLegacy({ store, container, afterImport });
+  /* старые экраны читают питание из новой модели; новые экраны узнают об изменениях данных журнала */
+  const legacySubs = new Set();
+  const foodProjection = (cb) => { const push = () => cb(foodForLegacy(store, mealOf)); setTimeout(push, 0); store.subscribe('foodEntries', push); };
+  startLegacy({ store, container, afterImport, foodProjection, onChange: () => legacySubs.forEach((f) => f()) });
 
   const ctx = {
     store, repos, afterImport,
     sync: pickSyncProvider(),
     updates: setupUpdates(),
-    legacy: { container, show: showLegacy, openAdd: legacyOpenAdd, persist: legacyPersist }
+    legacy: {
+      container, show: showLegacy, openAdd: legacyOpenAdd, persist: legacyPersist,
+      budget: legacyBudget, weekStats: legacyWeekStats,
+      listen(cb) { legacySubs.add(cb); return () => legacySubs.delete(cb); }
+    }
   };
   if (!location.hash) history.replaceState(null, '', '#/');
   mountApp(root, ctx);

@@ -1351,7 +1351,7 @@ function renderPlan(){
 }
 function renderSettings(){
   var s=S.setDraft||{},c=cfg(),w=weightOn(S.date);
-  var h=aiCard()+langCard()+'<div class="card pad">'+h2i('flame','var(--k-burn)','Расход калорий')+'<div class="grid2">'
+  var h=langCard()+'<div class="card pad">'+h2i('flame','var(--k-burn)','Расход калорий')+'<div class="grid2">'
     +fld('Базовый обмен + переваривание, ккал','c_base',nz(s.base)?s.base:'','numeric',String(DEF.base))
     +fld('Ккал за силовую','c_trainKcal',nz(s.trainKcal)?s.trainKcal:'','numeric',String(DEF.trainKcal))
     +fld('Ккал на 1000 шагов','c_kPer1000',nz(s.kPer1000)?s.kPer1000:'','decimal','авто: '+Math.round(0.37*w))
@@ -1421,7 +1421,7 @@ function ensurePlan(){
 function setSet(k,v){if(!S.setDraft)S.setDraft={};S.setDraft[k]=v;markSet();}
 function delDayDocs(id){
   if(!S.db)return;
-  ['workouts','days','food'].forEach(function(col){
+  ['workouts','days','food'].filter(function(col){return !(col==='food'&&HOST.foodProjection);}).forEach(function(col){
     var key=({workouts:'w',days:'d',food:'f'})[col];
     if((col==='workouts'&&S.workouts[id])||(col==='days'&&S.days[id])||(col==='food'&&S.food[id]))
       trackWrite(key,function(){return S.db.doc(col+'/'+id).delete();});
@@ -2083,7 +2083,7 @@ function sub(col,key,apply){
   S.db.collection(col).onSnapshot(function(snap){
     apply(fromSnap(snap));S.ready[key]=1;
     if(allReady()&&!S.draft){loadAll();}
-    render();
+    render();if(HOST.onChange)HOST.onChange();
   },onErr);
 }
 function init(db){
@@ -2098,7 +2098,14 @@ function init(db){
     if(S.draft&&!S.draftDirty&&!S.workouts[S.date])S.draft=buildFromTemplate(S.day,S.date);
   });
   sub('days','d',function(m){S.days=m;if(S.dayDraft&&!pend.d&&!S.dayDirty)loadDay();});
-  sub('food','f',function(m){S.food=m;if(S.foodDraft&&!pend.f&&!S.foodDirty)loadFood();});
+  /* питание живёт в новой модели (foodEntries); журнал получает его в своём формате только для чтения */
+  if(HOST.foodProjection)HOST.foodProjection(function(m){
+    S.food=m;S.ready.f=1;
+    if(allReady()&&!S.draft){loadAll();}
+    else if(S.foodDraft&&!S.foodDirty)loadFood();
+    render();if(HOST.onChange)HOST.onChange();
+  });
+  else sub('food','f',function(m){S.food=m;if(S.foodDraft&&!pend.f&&!S.foodDirty)loadFood();});
   sub('foods','l',function(m){S.foods=m;if(S.sheet&&S.sheet.type==='add')paintSug();});
   sub('settings','s',function(m){
     S.settings=m;if(!S.setDirty&&!pend.s)loadSettings();
@@ -2141,5 +2148,13 @@ export function showLegacy(tab,view){
   render(true);
 }
 export function legacyOpenAdd(){S.tab='food';openAdd();}
+/* Расход и цель по еде на день по настройкам журнала: { base, stepK, cardioNet, train, burned, goal, offset, corr, hasSteps, protein, fat, fiber } */
+export function legacyBudget(date){
+  if(!allReady())return null;
+  var b=burn(date),c=cfg();
+  return Object.assign({},b,{protein:c.protein,fat:c.fat,fiber:c.fiber});
+}
+/* Средние за 7 дней до даты: { n, eat, bur, w0, w1 } */
+export function legacyWeekStats(date){return allReady()?weekStats(date):null;}
 export function legacyPersist(){persistAll();return chain;}
 export function legacyBusy(){return !!(S.sheet||S.modal);}

@@ -50,3 +50,24 @@ test('миграции: старая копия после импорта сно
   await migrate(s);
   assert.equal(s.get('profile', 'me').heightCm, 170);
 });
+
+test('миграция 3: питание журнала переносится один раз', async () => {
+  const s = await createStore(memoryBackend({
+    foods: { f1: { name: 'Хлеб', kcal: 250 } },
+    food: { '2026-10-01': { entries: [{ id: 'x1', foodId: 'f1', name: 'Хлеб', grams: 50, kcal: 125, meal: 'b' }] } }
+  }));
+  await migrate(s);
+  assert.equal(s.get('foodItems', 'f1').name, 'Хлеб');
+  assert.equal(s.get('foodEntries', 'x1').time, '08:00');
+  assert.ok(s.get('food', '2026-10-01'), 'старые записи на месте');
+});
+
+test('миграция 3: если в новой модели уже есть еда, ничего не переносится', async () => {
+  const s = await createStore(memoryBackend({
+    meta: { schema: { version: 2 } },
+    foodEntries: { a: { id: 'a', date: '2026-10-02', time: '09:00', ref: { kind: 'quick', id: null }, nutrients: { kcal: 10 } } },
+    food: { '2026-10-01': { entries: [{ id: 'x1', name: 'Хлеб', kcal: 125 }] } }
+  }));
+  await migrate(s);
+  assert.equal(s.get('foodEntries', 'x1'), null);
+});

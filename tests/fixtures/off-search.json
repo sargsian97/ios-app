@@ -1,0 +1,6 @@
+{"count":3,"products":[
+{"code":"4600000000011","product_name_ru":"Молоко 3,2%","brands":"Домик в деревне","quantity":"930 мл","serving_size":"200 мл","serving_quantity":200,"nutriments":{"energy-kcal_100g":58,"proteins_100g":2.9,"fat_100g":3.2,"carbohydrates_100g":4.7}},
+{"code":"4600000000028","product_name":"Кефир","brands":"","nutriments":{"energy_100g":167.4,"proteins_100g":3,"fat_100g":1,"carbohydrates_100g":4}},
+{"code":"4600000000035","product_name":"","nutriments":{"energy-kcal_100g":100}},
+{"code":"4600000000042","product_name":"Пиво светлое","quantity":"0,5 л","nutriments":{"energy-kcal_100g":42,"alcohol_100g":4.5}}
+]}

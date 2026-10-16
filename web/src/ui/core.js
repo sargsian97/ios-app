@@ -53,3 +53,11 @@ export function useRoute() {
 export function todayYmd(d = new Date()) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
+
+/* Перерисовать компонент, когда меняются данные старого журнала (расход, шаги, тренировки) */
+export function useLegacy() {
+  const { legacy } = useApp();
+  const [, bump] = useReducer((x) => x + 1, 0);
+  useEffect(() => legacy.listen(bump), []);
+  return legacy;
+}

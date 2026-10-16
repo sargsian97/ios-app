@@ -3,17 +3,6 @@
 
 function n(v) { const x = Number(v); return v === '' || v == null || !isFinite(x) ? null : x; }
 
-/* Итог еды за день: { kcal, p, f, c, fib, count } */
-export function foodTotals(store, date) {
-  const d = store.get('food', date);
-  const o = { kcal: 0, p: 0, f: 0, c: 0, fib: 0, count: 0 };
-  ((d && d.entries) || []).forEach((e) => {
-    o.count++;
-    ['kcal', 'p', 'f', 'c', 'fib'].forEach((k) => { o[k] += n(e[k]) || 0; });
-  });
-  return o;
-}
-
 /* Взвешивания: [{ date, weight }] по возрастанию даты */
 export function weighIns(store) {
   const m = store.map('body');
@@ -57,4 +46,17 @@ export function weekStart(ymd) {
   const [y, m, d] = ymd.split('-').map(Number);
   const wd = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
   return addDays(ymd, -wd);
+}
+
+/* Записи новой модели питания в формате журнала: { дата: { date, entries: [{ id, name, grams, kcal, p, f, c, fib, pa, pv, meal }] } }.
+   Нужен старым экранам (история, расход за неделю), пока они не заменены. */
+export function foodForLegacy(store, mealOf) {
+  const out = {};
+  store.list('foodEntries').forEach((e) => {
+    const n = e.nutrients || {};
+    const d = out[e.date] || (out[e.date] = { date: e.date, entries: [] });
+    d.entries.push({ id: e.id, name: e.name, grams: e.amount == null ? '' : e.amount, kcal: n.kcal || 0, p: n.protein || 0, f: n.fat || 0, c: n.carbs || 0, fib: n.fiber || 0, pa: n.protein_animal || 0, pv: n.protein_plant || 0, meal: mealOf(e), time: e.time });
+  });
+  Object.keys(out).forEach((k) => out[k].entries.sort((a, b) => (a.time || '').localeCompare(b.time || '')));
+  return out;
 }

@@ -1,5 +1,5 @@
 /* Корень приложения: экраны по адресу, нижняя панель, «+», плашка обновления. */
-import { html, render, useApp, useData, useRoute, navigate, goBack, useEffect, useRef, useState, AppCtx } from './core.js';
+import { html, render, useApp, useData, useRoute, navigate, goBack, useEffect, useRef, useState, AppCtx, todayYmd } from './core.js';
 import { Icon } from './icons.js';
 import { Sheet } from './kit.js';
 import { t } from '../i18n/index.js';
@@ -7,10 +7,14 @@ import { Dashboard } from './screens/dashboard.js';
 import { More, About } from './screens/more.js';
 import { Profile } from './screens/profile.js';
 import { Settings } from './screens/settings.js';
+import { FoodDiary } from './screens/food/diary.js';
+import { FoodAdd } from './screens/food/add.js';
+import { FoodEditor } from './screens/food/editor.js';
+import { Recipes, RecipeEditor } from './screens/food/recipes.js';
+import { FoodLibrary, FoodSettings, FoodDays } from './screens/food/library.js';
 
 /* Экраны старого журнала: адрес → [вкладка журнала, вид плана, путь «назад»] */
 const LEGACY = {
-  '/food': ['food'],
   '/train': ['train'],
   '/more/body': ['body', null, '/more'],
   '/more/history': ['hist', null, '/more'],
@@ -18,13 +22,31 @@ const LEGACY = {
   '/more/journal-settings': ['plan', 'set', '/more']
 };
 
-const SCREENS = {
-  '/': Dashboard,
-  '/more': More,
-  '/more/profile': Profile,
-  '/more/settings': Settings,
-  '/more/about': About
-};
+const ROUTES = [
+  ['/', Dashboard],
+  ['/food', FoodDiary],
+  ['/food/add', FoodAdd],
+  ['/food/new-food', FoodEditor],
+  ['/food/item/:id', FoodEditor],
+  ['/food/recipes', Recipes],
+  ['/food/recipe/:id', RecipeEditor],
+  ['/food/library', FoodLibrary],
+  ['/food/settings', FoodSettings],
+  ['/food/days', FoodDays],
+  ['/more', More],
+  ['/more/profile', Profile],
+  ['/more/settings', Settings],
+  ['/more/about', About]
+];
+
+function screenFor(path) {
+  const parts = path.split('/').filter(Boolean);
+  for (const [pattern, C] of ROUTES) {
+    const pp = pattern.split('/').filter(Boolean);
+    if (pp.length === parts.length && pp.every((p, i) => p.startsWith(':') || p === parts[i])) return C;
+  }
+  return null;
+}
 
 /* Цвет свечения фона по разделу */
 const GLOW = { '/': '10,132,255', '/food': '255,69,58', '/train': '138,135,255', '/more': '142,142,147' };
@@ -63,11 +85,12 @@ function LegacyHost({ tab, view, back }) {
 function PlusSheet({ open, onClose }) {
   const { legacy } = useApp();
   function go(fn) { onClose(); fn(); }
+  const add = (extra) => navigate('/food/add?d=' + todayYmd() + (extra || ''));
   const A = [
-    ['search', 'var(--k-food)', 'plus.food', 'plus.food.sub', () => { navigate('/food'); legacy.openAdd(); }],
-    ['camera', '#FF9500', 'plus.photo', 'plus.photo.sub', () => { navigate('/food'); legacy.openAdd(); }],
-    ['barcode', '#8E8E93', 'plus.scan', 'common.soon', null],
-    ['bolt', '#8E8E93', 'plus.quick', 'common.soon', null],
+    ['search', 'var(--k-food)', 'plus.food', 'plus.food.sub', () => add()],
+    ['camera', '#FF9500', 'plus.photo', 'plus.photo.sub', () => add('&open=photo')],
+    ['barcode', '#30B0C7', 'plus.scan', 'plus.scan.sub', () => add('&open=scan')],
+    ['bolt', '#FFCC00', 'plus.quick', 'plus.quick.sub', () => add('&open=quick')],
     ['scale', 'var(--k-body)', 'plus.weight', 'plus.weight.sub', () => navigate('/more/body')],
     ['train', 'var(--k-str)', 'plus.workout', 'plus.workout.sub', () => navigate('/train')]
   ];
@@ -113,7 +136,7 @@ export function App() {
   }, [path]);
 
   const lg = LEGACY[path];
-  const Screen = SCREENS[path];
+  const Screen = screenFor(path);
   let body;
   if (lg) body = html`<${LegacyHost} tab=${lg[0]} view=${lg[1]} back=${lg[2]}/>`;
   else if (Screen) body = html`<${Screen} route=${route}/>`;

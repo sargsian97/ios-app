@@ -4,7 +4,8 @@ import { Page, Card } from '../kit.js';
 import { Icon } from '../icons.js';
 import { t, fmtNum, fmtDate } from '../../i18n/index.js';
 import { toDisplay, unitKey } from '../../domain/units.js';
-import { foodTotals, latestWeight, workoutsBetween, stepsOn, weekStart, addDays } from '../../data/legacy.js';
+import { latestWeight, workoutsBetween, stepsOn, weekStart, addDays } from '../../data/legacy.js';
+import { dayTotals } from '../../domain/nutrition.js';
 import { ImportCard } from './backup.js';
 
 function Tile({ icon, color, label, value, unit, sub, href }) {
@@ -17,11 +18,13 @@ function Tile({ icon, color, label, value, unit, sub, href }) {
 
 export function Dashboard() {
   const { store, repos } = useApp();
-  useData(['food', 'body', 'workouts', 'days', 'profile']);
+  useData(['foodEntries', 'dayEntries', 'body', 'workouts', 'days', 'profile']);
   const today = todayYmd();
   const profile = repos.profile.get();
   const units = profile.units;
-  const food = foodTotals(store, today);
+  const dayEntries = repos.foodEntry.byDate(today);
+  const tot = dayTotals(dayEntries, repos.dayEntry.get(today));
+  const food = { kcal: tot.kcal || 0, p: tot.protein || 0, f: tot.fat || 0, c: tot.carbs || 0, count: dayEntries.length };
   const w = latestWeight(store, today);
   const ws = weekStart(today);
   const trainings = workoutsBetween(store, ws, addDays(ws, 6)).length;

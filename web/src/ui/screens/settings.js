@@ -4,6 +4,7 @@ import { Page, Card, Segmented, List, Row } from '../kit.js';
 import { t } from '../../i18n/index.js';
 import { DEFAULT_UNITS, IMPERIAL } from '../../domain/units.js';
 import { BackupCard } from './backup.js';
+import { ClaudeKeyCard, UsdaKeyCard } from './keys.js';
 
 export function Settings() {
   const { repos, sync } = useApp();
@@ -42,6 +43,10 @@ export function Settings() {
       <${Row} icon="cloud" color="#5AC8FA" label=${t('settings.account.mode')} value=${sync.id === 'local' ? t('settings.account.localShort') : sync.id} chevron=${false}/>
       <${Row} icon="user" color="#AF52DE" label=${t('settings.account.signin')} disabled=${true} badge=${t('common.soon')}/>
     <//>
+
+    <div class="ltitle">${t('keys.title')}</div>
+    <${ClaudeKeyCard}/>
+    <${UsdaKeyCard}/>
 
     <${BackupCard}/>
   <//>`;

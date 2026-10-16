@@ -1,0 +1,9 @@
+{"totalHits":2,"foods":[
+{"fdcId":171287,"description":"EGG, WHOLE, RAW, FRESH","dataType":"SR Legacy","foodNutrients":[
+{"nutrientNumber":"208","unitName":"KCAL","value":143},{"nutrientNumber":"203","unitName":"G","value":12.6},{"nutrientNumber":"204","unitName":"G","value":9.51},
+{"nutrientNumber":"205","unitName":"G","value":0.72},{"nutrientNumber":"301","unitName":"MG","value":56},{"nutrientNumber":"418","unitName":"UG","value":0.89},
+{"nutrientNumber":"328","unitName":"UG","value":2},{"nutrientNumber":"601","unitName":"MG","value":372},{"nutrientNumber":"999","unitName":"G","value":5}]},
+{"fdcId":2000001,"description":"PROTEIN BAR","dataType":"Branded","brandOwner":"Acme Foods","gtinUpc":"012345678905","servingSize":60,"servingSizeUnit":"g","householdServingFullText":"1 bar",
+"foodNutrients":[{"nutrientNumber":"268","unitName":"KJ","value":1674},{"nutrientNumber":"203","unitName":"G","value":33}]},
+{"fdcId":3,"description":"NO ENERGY","foodNutrients":[{"nutrientNumber":"203","unitName":"G","value":1}]}
+]}

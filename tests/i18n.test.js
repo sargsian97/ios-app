@@ -30,3 +30,21 @@ test('i18n: числа по-русски', () => {
   assert.equal(fmtNum(null), '—');
   assert.match(fmtNum(12500), /^12\s500$/);
 });
+
+test('i18n: подписи всех нутриентов', async () => {
+  const { NUTRIENT_KEYS } = await import('../web/src/data/models/nutrients.js');
+  assert.deepEqual(NUTRIENT_KEYS.filter((k) => !hasKey('nutrient.' + k)), []);
+});
+
+test('i18n: ключи, собранные из частей, есть в каталоге', () => {
+  const keys = [];
+  ['all', 'fav', 'history', 'mine', 'recipes'].forEach((k) => keys.push('food.tab.' + k));
+  ['scan', 'quick', 'photo', 'new'].forEach((k) => keys.push('food.sc.' + k));
+  ['b', 'l', 'd', 's'].forEach((k) => keys.push('food.meal.' + k));
+  ['day', 'week', 'month'].forEach((k) => keys.push('ai.period.' + k));
+  ['no_key', 'limit', 'cancelled', 'bad_key', 'no_credit', 'network', 'rate_limited', 'invalid_json', 'image_rejected', 'refused', 'not_granted', 'unsure', 'no_name', 'other'].forEach((k) => keys.push('ai.err.' + k));
+  ['carbs', 'fats', 'protein', 'vitamins', 'minerals', 'other'].forEach((k) => keys.push('food.group.' + k));
+  ['off', 'usda', 'ai', 'user', 'legacy'].forEach((k) => keys.push('food.src.' + k));
+  ['g', 'ml', 'mg', 'mcg', 'kcal', 'kg', 'lb', 'cm', 'in', 'kj', 'km', 'mi'].forEach((k) => keys.push('unit.' + k));
+  assert.deepEqual(keys.filter((k) => !hasKey(k)), []);
+});

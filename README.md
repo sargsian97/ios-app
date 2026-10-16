@@ -5,7 +5,7 @@
 Внутри то же, что было в журнале в Claude:
 
 - **Тренировки**: дни A/B/C по шаблонам, подходы, таймер подхода и отдыха (пока он идёт, экран не гаснет), подсказки «прошлый раз», кардио, шаги и расчёт расхода калорий.
-- **Питание**: кольцо калорий, БЖУ и клетчатка с разбивкой белка на животный и растительный, «Мои продукты». Распознавание еды по фото и автозаполнение работают через Claude.
+- **Питание**: дневник по часам или по приёмам пищи, кольцо калорий, БЖУ и клетчатка с разбивкой белка на животный и растительный. Поиск в своих продуктах, Open Food Facts и USDA, штрихкод, «тарелка» из нескольких продуктов, быстрое добавление, свои продукты и рецепты. Распознавание еды по фото и автозаполнение работают через Claude.
 - **Замеры**: вес, обхваты, графики, календарь, расчёт процента жира.
 - **История**: календарь дефицита и профицита, итоги за неделю и месяц.
 - **План**: шаблоны тренировок и настройки, включая ключ Claude и резервные копии.
@@ -54,3 +54,7 @@ npm run serve   # http://localhost:8000
 | Что | Источник | Лицензия |
 |---|---|---|
 | Anthropic TypeScript SDK | [github.com/anthropics/anthropic-sdk-typescript](https://github.com/anthropics/anthropic-sdk-typescript) | MIT (`web/vendor/LICENSE-anthropic-sdk.txt`) |
+| Preact, htm (интерфейс) | [preactjs.com](https://preactjs.com), [github.com/developit/htm](https://github.com/developit/htm) | MIT, Apache 2.0 (`web/vendor/LICENSE-preact.txt`, `LICENSE-htm.txt`) |
+| zxing (штрихкоды EAN/UPC) | [github.com/zxing-js/library](https://github.com/zxing-js/library) | Apache 2.0 (`web/vendor/LICENSE-zxing.txt`) |
+| Продукты: Open Food Facts | [openfoodfacts.org](https://world.openfoodfacts.org) — запросы из приложения | база — ODbL, описания продуктов — DbCL |
+| Продукты: USDA FoodData Central | [fdc.nal.usda.gov](https://fdc.nal.usda.gov) — со своим ключом api.data.gov | общественное достояние (CC0) |

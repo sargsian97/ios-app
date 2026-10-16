@@ -32,6 +32,10 @@ export function More() {
       <${Row} icon="gear" color="#8E8E93" label=${t('settings.title')} sub=${t('more.settings.sub')} href="/more/settings"/>
       <${Row} icon="flame" color="#FF9500" label=${t('more.journalSettings')} sub=${t('more.journalSettings.sub')} href="/more/journal-settings"/>
     <//>
+    <${List} title=${t('more.food')}>
+      <${Row} icon="food" color="#FF3B30" label=${t('food.library')} href="/food/library"/>
+      <${Row} icon="list" color="#FF9500" label=${t('food.recipes')} href="/food/recipes"/>
+    <//>
     <${List} title=${t('more.about')}>
       <${Row} icon="info" color="#34C759" label=${t('about.title')} value=${APP_VERSION} href="/more/about"/>
     <//>
