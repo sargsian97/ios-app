@@ -1345,3 +1345,21 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 .gy-row2 input:first-child{text-align:left}
 .gy-stack{padding:8px 0 4px;border-bottom:.5px solid var(--line);margin-bottom:8px}
 .gy-stack .gy-row2{grid-template-columns:minmax(0,1fr) 34px}
+
+/* v23: столбики, пунктир, квадратные маркеры на графике; энергобаланс и недельные бары на обзоре */
+.ch-l.dash{stroke-dasharray:5 4;stroke-width:2}
+.ch-b{opacity:.85}
+.ch-kl.dash{background:repeating-linear-gradient(90deg,var(--sc) 0 5px,transparent 5px 8px) !important}
+.ch-kb{display:inline-block;width:9px;height:11px;border-radius:2px;background:var(--sc);margin-right:5px;vertical-align:-1px}
+.ch-kq{display:inline-block;width:8px;height:8px;border-radius:1.5px;background:var(--sc);margin-right:5px;vertical-align:0}
+.nw-row{display:grid;grid-template-columns:76px 1fr;gap:8px;align-items:end;margin:8px 0}
+.nw-row>span{font-size:13px;font-weight:600;color:var(--ink2);align-self:center}
+.nw-row>span small{display:block;font-weight:500;color:var(--muted);font-size:11px}
+.nw-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;height:42px;align-items:end}
+.nw-bars i{display:block;border-radius:4px 4px 2px 2px;background:var(--bc);opacity:.4;min-height:3px}
+.nw-bars i.hit{opacity:1}
+.nw-days{display:grid;grid-template-columns:76px 1fr;gap:8px}
+.nw-days div{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;font-size:11px;color:var(--muted);text-align:center}
+.nw-days b{color:var(--ink);font-weight:700}
+.eta{display:block;width:100%;height:auto;text-align:left;margin-bottom:12px}
+.eta b{display:block;font-size:22px;font-weight:800;margin:2px 0}

@@ -39,7 +39,7 @@ export function Expenditure() {
       <${DateChart} series=${[
         { key: 'intake', label: t('tdee.intake'), kind: 'dots', color: 'var(--k-food)', points: intake.map((r) => ({ x: r.date, y: r.intake })) },
         { key: 'tdee', label: t('tdee.series'), kind: 'line', color: 'var(--k-burn)', points: series.map((r) => ({ x: r.date, y: Math.round(r.tdee) })) }
-      ]} digits=${0} unit=${t('unit.kcal')} ariaLabel=${t('tdee.chartAria')} empty=${t('body.chartEmpty')}/>
+      ].concat(series.some((r) => r.status === 'hold') ? [{ key: 'hold', label: t('tdee.holdMark'), kind: 'squares', color: 'var(--muted)', points: series.filter((r) => r.status === 'hold').map((r) => ({ x: r.date, y: Math.round(r.tdee) })) }] : [])} digits=${0} unit=${t('unit.kcal')} ariaLabel=${t('tdee.chartAria')} empty=${t('body.chartEmpty')}/>
     </div>
     <${Card} title=${t('tdee.balance')} icon="cal" color="var(--k-cal)">
       ${[[t('tdee.week'), avg7], [t('tdee.period'), avgP]].map(([label, a]) => html`<div class="ltitle" style="margin:6px 0 4px">${label}</div>

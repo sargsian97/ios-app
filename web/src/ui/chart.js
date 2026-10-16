@@ -17,7 +17,9 @@ function ticks(lo, hi, n = 4) {
   return { list: out, step };
 }
 
-/* series: [{ key, label, kind: 'dots' | 'line', color, points: [{ x: 'YYYY-MM-DD', y }] }] */
+/* series: [{ key, label, kind: 'dots' | 'line' | 'dash' | 'bars' | 'squares', color, points: [{ x: 'YYYY-MM-DD', y }] }]
+   bars — столбики от нуля (тогда ось Y начинается с 0); dash — пунктир (цель); squares — квадратные маркеры (пауза расчёта) */
+const KEY = { line: 'ch-kl', dash: 'ch-kl dash', bars: 'ch-kb', squares: 'ch-kq', dots: 'ch-kd' };
 export function DateChart({ series, goal, digits = 1, unit = '', ariaLabel, empty }) {
   const box = useRef(null);
   const [hover, setHover] = useState(null);
@@ -32,6 +34,7 @@ export function DateChart({ series, goal, digits = 1, unit = '', ariaLabel, empt
     let y0 = Math.min(...ys), y1 = Math.max(...ys);
     const pad = Math.max((y1 - y0) * 0.12, 0.5);
     y0 -= pad; y1 += pad;
+    if (series.some((s) => s.kind === 'bars')) y0 = 0;
     const tk = ticks(y0, y1);
     y0 = Math.min(y0, tk.list[0]); y1 = Math.max(y1, tk.list[tk.list.length - 1]);
     const X = (d) => M.l + (dn(d) - x0) / (x1 - x0) * (W - M.l - M.r);
@@ -52,25 +55,29 @@ export function DateChart({ series, goal, digits = 1, unit = '', ariaLabel, empt
   }
 
   const xLabels = [dates[0], dates[Math.floor(dates.length / 2)], dates[dates.length - 1]].filter((d, i, a) => a.indexOf(d) === i);
-  const lines = series.filter((s) => s.kind === 'line' && s.points.length);
+  const lines = series.filter((s) => (s.kind === 'line' || s.kind === 'dash') && s.points.length);
+  const nDays = Math.max(1, geo.x1 - geo.x0 + 1);
+  const bw = Math.max(2, Math.min(14, (W - M.l - M.r) / nDays - 2));
   const hv = hover ? series.map((s) => ({ s, p: s.points.find((p) => p.x === hover) })).filter((x) => x.p) : [];
   const hx = hover ? X(hover) : 0;
 
   return html`<div class="chart">
-    ${series.length > 1 ? html`<div class="legend-row">${series.map((s) => html`<span class="ch-lg"><i class=${s.kind === 'line' ? 'ch-kl' : 'ch-kd'} style=${'--sc:' + s.color}></i>${s.label}</span>`)}</div>` : null}
+    ${series.length > 1 ? html`<div class="legend-row">${series.map((s) => html`<span class="ch-lg"><i class=${KEY[s.kind] || 'ch-kd'} style=${'--sc:' + s.color}></i>${s.label}</span>`)}</div>` : null}
     <div class="chart-box" ref=${box} onPointerMove=${onMove} onPointerDown=${onMove} onPointerLeave=${() => setHover(null)}>
       <svg viewBox=${'0 0 ' + W + ' ' + H} width="100%" role="img" aria-label=${ariaLabel || ''}>
         ${tk.list.map((v) => html`<g><line class="ch-g" x1=${M.l} x2=${W - M.r} y1=${Y(v)} y2=${Y(v)}/><text class="ch-t" x=${M.l - 6} y=${Y(v) + 4} text-anchor="end">${fmtNum(v, tk.step < 1 ? 1 : 0)}</text></g>`)}
         ${xLabels.map((d, i) => html`<text class="ch-t" x=${X(d)} y=${H - 6} text-anchor=${i === 0 ? 'start' : i === xLabels.length - 1 ? 'end' : 'middle'}>${fmtDate(d)}</text>`)}
         ${goal && goal.y != null ? html`<g><line class="ch-goal" x1=${M.l} x2=${W - M.r} y1=${Y(goal.y)} y2=${Y(goal.y)}/><text class="ch-t ch-gl" x=${W - M.r + 4} y=${Y(goal.y) + 4}>${goal.label}</text></g>` : null}
-        ${lines.map((s) => html`<polyline class="ch-l" style=${'stroke:' + s.color} points=${s.points.map((p) => X(p.x).toFixed(1) + ',' + Y(p.y).toFixed(1)).join(' ')}/>`)}
+        ${series.filter((s) => s.kind === 'bars').map((s) => s.points.map((p) => html`<rect class="ch-b" x=${X(p.x) - bw / 2} y=${Y(Math.max(p.y, 0))} width=${bw} height=${Math.max(0, Y(0) - Y(Math.max(p.y, 0)))} rx=${Math.min(3, bw / 3)} style=${'fill:' + s.color}/>`))}
+        ${lines.map((s) => html`<polyline class=${'ch-l' + (s.kind === 'dash' ? ' dash' : '')} style=${'stroke:' + s.color} points=${s.points.map((p) => X(p.x).toFixed(1) + ',' + Y(p.y).toFixed(1)).join(' ')}/>`)}
         ${series.filter((s) => s.kind === 'dots').map((s) => s.points.map((p) => html`<circle class="ch-d" cx=${X(p.x)} cy=${Y(p.y)} r="4" style=${'fill:' + s.color}/>`))}
-        ${lines.map((s) => { const p = s.points[s.points.length - 1]; return html`<g><circle class="ch-d" cx=${X(p.x)} cy=${Y(p.y)} r="4.5" style=${'fill:' + s.color}/><text class="ch-t ch-end" x=${X(p.x) + 7} y=${Y(p.y) + 4}>${fmtNum(p.y, digits)}</text></g>`; })}
+        ${series.filter((s) => s.kind === 'squares').map((s) => s.points.map((p) => html`<rect class="ch-d" x=${X(p.x) - 4} y=${Y(p.y) - 4} width="8" height="8" rx="1.5" style=${'fill:' + s.color}/>`))}
+        ${lines.filter((s) => s.kind === 'line').map((s) => { const p = s.points[s.points.length - 1]; return html`<g><circle class="ch-d" cx=${X(p.x)} cy=${Y(p.y)} r="4.5" style=${'fill:' + s.color}/><text class="ch-t ch-end" x=${X(p.x) + 7} y=${Y(p.y) + 4}>${fmtNum(p.y, digits)}</text></g>`; })}
         ${hover ? html`<line class="ch-x" x1=${hx} x2=${hx} y1=${M.t} y2=${H - M.b}/>` : null}
       </svg>
       ${hover && hv.length ? html`<div class="ch-tip" style=${'left:' + Math.min(78, Math.max(4, hx / W * 100 - 18)) + '%'}>
         <div class="ch-td">${fmtDate(hover, 'long')}</div>
-        ${hv.map(({ s, p }) => html`<div class="ch-tr"><i class=${s.kind === 'line' ? 'ch-kl' : 'ch-kd'} style=${'--sc:' + s.color}></i><b>${fmtNum(p.y, digits)}</b> ${unit} <span>${s.label}</span></div>`)}
+        ${hv.map(({ s, p }) => html`<div class="ch-tr"><i class=${KEY[s.kind] || 'ch-kd'} style=${'--sc:' + s.color}></i><b>${fmtNum(p.y, digits)}</b> ${unit} <span>${s.label}</span></div>`)}
       </div>` : null}
     </div>
   </div>`;

@@ -32,7 +32,9 @@ export function CheckinBanner() {
   return html`<div class="card pad cibanner">
     <div class="row"><span class="hci" style="--cc:var(--k-plan)"><${Icon} name="cal"/></span><b class="grow">${t('ci.banner.title')}</b></div>
     <div class="hint" style="margin:6px 0 10px">${t('ci.banner.text')}</div>
-    <button class="primary" style="width:100%" onClick=${() => navigate('/checkin')}>${t('ci.banner.go')}</button>
+    <div class="row"><button class="primary grow" onClick=${() => navigate('/checkin')}>${t('ci.banner.go')}</button>
+      <button onClick=${() => repos.checkIn.create({ date: todayYmd(), modules: [], note: 'skipped' })}>${t('ci.banner.skip')}</button></div>
+    <div class="hint" style="margin-top:8px">${t('ci.banner.skipHint')}</div>
   </div>`;
 }
 

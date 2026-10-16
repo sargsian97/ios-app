@@ -68,7 +68,10 @@ await p.waitForLoadState('load');
 await wait(1800);
 
 check('баннер чек-ина на обзоре', await p.locator('.cibanner').count() === 1);
-await shot('01-dashboard', false);
+check('обзор: недельные бары БЖУ', await p.locator('.nw-row').count() === 4);
+check('обзор: энергобаланс за 30 дней — столбики и цель', await p.locator('.chart rect.ch-b').count() > 10 && await p.locator('.chart polyline.dash').count() === 1);
+check('обзор: кнопка «пропустить неделю» у чек-ина', await p.locator('.cibanner button', { hasText: 'Пропустить неделю' }).count() === 1);
+await shot('01-dashboard');
 
 /* расход */
 await go('#/more/expenditure');
