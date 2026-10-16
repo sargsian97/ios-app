@@ -105,6 +105,7 @@ export async function createStore(backend, preloaded) {
   rows.forEach((r) => { (mem[r.col] = mem[r.col] || {})[r.id] = freeze(r.data); });
 
   const subs = new Set();
+  const versions = {};
   let pending = null;
   let chain = Promise.resolve();
 
@@ -120,7 +121,7 @@ export async function createStore(backend, preloaded) {
         });
       }, 0);
     }
-    cols.forEach((c) => pending.add(c));
+    cols.forEach((c) => { pending.add(c); versions[c] = (versions[c] || 0) + 1; });
   }
 
   /* Записи на диск идут строго по очереди */
@@ -156,6 +157,8 @@ export async function createStore(backend, preloaded) {
     map(col) { return mem[col] || {}; },
     list(col) { const m = mem[col] || {}; return Object.keys(m).map((id) => m[id]); },
     ids(col) { return Object.keys(mem[col] || {}); },
+    /* Растёт при каждом изменении коллекции — для кэширования индексов */
+    version(col) { return versions[col] || 0; },
     collections() { return Object.keys(mem).filter((c) => Object.keys(mem[c]).length); },
     put(col, id, data) { return applyOps([{ op: 'put', col, id, data }]); },
     remove(col, id) { return applyOps([{ op: 'remove', col, id }]); },
