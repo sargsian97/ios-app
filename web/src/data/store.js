@@ -22,19 +22,38 @@ function freeze(o) {
 
 /* ---------- места хранения ---------- */
 
+/* Одна база на всё: документы (docs) и файлы — фото прогресса (blobs). Версия 2 добавила blobs. */
+const DB_VERSION = 2;
+const BLOBS = 'blobs';
+const opened = {};
+export function openJournalDb(name = DB_NAME) {
+  if (opened[name]) return opened[name];
+  opened[name] = new Promise((resolve, reject) => {
+    if (typeof indexedDB === 'undefined') { reject(new Error('no indexedDB')); return; }
+    const rq = indexedDB.open(name, DB_VERSION);
+    rq.onupgradeneeded = () => {
+      const db = rq.result;
+      if (!db.objectStoreNames.contains(OS)) db.createObjectStore(OS, { keyPath: 'path' });
+      if (!db.objectStoreNames.contains(BLOBS)) db.createObjectStore(BLOBS);
+    };
+    rq.onsuccess = () => {
+      const db = rq.result;
+      /* новая версия приложения в другой вкладке обновляет базу — освобождаем её */
+      db.onversionchange = () => { db.close(); delete opened[name]; };
+      resolve(db);
+    };
+    rq.onerror = () => { delete opened[name]; reject(rq.error); };
+    rq.onblocked = () => { delete opened[name]; reject(new Error('blocked')); };
+  });
+  return opened[name];
+}
+
 export function idbBackend(name = DB_NAME) {
   let idb = null;
   return {
     kind: 'indexeddb',
     async load() {
-      idb = await new Promise((resolve, reject) => {
-        if (typeof indexedDB === 'undefined') { reject(new Error('no indexedDB')); return; }
-        const rq = indexedDB.open(name, 1);
-        rq.onupgradeneeded = () => { rq.result.createObjectStore(OS, { keyPath: 'path' }); };
-        rq.onsuccess = () => resolve(rq.result);
-        rq.onerror = () => reject(rq.error);
-        rq.onblocked = () => reject(new Error('blocked'));
-      });
+      idb = await openJournalDb(name);
       return new Promise((resolve, reject) => {
         const rq = idb.transaction(OS, 'readonly').objectStore(OS).getAll();
         rq.onsuccess = () => resolve(rq.result || []);
@@ -53,6 +72,35 @@ export function idbBackend(name = DB_NAME) {
         tx.onabort = () => reject(tx.error || new Error('aborted'));
       });
     }
+  };
+}
+
+/* Файлы (фото): put / get / remove по id. В резервную копию не попадают. */
+export function idbBlobs(name = DB_NAME) {
+  function run(mode, fn) {
+    return openJournalDb(name).then((db) => new Promise((resolve, reject) => {
+      const tx = db.transaction(BLOBS, mode);
+      const rq = fn(tx.objectStore(BLOBS));
+      tx.oncomplete = () => resolve(rq && rq.result);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error || new Error('aborted'));
+    }));
+  }
+  return {
+    put: (id, blob) => run('readwrite', (os) => os.put(blob, id)).then(() => id),
+    get: (id) => run('readonly', (os) => os.get(id)).then((b) => b || null),
+    remove: (id) => run('readwrite', (os) => os.delete(id)),
+    keys: () => run('readonly', (os) => os.getAllKeys())
+  };
+}
+
+export function memoryBlobs() {
+  const m = new Map();
+  return {
+    put: async (id, blob) => { m.set(id, blob); return id; },
+    get: async (id) => m.get(id) || null,
+    remove: async (id) => { m.delete(id); },
+    keys: async () => [...m.keys()]
   };
 }
 

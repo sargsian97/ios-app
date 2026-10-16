@@ -12,11 +12,14 @@ import { FoodAdd } from './screens/food/add.js';
 import { FoodEditor } from './screens/food/editor.js';
 import { Recipes, RecipeEditor } from './screens/food/recipes.js';
 import { FoodLibrary, FoodSettings, FoodDays } from './screens/food/library.js';
+import { Body } from './screens/body/body.js';
+import { Photos } from './screens/body/photos.js';
+import { BodyHistory } from './screens/body/history.js';
+import { Cycle } from './screens/body/cycle.js';
 
 /* Экраны старого журнала: адрес → [вкладка журнала, вид плана, путь «назад»] */
 const LEGACY = {
   '/train': ['train'],
-  '/more/body': ['body', null, '/more'],
   '/more/history': ['hist', null, '/more'],
   '/more/templates': ['plan', 'tpl', '/more'],
   '/more/journal-settings': ['plan', 'set', '/more']
@@ -35,6 +38,10 @@ const ROUTES = [
   ['/food/days', FoodDays],
   ['/more', More],
   ['/more/profile', Profile],
+  ['/more/body', Body],
+  ['/more/body/photos', Photos],
+  ['/more/body/history', BodyHistory],
+  ['/more/body/cycle', Cycle],
   ['/more/settings', Settings],
   ['/more/about', About]
 ];
@@ -91,7 +98,7 @@ function PlusSheet({ open, onClose }) {
     ['camera', '#FF9500', 'plus.photo', 'plus.photo.sub', () => add('&open=photo')],
     ['barcode', '#30B0C7', 'plus.scan', 'plus.scan.sub', () => add('&open=scan')],
     ['bolt', '#FFCC00', 'plus.quick', 'plus.quick.sub', () => add('&open=quick')],
-    ['scale', 'var(--k-body)', 'plus.weight', 'plus.weight.sub', () => navigate('/more/body')],
+    ['scale', 'var(--k-body)', 'plus.weight', 'plus.weight.sub', () => navigate('/more/body?open=weigh')],
     ['train', 'var(--k-str)', 'plus.workout', 'plus.workout.sub', () => navigate('/train')]
   ];
   return html`<${Sheet} open=${open} onClose=${onClose} title=${t('plus.title')}>

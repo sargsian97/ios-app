@@ -54,8 +54,8 @@ export function nutritionOps(store, { now }) {
   return ops;
 }
 
-/* Взвешивания, замеры, шаги */
-export function bodyOps(store, { now }) {
+/* Взвешивания, замеры и (по желанию) шаги. Шаги пока остаются в журнале: их вводит экран тренировки. */
+export function bodyOps(store, { now, steps: withSteps = true }) {
   const ops = [];
   const body = store.map('body');
   Object.keys(body).sort().forEach((date) => {
@@ -71,7 +71,7 @@ export function bodyOps(store, { now }) {
       if (op) ops.push(op);
     }
   });
-  const days = store.map('days');
+  const days = withSteps ? store.map('days') : {};
   Object.keys(days).sort().forEach((date) => {
     const s = num(days[date].steps);
     if (s != null && s > 0) {

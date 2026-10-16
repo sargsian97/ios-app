@@ -1046,3 +1046,84 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 .tlh:not(.busy) .tladd{width:26px;height:26px;opacity:.75}
 .tlh:not(.busy) .tlt{font-weight:600;opacity:.8}
 .soonrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;margin:0 0 12px;border-radius:var(--r-md);background:var(--input);color:var(--muted);font-size:14px;font-weight:600}
+
+/* =====================================================================
+   v18: тело — тренд веса, график, плитки замеров, фото, цикл
+   ===================================================================== */
+:root{--c-scale:#8E8E93}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--c-scale:#8C8C96}}
+:root[data-theme="dark"]{--c-scale:#8C8C96}
+.whero .wh-top{align-items:flex-start;gap:12px}
+.wh-v{display:flex;align-items:baseline;gap:6px;margin-top:2px}
+.wh-v b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:48px;font-weight:800;line-height:1}
+.wh-v small{font-size:17px;font-weight:600;color:var(--muted)}
+.small-cta{height:40px;padding:0 16px;border-radius:20px;font-size:15px;flex:none}
+.wstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.wstats>div,.wstats .linkish{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px;border-radius:var(--r-md);background:var(--input);box-shadow:var(--field-edge);text-align:center;width:100%;height:auto}
+.wstats .linkish{padding:0;background:none;box-shadow:none;font-weight:400}
+.wstats b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:19px;font-weight:700;color:var(--ink)}
+.wstats span{font-size:11.5px;font-weight:600;color:var(--muted);margin-top:2px}
+.banner.forecast{margin:12px 0 0;font-weight:600;background:color-mix(in srgb,var(--k-body) 12%,transparent)}
+.ch-title{font-size:16px}
+.sect{font-size:18px;font-weight:800}
+.linkish{background:none;box-shadow:none;height:auto;padding:0;text-align:left;font-weight:400;color:inherit}
+
+/* график */
+.chart{position:relative}
+.legend-row{display:flex;gap:14px;margin:0 0 6px;font-size:12.5px;font-weight:600;color:var(--ink2)}
+.ch-lg{display:inline-flex;align-items:center;gap:6px}
+.ch-kl{display:inline-block;width:14px;height:2px;border-radius:2px;background:var(--sc)}
+.ch-kd{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--sc)}
+.chart-box{position:relative;touch-action:pan-y}
+.chart-box svg{display:block;overflow:visible}
+.ch-g{stroke:var(--line);stroke-width:1}
+.ch-t{font-size:10px;fill:var(--muted);font-family:var(--num);font-variant-numeric:tabular-nums}
+.ch-end{fill:var(--ink);font-weight:700;font-size:11px}
+.ch-gl{fill:var(--accent);font-weight:700}
+.ch-goal{stroke:var(--accent);stroke-width:1}
+.ch-l{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ch-d{stroke:var(--card);stroke-width:2}
+.ch-x{stroke:var(--ink);stroke-width:1;opacity:.35}
+.ch-tip{position:absolute;top:-6px;min-width:120px;padding:8px 10px;border-radius:12px;background:var(--card);box-shadow:var(--edge),0 10px 26px rgba(0,0,0,.18);font-size:12.5px;pointer-events:none;z-index:2}
+.ch-td{font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:capitalize}
+.ch-tr{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.ch-tr b{font-family:var(--num);font-size:14px}
+.ch-tr span{color:var(--muted)}
+.chart-empty{padding:30px 10px;text-align:center;color:var(--muted);font-size:14px}
+.minibars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;height:74px;margin-top:12px;align-items:end}
+.minibars .mb{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
+.minibars i{display:block;width:100%;max-width:22px;border-radius:4px 4px 0 0}
+.minibars span{font-size:10px;color:var(--muted);font-weight:600}
+
+/* плитки замеров */
+.mtiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 var(--gap)}
+.mtile{display:flex;flex-direction:column;align-items:flex-start;height:auto;padding:12px 14px;border-radius:var(--r-lg);background:var(--card);background-image:var(--sheen);box-shadow:var(--edge),var(--lift);text-align:left;font-weight:400}
+.mtile.on{box-shadow:0 0 0 2px var(--k-body),var(--lift)}
+.mt-l{font-size:13px;font-weight:700;color:var(--k-body)}
+.mt-v{display:flex;align-items:baseline;gap:4px;margin-top:4px}
+.mt-v b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:24px;font-weight:800;color:var(--ink)}
+.mt-v small{font-size:12px;color:var(--muted);font-weight:600}
+.mt-d{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+.mt-d.dn{color:var(--ok)} .mt-d.up{color:var(--warn)}
+
+/* фото */
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.thumb{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted);font-weight:600;text-align:center}
+.bimg{padding:0;height:auto;width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:var(--input);box-shadow:none;display:block}
+.bimg img{width:100%;height:100%;object-fit:cover;display:block}
+.bimg.big{aspect-ratio:auto;max-height:70vh}
+.bimg.big img{object-fit:contain;height:auto;max-height:70vh}
+.bimg-ph{display:block;width:100%;height:100%}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px}
+.pcell{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+.pcell.sel .bimg{box-shadow:0 0 0 3px var(--accent)}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.compare>div{display:flex;flex-direction:column;gap:4px;text-align:center;font-size:13px}
+.compare span{color:var(--muted)}
+
+/* календарь цикла */
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cc{height:40px;padding:0;border-radius:12px;background:var(--input);font-family:var(--num);font-weight:600;font-size:14px;box-shadow:none}
+.cc.on{background:#FF2D55;color:#fff}
+.cc.pred{box-shadow:inset 0 0 0 1.5px #FF2D55;background:transparent}
+.cc.today{outline:2px solid var(--ink);outline-offset:1px}

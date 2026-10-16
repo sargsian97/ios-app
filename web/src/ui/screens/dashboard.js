@@ -2,9 +2,10 @@
 import { html, useApp, useData, navigate, todayYmd } from '../core.js';
 import { Page, Card } from '../kit.js';
 import { Icon } from '../icons.js';
-import { t, fmtNum, fmtDate } from '../../i18n/index.js';
+import { t, fmtNum, fmtFix, fmtDate } from '../../i18n/index.js';
 import { toDisplay, unitKey } from '../../domain/units.js';
-import { latestWeight, workoutsBetween, stepsOn, weekStart, addDays } from '../../data/legacy.js';
+import { workoutsBetween, stepsOn, weekStart, addDays } from '../../data/legacy.js';
+import { useWeight } from './body/body.js';
 import { dayTotals } from '../../domain/nutrition.js';
 import { ImportCard } from './backup.js';
 
@@ -18,14 +19,16 @@ function Tile({ icon, color, label, value, unit, sub, href }) {
 
 export function Dashboard() {
   const { store, repos } = useApp();
-  useData(['foodEntries', 'dayEntries', 'body', 'workouts', 'days', 'profile']);
+  useData(['foodEntries', 'dayEntries', 'scaleEntries', 'dietProfile', 'workouts', 'days', 'profile']);
   const today = todayYmd();
   const profile = repos.profile.get();
   const units = profile.units;
   const dayEntries = repos.foodEntry.byDate(today);
   const tot = dayTotals(dayEntries, repos.dayEntry.get(today));
   const food = { kcal: tot.kcal || 0, p: tot.protein || 0, f: tot.fat || 0, c: tot.carbs || 0, count: dayEntries.length };
-  const w = latestWeight(store, today);
+  const wt = useWeight();
+  const wkAgo = wt.trend.filter((r) => r.date <= addDays(today, -7)).pop();
+  const w = wt.last ? { weight: wt.last.trend, date: wt.last.date, change: wkAgo ? wt.last.trend - wkAgo.trend : null } : null;
   const ws = weekStart(today);
   const trainings = workoutsBetween(store, ws, addDays(ws, 6)).length;
   const steps = stepsOn(store, today);
@@ -48,7 +51,7 @@ export function Dashboard() {
     <div class="dgrid">
       <${Tile} icon="food" color="var(--k-food)" label=${t('dash.food')} value=${fmtNum(energy)} unit=${t(unitKey('energy', units))}
         sub=${food.count ? t('dash.food.sub', { p: fmtNum(food.p), f: fmtNum(food.f), c: fmtNum(food.c) }) : t('dash.food.empty')} href="/food"/>
-      <${Tile} icon="scale" color="var(--k-body)" label=${t('dash.weight')} value=${w ? fmtNum(toDisplay('weight', w.weight, units), 1) : '—'}
+      <${Tile} icon="scale" color="var(--k-body)" label=${t('dash.weight')} value=${w ? fmtFix(toDisplay('weight', w.weight, units), 1) : '—'}
         unit=${w ? t(unitKey('weight', units)) : null} sub=${wSub || t('dash.weight.empty')} href="/more/body"/>
       <${Tile} icon="train" color="var(--k-str)" label=${t('dash.train')} value=${fmtNum(trainings)}
         sub=${t('dash.train.sub', { count: trainings })} href="/train"/>

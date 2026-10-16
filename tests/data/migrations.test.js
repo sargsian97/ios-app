@@ -71,3 +71,15 @@ test('миграция 3: если в новой модели уже есть е
   await migrate(s);
   assert.equal(s.get('foodEntries', 'x1'), null);
 });
+
+test('миграция 4: взвешивания и замеры переносятся, шаги остаются в журнале', async () => {
+  const s = await createStore(memoryBackend({
+    body: { '2026-10-01': { weight: 80.5, waist: 85, glute: 100 } },
+    days: { '2026-10-01': { steps: 9000 } }
+  }));
+  await migrate(s);
+  assert.equal(s.list('scaleEntries')[0].weightKg, 80.5);
+  assert.equal(s.get('bodyEntries', '2026-10-01').measurements.hips, 100);
+  assert.equal(s.list('stepsEntries').length, 0);
+  assert.equal(s.get('days', '2026-10-01').steps, 9000);
+});

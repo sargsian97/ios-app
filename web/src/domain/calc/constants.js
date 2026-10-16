@@ -160,3 +160,28 @@ export const WARMUP_SCHEMES = freeze({         // доля рабочего ве
 /* ── Объём по мышцам ──
    Временное значение, уточнится в части 2 спецификации. */
 export const SECONDARY_MUSCLE_FACTOR = 0.5;    // подход засчитывается вторичной мышце с этим весом
+
+/* ── Процент жира по формулам и отношения обхватов ──
+   Временное значение, уточнится в части 2 спецификации.
+   Опубликованные формулы: Deurenberg (1991), CUN-BAE (Gómez-Ambrosi 2012), RFM (Woolcott 2018), US Navy (Hodgdon 1984).
+   Рост, талия, шея, бёдра — в см. */
+export const BODY_FAT = freeze({
+  deurenberg: { bmi: 1.2, age: 0.23, male: -10.8, base: -5.4 },
+  cunBae: { base: -44.988, age: 0.503, female: 10.689, bmi: 3.172, bmi2: -0.026, bmiFemale: 0.181, bmiAge: -0.02, bmi2Female: -0.005, bmi2Age: 0.00021 },
+  rfm: { male: 64, female: 76, k: 20 },
+  navy: {
+    male: { a: 1.0324, waistNeck: 0.19077, height: 0.15456 },
+    female: { a: 1.29579, waistHipNeck: 0.35004, height: 0.221 },
+    num: 495, sub: 450
+  },
+  validMin: 2,                                 // оценки вне 2–60 % отбрасываем как неправдоподобные
+  validMax: 60
+});
+
+/* ── Менструальный цикл ──
+   Временное значение, уточнится в части 2 спецификации. */
+export const CYCLE_DEFAULT_LENGTH = 28;        // длина цикла, пока нет двух полных циклов, дни
+export const CYCLE_PERIOD_GAP_DAYS = 2;        // разрыв больше — уже новые месячные
+export const CYCLE_HISTORY = 6;                // среднее по последним N циклам
+export const CYCLE_MIN_LENGTH = 15;            // короче или длиннее — не учитываем в среднем (вероятно, пропуск записей)
+export const CYCLE_MAX_LENGTH = 60;

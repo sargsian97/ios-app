@@ -2,7 +2,7 @@
    Версия 1 — данные старого журнала (коллекции workouts, body, templates, days, food, foods, settings, i18n).
    Каждая миграция возвращает список операций для store.batch и не удаляет старые записи. */
 import { Profile } from './models/profile.js';
-import { nutritionOps } from './legacy-migrate.js';
+import { nutritionOps, bodyOps } from './legacy-migrate.js';
 
 const META = 'meta', SCHEMA = 'schema';
 
@@ -32,6 +32,15 @@ export const MIGRATIONS = [
     up(store, { now }) {
       if (store.ids('foodEntries').length || store.ids('foodItems').length) return [];
       return nutritionOps(store, { now });
+    }
+  },
+  {
+    version: 4,
+    name: 'body',
+    /* Взвешивания и замеры журнала → scaleEntries и bodyEntries (этап 4); шаги пока остаются в журнале */
+    up(store, { now }) {
+      if (store.ids('scaleEntries').length || store.ids('bodyEntries').length) return [];
+      return bodyOps(store, { now, steps: false });
     }
   }
 ];

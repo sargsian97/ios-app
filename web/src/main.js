@@ -5,7 +5,8 @@ import { createRepos } from './data/repos/index.js';
 import { pickSyncProvider } from './services/sync.js';
 import { setLang, t } from './i18n/index.js';
 import { startLegacy, showLegacy, legacyOpenAdd, legacyPersist, legacyBudget, legacyWeekStats } from '../app.js';
-import { foodForLegacy } from './data/legacy.js';
+import { foodForLegacy, bodyForLegacy } from './data/legacy.js';
+import { idbBlobs, memoryBlobs } from './data/store.js';
 import { mealOf } from './domain/nutrition.js';
 import { mountApp } from './ui/app.js';
 
@@ -67,10 +68,12 @@ async function boot() {
   /* старые экраны читают питание из новой модели; новые экраны узнают об изменениях данных журнала */
   const legacySubs = new Set();
   const foodProjection = (cb) => { const push = () => cb(foodForLegacy(store, mealOf)); setTimeout(push, 0); store.subscribe('foodEntries', push); };
-  startLegacy({ store, container, afterImport, foodProjection, onChange: () => legacySubs.forEach((f) => f()) });
+  const bodyProjection = (cb) => { const push = () => cb(bodyForLegacy(store)); setTimeout(push, 0); store.subscribe(['scaleEntries', 'bodyEntries'], push); };
+  startLegacy({ store, container, afterImport, foodProjection, bodyProjection, onChange: () => legacySubs.forEach((f) => f()) });
 
   const ctx = {
     store, repos, afterImport,
+    blobs: PREVIEW && PREVIEW.memory ? memoryBlobs() : idbBlobs(),
     sync: pickSyncProvider(),
     updates: setupUpdates(),
     legacy: {

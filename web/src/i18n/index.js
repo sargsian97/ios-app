@@ -38,6 +38,14 @@ export function fmtNum(n, digits = 0) {
   return nf.format(n);
 }
 
+/* Ровно digits знаков после запятой: 82,0 */
+export function fmtFix(n, digits = 1) {
+  if (n == null || n === '' || !isFinite(n)) return '—';
+  const k = 'f' + lang + digits;
+  const nf = nfCache[k] || (nfCache[k] = new Intl.NumberFormat(locale(), { maximumFractionDigits: digits, minimumFractionDigits: digits }));
+  return nf.format(n);
+}
+
 function toDate(ymd) { const p = String(ymd).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
 
 export function fmtDate(ymd, style = 'short') {

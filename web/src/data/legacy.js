@@ -3,23 +3,6 @@
 
 function n(v) { const x = Number(v); return v === '' || v == null || !isFinite(x) ? null : x; }
 
-/* Взвешивания: [{ date, weight }] по возрастанию даты */
-export function weighIns(store) {
-  const m = store.map('body');
-  return Object.keys(m).sort().map((date) => ({ date, weight: n(m[date].weight) })).filter((x) => x.weight != null);
-}
-
-/* Последний вес не позже даты и изменение относительно взвешивания ~неделю назад */
-export function latestWeight(store, date) {
-  const all = weighIns(store).filter((x) => x.date <= date);
-  if (!all.length) return null;
-  const last = all[all.length - 1];
-  const weekAgo = addDays(last.date, -7);
-  const before = all.filter((x) => x.date <= weekAgo);
-  const prev = before.length ? before[before.length - 1] : null;
-  return { date: last.date, weight: last.weight, change: prev ? last.weight - prev.weight : null, prevDate: prev ? prev.date : null };
-}
-
 /* Тренировки с хотя бы одним выполненным подходом в диапазоне дат */
 export function workoutsBetween(store, from, to) {
   const m = store.map('workouts');
@@ -59,4 +42,34 @@ export function foodForLegacy(store, mealOf) {
   });
   Object.keys(out).forEach((k) => out[k].entries.sort((a, b) => (a.time || '').localeCompare(b.time || '')));
   return out;
+}
+
+/* Взвешивания и замеры новой модели в формате журнала: { дата: { weight, waist, neck, glute, thigh, bic, bicR, fat, note } }.
+   За день берётся последнее взвешивание. Нужно старым экранам (расход по весу, история). */
+export function bodyForLegacy(store) {
+  const out = {};
+  const day = (d) => out[d] || (out[d] = {});
+  store.list('scaleEntries').slice().sort((a, b) => (a.date + (a.time || '') + (a.createdAt || '')).localeCompare(b.date + (b.time || '') + (b.createdAt || ''))).forEach((s) => {
+    const o = day(s.date);
+    o.weight = s.weightKg;
+    if (s.bodyFatPct != null) o.fat = s.bodyFatPct;
+  });
+  store.list('bodyEntries').forEach((b) => {
+    const o = day(b.date), m = b.measurements || {};
+    if (m.waist != null) o.waist = m.waist;
+    if (m.neck != null) o.neck = m.neck;
+    if (m.hips != null) o.glute = m.hips;
+    if (m.thighL != null) o.thigh = m.thighL;
+    if (m.bicepsL != null) o.bic = m.bicepsL;
+    if (m.bicepsR != null) o.bicR = m.bicepsR;
+    if (b.bodyFatPct != null) o.fat = b.bodyFatPct;
+    if (b.note) o.note = b.note;
+  });
+  return out;
+}
+
+/* Шаги за день в журнале (его экран тренировки — владелец шагов до этапа 7) */
+export function setStepsOp(store, date, steps) {
+  const cur = store.get('days', date) || { date };
+  return { op: 'put', col: 'days', id: date, data: Object.assign({}, cur, { date, steps: steps == null ? '' : steps }) };
 }

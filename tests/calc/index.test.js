@@ -19,7 +19,8 @@ const API = [
   'warmupSets', 'needsWarmup',
   'platesFor', 'achievableLoads',
   'weeklyVolume', 'averagePerWeek',
-  'addDays', 'diffDays', 'rangeDays'
+  'addDays', 'diffDays', 'rangeDays',
+  'bodyFatEstimates', 'bodyFatEstimate', 'bodyRatios', 'periodRuns', 'cycleSummary'
 ];
 
 test('index.js отдаёт все функции и константы', () => {

@@ -59,7 +59,9 @@ export const DietProfile = model({
     trendVersion: f.enum(['v1', 'v2']),
     tdeeVersion: f.enum(['v1']),
     /* чек-ин */
-    checkInWeekday: WEEKDAY(0)
+    checkInWeekday: WEEKDAY(0),
+    /* тело */
+    cycleTracking: f.bool()
   }
 });
 

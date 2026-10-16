@@ -2091,7 +2091,13 @@ function init(db){
   render(true);
   setupAI();
   sub('workouts','w',function(m){S.workouts=m;if(S.draft&&!pend.w&&!S.draftDirty)loadDraft();});
-  sub('body','b',function(m){S.body=m;if(!S.bodyDirtyForm)loadBodyForm();});
+  /* взвешивания и замеры живут в новой модели; журнал читает их в своём формате */
+  if(HOST.bodyProjection)HOST.bodyProjection(function(m){
+    S.body=m;S.ready.b=1;if(!S.bodyDirtyForm)loadBodyForm();
+    if(allReady()&&!S.draft){loadAll();}
+    render();if(HOST.onChange)HOST.onChange();
+  });
+  else sub('body','b',function(m){S.body=m;if(!S.bodyDirtyForm)loadBodyForm();});
   sub('templates','t',function(m){
     S.templates=m;
     ['A','B','C'].forEach(function(x){if(!S.tplDirty[x]){if(m[x])S.tplDraft[x]=clone(m[x]);else delete S.tplDraft[x];}});
