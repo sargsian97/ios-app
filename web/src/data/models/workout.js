@@ -141,7 +141,11 @@ export const WorkoutProgram = model({
     deload: f.enum(['none', 'start', 'end']),
     repeat: f.enum(['forever', 'once']),
     startDate: f.date(),
-    status: f.enum(['active', 'draft', 'archived'])
+    status: f.enum(['active', 'draft', 'archived']),
+    /* параметры генератора — чтобы пересобрать с теми же настройками */
+    split: f.string({ def: '' }),
+    experience: f.enum(['beginner', 'intermediate', 'advanced'], { nullable: true }),
+    minutes: f.number({ min: 0, max: 600, int: true })
   }
 });
 

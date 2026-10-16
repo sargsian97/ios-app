@@ -1,6 +1,6 @@
 /* Service worker: приложение открывается без интернета.
    При каждом выпуске новой версии меняй VERSION — тогда телефон предложит обновиться. */
-const VERSION = '2026-10-16.9';
+const VERSION = '2026-10-16.10';
 const CACHE = 'journal-' + VERSION;
 const SHELL = [
   './',
@@ -32,6 +32,7 @@ const SHELL = [
   'src/domain/gym.js',
   'src/domain/nutrition.js',
   'src/domain/program.js',
+  'src/domain/training-program.js',
   'src/domain/units.js',
   'src/domain/workout.js',
   'src/i18n/index.js',
@@ -66,6 +67,7 @@ const SHELL = [
   'src/domain/calc/index.js',
   'src/domain/calc/macros.js',
   'src/domain/calc/micro_goals.js',
+  'src/domain/calc/periodization.js',
   'src/domain/calc/plate_calculator.js',
   'src/domain/calc/progression.js',
   'src/domain/calc/tdee.js',
@@ -117,6 +119,7 @@ const SHELL = [
   'src/ui/screens/train/library.js',
   'src/ui/screens/train/plans.js',
   'src/ui/screens/train/plates.js',
+  'src/ui/screens/train/programs.js',
   'src/ui/screens/train/session.js',
   'src/ui/screens/train/settings.js',
   'src/ui/screens/train/train.js',

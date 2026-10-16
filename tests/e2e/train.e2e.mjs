@@ -51,7 +51,7 @@ check('шаги перенесены', (await idbList('stepsEntries')).some((s) 
 /* вкладка */
 await go('#/train');
 check('вкладка: карточка «сегодня»', await p.locator('.wk-today').count() === 1);
-check('вкладка: неделя и действия', await p.locator('.wk-actions .scbtn').count() === 7);
+check('вкладка: неделя и действия', await p.locator('.wk-actions .scbtn').count() === 8);
 await shot('01-home');
 
 /* тренировка по шаблону */
@@ -243,6 +243,33 @@ check('уровни: карта и 20 мышц', await p.locator('.mm-lv svg').c
 await p.locator('.lv-row').first().click(); await wait(300);
 check('уровни: вклад упражнений', await p.locator('.lv-row[aria-expanded="true"] .nut-top span').count() >= 1);
 await shot('16-levels');
+
+/* программа: мастер → этапы → предпросмотр → сохранение */
+await go('#/train/programs');
+check('программы: пусто, есть кнопка', await p.locator('.prog-empty').count() === 1);
+await p.locator('.prog-empty button').click(); await wait(600);
+await p.locator('.segw', { hasText: 'Дней в неделю' }).getByRole('radio', { name: '4' }).click(); await wait(200);
+check('мастер: сплиты под 4 дня', await p.locator('.prog-splits .lrow').count() === 4, await p.locator('.prog-splits .lrow').count());
+await p.locator('.prog-focus .chip', { hasText: 'Бицепс' }).click();
+await shot('17-gen-form');
+await p.getByRole('button', { name: 'Собрать программу' }).click(); await wait(300);
+check('этапы сборки', await p.locator('.prog-stage').count() === 6);
+await wait(1800);
+check('предпросмотр: 4 дня', await p.locator('.prog-day').count() === 4, await p.locator('.prog-day').count());
+await shot('18-gen-preview');
+await p.getByRole('button', { name: 'Сохранить и начать' }).click(); await wait(800);
+const progs = await idbList('workoutPrograms');
+const pplans = (await idbList('workoutPlans')).filter((x) => x.programId && progs[0] && x.programId === progs[0].id);
+check('программа сохранена: активна, 4 шаблона по дням', progs.length === 1 && progs[0].status === 'active' && progs[0].split === 'upper_lower' && pplans.length === 4 && pplans.every((x) => x.weekday != null), { n: progs.length, plans: pplans.length });
+check('экран программы: неделя и 7 дней', await p.locator('.prog-weeks i').count() === 5 && await p.locator('.prog-days .lrow').count() === 7);
+await shot('19-program');
+await go('#/train/session');
+await p.locator('.wk-head [aria-label="Тренировка"]').click(); await wait(400);
+await p.locator('.sheet button.danger', { hasText: 'Отменить тренировку' }).click(); await wait(300);
+await p.locator('.modal .danger').click(); await wait(900);
+const todayTxt = await p.locator('.wk-today').innerText();
+check('вкладка: тренировка из программы с неделей', await p.locator('.wk-progline').count() === 1 && /Неделя 1 из 5/.test(todayTxt), todayTxt);
+await shot('20-home-program');
 
 
 await go('#/train');

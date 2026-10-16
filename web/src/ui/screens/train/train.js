@@ -14,6 +14,7 @@ import { useCatalog, whyLabel, cardioTypeLabel, fmtClock, currentBodyweight, wei
 import { useNow } from '../../train/timer.js';
 import { NumIn } from '../../train/inputs.js';
 import { LogRow } from './history.js';
+import { activeProgram, programWeekMods } from '../../../domain/training-program.js';
 
 export async function startWorkout(app, { plan = null, date, catalog }) {
   const { repos } = app;
@@ -22,7 +23,9 @@ export async function startWorkout(app, { plan = null, date, catalog }) {
   const gym = defaultGym(repos.gym.list(), profile);
   const configs = {};
   repos.userExerciseConfig.list().forEach((c) => { configs[c.id] = c; });
-  let s = buildSession({ plan, catalog, logs, date, now: new Date().toISOString(), bodyweightKg: profile.bodyweightFromTrend ? currentBodyweight(repos) : null, previousFrom: profile.previousFrom, newId: uid, gymId: gym ? gym.id : null, progression: progressionFor(profile, gym, configs) });
+  const program = plan && plan.programId ? repos.workoutProgram.get(plan.programId) : null;
+  const wk = program ? programWeekMods(program, date) : null;
+  let s = buildSession({ weekMods: wk && wk.mods, plan, catalog, logs, date, now: new Date().toISOString(), bodyweightKg: profile.bodyweightFromTrend ? currentBodyweight(repos) : null, previousFrom: profile.previousFrom, newId: uid, gymId: gym ? gym.id : null, progression: progressionFor(profile, gym, configs) });
   if (profile.autoWarmup) {
     s = addWarmups(s, { catalog, gym, configs, profile, newId: uid });
   }
@@ -37,7 +40,7 @@ export function sortPlans(plans) {
 export function TrainHome({ route }) {
   const app = useApp();
   const { repos, store } = app;
-  useData(['workoutSessions', 'workoutLogs', 'workoutPlans', 'scaleEntries', 'workoutProfile', 'profile']);
+  useData(['workoutSessions', 'workoutLogs', 'workoutPlans', 'workoutPrograms', 'scaleEntries', 'workoutProfile', 'profile']);
   const cat = useCatalog();
   const today = todayYmd();
   const date = route.query.d || today;
@@ -46,7 +49,10 @@ export function TrainHome({ route }) {
   const s = repos.workoutSession.get('current');
   const logs = repos.workout.list();
   const plans = sortPlans(repos.workoutPlan.list((p) => !p.archived));
-  const sug = suggestPlan(plans, logs, today);
+  const prog = activeProgram(repos.workoutProgram.list());
+  const progPlans = prog ? plans.filter((p) => p.programId === prog.id) : [];
+  const sug = suggestPlan(progPlans.length ? progPlans : plans, logs, today);
+  const pwk = prog ? programWeekMods(prog, today) : null;
   const [choose, setChoose] = useState(false);
   const [cardio, setCardio] = useState(false);
   const start = (plan) => (s ? navigate('/train/session') : startWorkout(app, { plan, date, catalog: cat.byId }));
@@ -65,6 +71,7 @@ export function TrainHome({ route }) {
     ${!s ? html`<div class="card pad wk-today">
       ${sug ? html`
         <div class="rl">${isToday ? t('train.today') : t('train.forDay')}</div>
+        ${prog && sug.plan.programId === prog.id && pwk && !pwk.finished ? html`<button class="wk-progline" onClick=${() => navigate('/train/programs')}>${prog.name} · ${t('prog.weekOf', { n: pwk.week + 1, total: pwk.weeks })}${pwk.deload ? ' · ' + t('prog.deload') : pwk.mods && pwk.mods.heavy != null ? ' · ' + t(pwk.mods.heavy ? 'prog.heavy' : 'prog.light') : ''}</button>` : null}
         <div class="wk-today-h"><b>${sug.plan.name}</b><span class="hint">${isToday ? whyLabel(sug.why) + (sug.why === 'missed' || sug.why === 'next' ? ' · ' + fmtDate(sug.date, 'long') : '') : ''}</span></div>
         <div class="wk-preview">${planItems(sug.plan).slice(0, 8).map((it) => html`<span>${cat.byId[it.exerciseId] && !(it.alternatives && it.alternatives.length > 1) ? cat.byId[it.exerciseId].name : it.name}</span>`)}${planItems(sug.plan).length > 8 ? html`<span>+${planItems(sug.plan).length - 8}</span>` : null}</div>
         <${GymLine}/>
@@ -80,7 +87,7 @@ export function TrainHome({ route }) {
     ${dayLogs.length ? html`<div class="ltitle">${isToday ? t('train.doneToday') : t('train.dayLogs')}</div><div class="list">${dayLogs.map((w) => html`<${LogRow} w=${w} byId=${cat.byId} units=${units}/>`)}</div>` : !isToday ? html`<div class="card empty">${t('train.dayEmpty')}</div>` : null}
 
     <div class="scgrid wk-actions">
-      ${[['heart', 'train.act.cardio', () => setCardio(true)], ['search', 'train.act.library', () => navigate('/train/library')], ['list', 'train.act.plans', () => navigate('/train/plans')], ['cal', 'train.act.history', () => navigate('/train/history')], ['target', 'train.act.levels', () => navigate('/train/levels')], ['plate', 'train.act.plates', () => navigate('/train/plates')], ['gym', 'train.act.gyms', () => navigate('/train/gyms')]].map(([ic, l, fn]) => html`<button class="scbtn" onClick=${fn}><${Icon} name=${ic}/><span>${t(l)}</span></button>`)}
+      ${[['heart', 'train.act.cardio', () => setCardio(true)], ['search', 'train.act.library', () => navigate('/train/library')], ['list', 'train.act.plans', () => navigate('/train/plans')], ['bolt', 'train.act.programs', () => navigate('/train/programs')], ['cal', 'train.act.history', () => navigate('/train/history')], ['target', 'train.act.levels', () => navigate('/train/levels')], ['plate', 'train.act.plates', () => navigate('/train/plates')], ['gym', 'train.act.gyms', () => navigate('/train/gyms')]].map(([ic, l, fn]) => html`<button class="scbtn" onClick=${fn}><${Icon} name=${ic}/><span>${t(l)}</span></button>`)}
     </div>
 
     ${isToday ? html`<${Card} title=${t('train.week')} icon="train" color="var(--k-str)">

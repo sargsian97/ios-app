@@ -1398,3 +1398,32 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 .lv-dots{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}
 .lv-dots i{width:6px;height:6px;border-radius:3px;background:var(--input)}
 .lv-dots i.on{background:var(--k-str)}
+.wk-progline{display:block;width:100%;text-align:left;background:none;border:0;padding:0;margin:2px 0 6px;color:var(--k-str);font-weight:600;font-size:13px;min-height:0;box-shadow:none}
+.prog-name{font-size:22px;font-weight:800;margin:2px 0}
+.prog-weeks{display:flex;gap:4px;margin:12px 0 6px}
+.prog-weeks i{flex:1;height:6px;border-radius:3px;background:var(--input)}
+.prog-weeks i.past{background:color-mix(in srgb,var(--k-str) 45%,var(--input))}
+.prog-weeks i.cur{background:var(--k-str)}
+.prog-weeks i.dl{outline:1.5px dashed color-mix(in srgb,var(--k-str) 60%,transparent);outline-offset:1px}
+.prog-wk{font-weight:600;font-size:14px;margin-bottom:8px}
+.prog-days{margin:8px -4px 0}
+.prog-days .lrow.rest{opacity:.55}
+.prog-empty p{margin:0 0 12px;line-height:1.4}
+.prog-stages{display:flex;flex-direction:column;gap:14px;padding:20px}
+.prog-stage{display:flex;align-items:center;gap:12px;color:var(--muted);font-weight:600;transition:color .2s}
+.prog-stage .dot{width:22px;height:22px;border-radius:11px;border:2px solid var(--input);display:grid;place-items:center;flex:none}
+.prog-stage.cur{color:var(--ink)}
+.prog-stage.cur .dot{border-color:var(--k-str);animation:progpulse 1s infinite}
+.prog-stage.done{color:var(--ink)}
+.prog-stage.done .dot{background:var(--k-str);border-color:var(--k-str);color:#fff}
+.prog-stage.done .dot svg{width:14px;height:14px}
+@keyframes progpulse{50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--k-str) 25%,transparent)}}
+@media (prefers-reduced-motion:reduce){.prog-stage.cur .dot{animation:none}}
+.prog-dh{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.prog-dh .hint{margin-left:auto}
+.prog-it{display:flex;width:100%;gap:8px;align-items:baseline;text-align:left;background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:9px 0;min-height:0;box-shadow:none;color:var(--ink);font-weight:500}
+.prog-it .hint{margin:0;white-space:nowrap}
+.prog-vol{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;margin-top:6px}
+.prog-vol b{font-family:var(--num)}
+.prog-splits .lrow.on{color:var(--k-str)}
+.prog-focus .chip.less{opacity:.6;text-decoration:line-through}

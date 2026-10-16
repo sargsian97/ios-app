@@ -83,6 +83,15 @@ test('i18n: подписи тренировок — для всех значен
   Object.values(G.GYM_TEMPLATES).forEach((tp) => { tp.bars.forEach((b) => keys.push('gym.bar.' + b.name)); tp.stacks.forEach((x) => keys.push('gym.stack.' + x.name)); });
   ['min', 'max', 'step'].forEach((k) => keys.push('gym.' + k));
   ['plates', 'gyms'].forEach((k) => keys.push('train.act.' + k));
+  ['levels', 'programs'].forEach((k) => keys.push('train.act.' + k));
+  const P = await import('../web/src/domain/training-program.js');
+  P.SPLIT_KEYS.forEach((k) => { keys.push('prog.split.' + k); keys.push('prog.splitHint.' + k); });
+  Object.keys(P.DAY_TYPES).forEach((k) => keys.push('prog.day.' + k));
+  P.GOALS.forEach((k) => keys.push('prog.goal.' + k));
+  P.EXPERIENCE.forEach((k) => keys.push('prog.exp.' + k));
+  ['none', 'linear', 'reverse', 'undulating'].forEach((k) => { keys.push('prog.per.' + k); keys.push('prog.perHint.' + k); });
+  ['none', 'start', 'end'].forEach((k) => keys.push('prog.dl.' + k));
+  ['equipment', 'experience', 'priorities', 'split', 'exercises', 'time'].forEach((k) => keys.push('prog.stage.' + k));
   assert.deepEqual(keys.filter((k) => !hasKey(k)), []);
 });
 

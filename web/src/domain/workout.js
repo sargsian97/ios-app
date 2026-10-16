@@ -1,7 +1,7 @@
 /* Тренировка: сборка сессии из шаблона, предыдущие значения, цели подходов, отдых, переходы
    (суперсеты), завершение, итоги и рекорды, выбор тренировки на сегодня, кардио журнала.
    Чистые функции: время и id передаются параметрами. Веса — в кг, время — в секундах, дистанция — в метрах. */
-import { e1rm, isWorkingSet, addDays, nextSetTarget, DEFAULT_TARGET_RIR } from './calc/index.js';
+import { e1rm, isWorkingSet, addDays, nextSetTarget, DEFAULT_TARGET_RIR, applyWeek } from './calc/index.js';
 import { isCardio } from './exercises.js';
 
 const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
@@ -149,8 +149,10 @@ export function exerciseEntry({ exercise, item = null, prev = null, newId, exerc
 }
 
 /* Новая сессия: из шаблона (с выбором варианта упражнения) или пустая */
-export function buildSession({ plan = null, catalog = {}, logs = [], date, now, bodyweightKg = null, programId = null, previousFrom = 'any', newId, name = '', gymId = null, progression = null }) {
-  const exercises = planItems(plan).map((it) => {
+export function buildSession({ plan = null, catalog = {}, logs = [], date, now, bodyweightKg = null, programId = null, previousFrom = 'any', newId, name = '', gymId = null, progression = null, weekMods = null }) {
+  /* weekMods — поправки недели программы (периодизация, делоад): applyWeek к целям каждого упражнения */
+  const exercises = planItems(plan).map((raw) => {
+    const it = weekMods ? applyWeek(raw, weekMods) : raw;
     const id = pickAlternative(it, logs);
     const ex = catalog[id] || null;
     const prev = previousSets(logs, id, { programId: previousFrom === 'program' ? (programId || (plan && plan.programId)) : null, before: null });

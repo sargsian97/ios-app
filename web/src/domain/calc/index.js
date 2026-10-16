@@ -15,3 +15,4 @@ export * from './volume.js';
 export * from './body_fat.js';
 export * from './cycle.js';
 export * from './checkin.js';
+export * from './periodization.js';

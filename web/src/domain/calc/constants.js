@@ -229,3 +229,26 @@ export const PROTEIN_V2_G_PER_KG = freeze({    // приближение: диа
   none: [1.2, 1.6], cardio: [1.4, 1.8], lift: [1.6, 2.2], both: [1.6, 2.2]
 });
 export const FAT_MIN_G_PER_KG = 0.5;           // приближение: безопасный минимум жиров (точное число не опубликовано)
+
+/* ── Генератор программ тренировок: диапазоны повторов, RIR, подходы, время, периодизация, делоад ──
+   Временное значение, уточнится в части 2 спецификации. */
+export const GEN_REP_RANGES = Object.freeze({
+  strength: Object.freeze({ main: [3, 5], secondary: [5, 8], iso: [8, 12], core: [8, 15] }),
+  hypertrophy: Object.freeze({ main: [6, 10], secondary: [8, 12], iso: [10, 15], core: [10, 20] }),
+  both: Object.freeze({ main: [4, 6], secondary: [6, 10], iso: [10, 15], core: [10, 15] })
+});
+export const GEN_RIR = Object.freeze({ main: 2, secondary: 2, iso: 1, core: 2 }); // целевой RIR по роли упражнения
+export const GEN_RIR_BEGINNER_ADD = 1;          // новичкам — на повтор дальше от отказа
+export const GEN_SETS = Object.freeze({ main: 4, secondary: 3, iso: 3, core: 3 }); // подходов по роли
+export const GEN_MIN_SETS = 2;                  // меньше не опускаем ни при нехватке времени, ни при «меньше внимания»
+export const GEN_MIN_EXERCISES = 3;             // минимум упражнений в тренировке
+export const GEN_REST_SEC = Object.freeze({ main: 150, secondary: 105, iso: 60, core: 45 }); // отдых для оценки времени
+export const GEN_SET_WORK_SEC = 40;             // сам подход
+export const GEN_WARMUP_MIN_PER_MAIN = 3;       // разминочные подходы перед основным упражнением, минут
+export const GEN_SESSION_OVERHEAD_MIN = 3;      // переходы, настройка, общая разминка
+export const GEN_CORE_HOLD_SEC = 45;            // упражнения на время (планка): секунд в подходе
+export const PERIOD_LINEAR_REPS_PER_WEEK = 1;   // линейная: повторов меньше (а вес больше) на столько за неделю
+export const PERIOD_LINEAR_MAX_SHIFT = 3;       // но не больше чем на столько
+export const PERIOD_UNDULATING_SHIFT = 2;       // чередование: тяжёлая неделя −2 повтора, лёгкая +2
+export const DELOAD_SET_FACTOR = 0.5;           // делоад: подходов вдвое меньше
+export const DELOAD_RIR_ADD = 2;                // и на 2 повтора дальше от отказа (вес снизится сам через прогрессию)

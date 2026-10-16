@@ -31,6 +31,7 @@ import { TrainSettings } from './screens/train/settings.js';
 import { GymList, GymEditor } from './screens/train/gyms.js';
 import { PlateCalculator } from './screens/train/plates.js';
 import { Levels } from './screens/train/levels.js';
+import { ProgramList, ProgramGenerator } from './screens/train/programs.js';
 
 /* Экраны старого журнала: адрес → [вкладка журнала, вид плана, путь «назад»] */
 const LEGACY = {
@@ -64,6 +65,8 @@ const ROUTES = [
   ['/train/gym/:id', GymEditor],
   ['/train/plates', PlateCalculator],
   ['/train/levels', Levels],
+  ['/train/programs', ProgramList],
+  ['/train/program/new', ProgramGenerator],
   ['/more/templates', PlanList],
   ['/more', More],
   ['/onboarding', Onboarding],
