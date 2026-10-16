@@ -1161,3 +1161,15 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 .gbar i{background:linear-gradient(90deg,var(--k-plan),#5AC8FA)}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .grid4 input{padding:0 8px !important;text-align:center}
+
+/* =====================================================================
+   v20: расход энергии и чек-ин
+   ===================================================================== */
+.tstatus{display:inline-block;margin-top:8px;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;background:var(--input);color:var(--muted)}
+.tstatus.st-ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.tstatus.st-hold{background:color-mix(in srgb,var(--k-steps) 18%,transparent);color:var(--k-burn)}
+.tstatus.st-fixed{background:color-mix(in srgb,var(--k-plan) 16%,transparent);color:var(--k-plan)}
+.cibanner{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--k-plan) 40%,transparent),var(--lift)}
+.cibanner .hci{color:var(--k-plan)}
+.ob-p{font-size:16px;line-height:1.45;color:var(--ink2)}
+.onboarding .lrow .sw{flex:none}

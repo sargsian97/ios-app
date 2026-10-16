@@ -38,6 +38,13 @@ export function fmtNum(n, digits = 0) {
   return nf.format(n);
 }
 
+/* Со знаком: +120 / −120 / 0 */
+export function fmtSigned(n, digits = 0) {
+  if (n == null || !isFinite(n)) return '—';
+  const r = Math.round(n * Math.pow(10, digits)) / Math.pow(10, digits);
+  return (r > 0 ? '+' : r < 0 ? '−' : '') + fmtNum(Math.abs(r), digits);
+}
+
 /* Ровно digits знаков после запятой: 82,0 */
 export function fmtFix(n, digits = 1) {
   if (n == null || n === '' || !isFinite(n)) return '—';

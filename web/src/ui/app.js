@@ -18,6 +18,9 @@ import { BodyHistory } from './screens/body/history.js';
 import { Cycle } from './screens/body/cycle.js';
 import { Onboarding } from './screens/onboarding.js';
 import { GoalScreen, MicroGoals } from './screens/goal.js';
+import { Expenditure } from './screens/expenditure.js';
+import { Checkin, CheckinSettings } from './screens/checkin.js';
+import { computeExpenditure } from './food/expenditure.js';
 
 /* Экраны старого журнала: адрес → [вкладка журнала, вид плана, путь «назад»] */
 const LEGACY = {
@@ -41,6 +44,9 @@ const ROUTES = [
   ['/more', More],
   ['/onboarding', Onboarding],
   ['/more/goal', GoalScreen],
+  ['/checkin', Checkin],
+  ['/more/expenditure', Expenditure],
+  ['/more/checkin-settings', CheckinSettings],
   ['/more/micro', MicroGoals],
   ['/more/profile', Profile],
   ['/more/body', Body],
@@ -121,6 +127,25 @@ function UpdateBanner() {
   return html`<div class="upd"><span>${t('update.available')}</span><button class="small" onClick=${() => updates.apply()}>${t('update.apply')}</button></div>`;
 }
 
+/* Раз в день сохраняем оценку расхода на сегодня — история того, что приложение думало в тот день */
+function TdeeSnapshot() {
+  const app = useApp();
+  useData(['foodEntries', 'dayEntries', 'scaleEntries', 'dietProfile', 'profile']);
+  useEffect(() => {
+    const tm = setTimeout(() => {
+      const today = todayYmd();
+      const ex = computeExpenditure(app, today);
+      if (!ex || !ex.current) return;
+      const cur = app.repos.tdeeEntry.get(today);
+      const tdee = Math.round(ex.current.tdee);
+      if (cur && cur.tdee === tdee && cur.status === ex.current.status) return;
+      app.repos.tdeeEntry.save({ id: today, date: today, tdee, status: ex.current.status, reason: ex.current.reason || '', version: app.repos.dietProfile.get().tdeeVersion || 'v1' }).catch(() => {});
+    }, 1500);
+    return () => clearTimeout(tm);
+  });
+  return null;
+}
+
 function Theme() {
   const { repos } = useApp();
   useData('profile');
@@ -157,7 +182,8 @@ export function App() {
   return html`<${Theme}/>
     <${UpdateBanner}/>
     ${body}
-    ${path.startsWith('/onboarding') ? null : html`<${TabBar} path=${path} onPlus=${() => setPlus(true)}/>`}
+    ${path.startsWith('/onboarding') || path.startsWith('/checkin') ? null : html`<${TabBar} path=${path} onPlus=${() => setPlus(true)}/>`}
+    <${TdeeSnapshot}/>
     <${PlusSheet} open=${plus} onClose=${() => setPlus(false)}/>`;
 }
 

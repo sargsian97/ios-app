@@ -3,12 +3,13 @@
 import { html, useApp, useData, useLegacy, useState, useEffect, navigate, todayYmd } from '../../core.js';
 import { Page, Card, Sheet, Confirm, Segmented, Toggle, Field } from '../../kit.js';
 import { Icon } from '../../icons.js';
-import { t, fmtNum } from '../../../i18n/index.js';
+import { t, fmtNum, fmtSigned } from '../../../i18n/index.js';
 import { DateNav, Ring, MacroStrip, EntryRow, useEnergy, num, nowTime, addDays, macroLine } from '../../food/parts.js';
 import { dayBudget } from '../../food/budget.js';
 import { dayTotals, timelineHours, mealOf, foodNutrients, servingAmount, copyEntries, moveEntries } from '../../../domain/nutrition.js';
 import { uid } from '../../../data/ids.js';
 import { formatClock } from '../../../domain/units.js';
+import { CheckinBanner } from '../checkin.js';
 import { scaleNutrients, roundNutrients } from '../../../data/models/nutrients.js';
 
 const MEALS = [['b', 'food.meal.b', '#FFB800'], ['l', 'food.meal.l', '#FF7A1A'], ['d', 'food.meal.d', '#8A87FF'], ['s', 'food.meal.s', '#FF2D55']];
@@ -68,6 +69,7 @@ export function FoodDiary({ route }) {
         <button class="small icn" aria-label=${t('food.menu')} onClick=${() => setMenu(true)}><${Icon} name="more" size=${18}/></button>
       </div>`}>
     <${DateNav} date=${date} onChange=${setDate}/>
+    ${date === todayYmd() ? html`<${CheckinBanner}/>` : null}
     <${Banner} variant=${dp.banner} totals=${totals} budget=${budget} energy=${energy} flags=${flags}/>
 
     <div class="pills sub" style="margin:0 0 12px">
@@ -221,7 +223,7 @@ function WeekCard({ date, legacy, energy }) {
   return html`<${Card} title=${t('food.week.title', { n: ws.n })} icon="cal" color="var(--k-cal)">
     <div class="kv"><span>${t('food.week.eat')}</span><span>${energy.fmt(ws.eat)} ${energy.unit}</span></div>
     <div class="kv"><span>${t('food.week.burn')}</span><span>${energy.fmt(ws.bur)} ${energy.unit}</span></div>
-    <div class="kv tot"><span>${t('food.week.balance')}</span><span>${(diff > 0 ? '+' : '') + energy.fmt(diff)} ${energy.unit}</span></div>
+    <div class="kv tot"><span>${t('food.week.balance')}</span><span>${fmtSigned(diff)} ${energy.unit}</span></div>
     ${ws.w1 != null && ws.w0 != null ? html`<div class="kv"><span>${t('food.week.weight')}</span><span>${fmtNum(ws.w0, 1)} → ${fmtNum(ws.w1, 1)}</span></div>` : null}
   <//>`;
 }

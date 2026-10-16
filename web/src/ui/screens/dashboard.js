@@ -8,6 +8,7 @@ import { workoutsBetween, stepsOn, weekStart, addDays } from '../../data/legacy.
 import { useWeight } from './body/body.js';
 import { dayTotals } from '../../domain/nutrition.js';
 import { ImportCard } from './backup.js';
+import { CheckinBanner } from './checkin.js';
 
 function Tile({ icon, color, label, value, unit, sub, href }) {
   return html`<button class="dtile" style=${'--cc:' + color} onClick=${() => navigate(href)}>
@@ -43,6 +44,7 @@ export function Dashboard() {
   return html`<${Page} title=${t('dash.title')} icon="home" color="linear-gradient(135deg,#5AB0FF,#0A84FF)">
     <div class="hsub dsub">${fmtDate(today, 'long')}</div>
     <${ImportCard}/>
+    <${CheckinBanner}/>
     ${!profile.onboardedAt ? html`<${Card} cls="welcome" title=${t('dash.setup.title')} icon="target" color="var(--k-plan)">
       <div class="hint" style="margin:0 0 12px">${t('dash.setup.text')}</div>
       <button class="primary" style="width:100%" onClick=${() => navigate('/onboarding')}>${t('dash.setup.go')}</button>

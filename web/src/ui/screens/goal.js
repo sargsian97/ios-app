@@ -9,6 +9,7 @@ import { GOAL_RATES, GOAL_RATE_DEFAULT, forecastGoalDate, microGoals, ageOn, NUT
 import { useWeight } from './body/body.js';
 import { warnLabel } from './onboarding.js';
 import { DietOptions, ProteinOptions } from './program-options.js';
+import { computeExpenditure, startTdeeFor } from '../food/expenditure.js';
 import { nutrientLabel, unitLabel } from '../food/labels.js';
 
 const WD = ['wd.0', 'wd.1', 'wd.2', 'wd.3', 'wd.4', 'wd.5', 'wd.6'];
@@ -16,15 +17,14 @@ const GOAL_T = { lose: 'goal.lose', maintain: 'goal.maintain', gain: 'goal.gain'
 const STYLE_T = { coached: 'ob.style.coached', collaborative: 'ob.style.collab', manual: 'ob.style.manual' };
 const TDEE_T = { fixed: 'goal.tdee.fixed', adaptive: 'goal.tdee.adaptive', estimate: 'goal.tdee.estimate' };
 
-/* Расход для расчёта целей: фиксированный, иначе стартовая оценка (адаптивный — этап 6) */
-export function currentTdee(repos, trendKg, today) {
-  const p = repos.profile.get(), dp = repos.dietProfile.get();
+/* Расход для расчёта целей: фиксированный → по данным (адаптивный) → стартовая оценка */
+export function currentTdee(repos, trendKg, today, app) {
+  const dp = repos.dietProfile.get();
   if (dp.tdeeMode === 'fixed' && dp.fixedTdee) return { tdee: dp.fixedTdee, source: 'fixed' };
-  const last = repos.tdeeEntry.list().sort((a, b) => b.date.localeCompare(a.date))[0];
-  if (last && last.status !== 'initial') return { tdee: Math.round(last.tdee), source: 'adaptive' };
-  if (!p.sex || !p.birthDate || !p.heightCm || !trendKg || !dp.activity) return null;
-  try { return { tdee: startingEstimate({ sex: p.sex, birthDate: p.birthDate, heightCm: p.heightCm, weightKg: trendKg, bodyFatPct: dp.bodyFatPct, activity: dp.activity, today }).tdee, source: 'estimate' }; }
-  catch (e) { return null; }
+  const ex = app ? computeExpenditure(app, today) : null;
+  if (ex && ex.current && (ex.current.status === 'ok' || ex.current.status === 'hold')) return { tdee: Math.round(ex.current.tdee), source: 'adaptive', status: ex.current.status };
+  const est = startTdeeFor(repos, trendKg, today);
+  return est ? { tdee: est, source: 'estimate' } : null;
 }
 
 /* Действующие цели на 7 дней (последние по validFrom не позже даты) */
@@ -51,7 +51,7 @@ export function GoalScreen() {
   const [sheet, setSheet] = useState(null);
   const [msg, setMsg] = useState('');
   const dw = (kg) => (kg == null ? '—' : fmtFix(toDisplay('weight', kg, units), 1));
-  const tdee = currentTdee(repos, w.last && w.last.trend, today);
+  const tdee = currentTdee(repos, w.last && w.last.trend, today, app);
 
   if (!goal && !program) {
     return html`<${Page} title=${t('goal.title')} icon="target" color="linear-gradient(135deg,#5AB0FF,#0A84FF)" back="/more" backLabel=${t('nav.more')}>
@@ -106,6 +106,8 @@ export function GoalScreen() {
     <//>` : null}
 
     <${List} title=${t('goal.more')}>
+      <${Row} icon="cal" color="#0A84FF" label=${t('ci.settings')} href="/more/checkin-settings"/>
+      <${Row} icon="flame" color="#FF9500" label=${t('tdee.title')} href="/more/expenditure"/>
       <${Row} icon="list" color="#14B8A6" label=${t('micro.title')} href="/more/micro"/>
       <${Row} icon="target" color="#5856D6" label=${t('goal.redo')} href="/onboarding"/>
     <//>

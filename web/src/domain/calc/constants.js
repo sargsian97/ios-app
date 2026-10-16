@@ -193,3 +193,11 @@ export const GOAL_RATES = freeze({             // % массы тела в не�
   gain: [0.1, 0.25, 0.5]
 });
 export const GOAL_RATE_DEFAULT = freeze({ lose: 0.5, gain: 0.25, maintain: 0 });
+
+/* ── Еженедельный чек-ин ──
+   Временное значение, уточнится в части 2 спецификации. */
+export const CHECKIN_LOOKBACK_DAYS = 28;       // окно для «обычного» потребления (медиана записанных дней)
+export const CHECKIN_PARTIAL_SHARE = 0.5;      // день меньше этой доли медианы — похож на неполный
+export const CHECKIN_PARTIAL_MIN_KCAL = 600;   // или меньше этого числа ккал — тоже похож на неполный
+export const CHECKIN_BREAK_DAYS = 3;           // столько дней без записей за неделю — «перерыв в логировании»
+export const CHECKIN_WEIGHIN_STALE_DAYS = 3;   // последнее взвешивание старше — предложить взвеситься

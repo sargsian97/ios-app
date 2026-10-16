@@ -25,6 +25,7 @@ export function More() {
     <//>
     <${List}>
       <${Row} icon="target" color="#0A84FF" label=${t('goal.title')} sub=${t('more.goal.sub')} href="/more/goal"/>
+      <${Row} icon="flame" color="#FF9500" label=${t('tdee.title')} sub=${t('more.tdee.sub')} href="/more/expenditure"/>
     <//>
     <${List} title=${t('more.journal')}>
       <${Row} icon="scale" color="#AF52DE" label=${t('more.body')} href="/more/body"/>

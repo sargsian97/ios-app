@@ -51,3 +51,11 @@ test('i18n: ключи, собранные из частей, есть в кат
   ['g', 'ml', 'mg', 'mcg', 'kcal', 'kg', 'lb', 'cm', 'in', 'kj', 'km', 'mi'].forEach((k) => keys.push('unit.' + k));
   assert.deepEqual(keys.filter((k) => !hasKey(k)), []);
 });
+
+test('i18n: числа со знаком', async () => {
+  const { fmtSigned } = await import('../web/src/i18n/index.js');
+  assert.equal(fmtSigned(-643.4), '−643');
+  assert.equal(fmtSigned(120), '+120');
+  assert.equal(fmtSigned(0.2), '0');
+  assert.equal(fmtSigned(null), '—');
+});

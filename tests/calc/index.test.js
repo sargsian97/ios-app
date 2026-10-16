@@ -20,7 +20,8 @@ const API = [
   'platesFor', 'achievableLoads',
   'weeklyVolume', 'averagePerWeek',
   'addDays', 'diffDays', 'rangeDays',
-  'bodyFatEstimates', 'bodyFatEstimate', 'bodyRatios', 'periodRuns', 'cycleSummary'
+  'bodyFatEstimates', 'bodyFatEstimate', 'bodyRatios', 'periodRuns', 'cycleSummary',
+  'findPartialDays', 'unloggedDays', 'loggingBreak'
 ];
 
 test('index.js отдаёт все функции и константы', () => {
