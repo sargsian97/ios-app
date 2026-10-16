@@ -134,6 +134,71 @@ export function perServingTo100(nutrients, servingGrams) {
 
 /* Калории из БЖУ по Атуотеру — подсказка, если калории не указаны */
 export function kcalFromMacros(n) {
-  const p = Number(n.protein) || 0, f = Number(n.fat) || 0, c = Number(n.carbs) || 0;
-  return Math.round(p * KCAL_PER_G.protein + f * KCAL_PER_G.fat + c * KCAL_PER_G.carbs);
+  const p = Number(n.protein) || 0, f = Number(n.fat) || 0, c = Number(n.carbs) || 0, a = Number(n.alcohol) || 0;
+  return Math.round(p * KCAL_PER_G.protein + f * KCAL_PER_G.fat + c * KCAL_PER_G.carbs + a * KCAL_PER_G.alcohol);
+}
+
+const minutes = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+const entryKey = (e) => (e.ref && e.ref.id ? e.ref.kind + ':' + e.ref.id : 'name:' + (e.name || '').trim().toLowerCase());
+
+/* «Обычно в это время»: что чаще всего записывалось в окне ± windowMin минут от time за последние days дней
+   до today; не меньше minCount раз. Возвращает последние записи этих продуктов, по убыванию частоты. */
+export function hourlyGoTos(entries, { time, today, days = 60, windowMin = 90, minCount = 2, limit = 6, addDays } = {}) {
+  const t0 = minutes(time);
+  if (t0 == null) return [];
+  const from = addDays ? addDays(today, -days) : null;
+  const stat = new Map();
+  (entries || []).forEach((e) => {
+    if (from && e.date < from) return;
+    if (today && e.date > today) return;
+    const m = minutes(e.time);
+    if (m == null) return;
+    const d = Math.min(Math.abs(m - t0), 1440 - Math.abs(m - t0));
+    if (d > windowMin) return;
+    const k = entryKey(e);
+    const s = stat.get(k) || { n: 0, last: null };
+    s.n++;
+    if (!s.last || (e.date + e.time) > (s.last.date + s.last.time)) s.last = e;
+    stat.set(k, s);
+  });
+  return [...stat.values()].filter((s) => s.n >= minCount).sort((a, b) => b.n - a.n || (b.last.date + b.last.time).localeCompare(a.last.date + a.last.time)).slice(0, limit).map((s) => s.last);
+}
+
+/* Поиск по истории: последние записи с названием, где каждое слово запроса — начало слова */
+export function historyMatches(entries, query, { limit = 5 } = {}) {
+  const norm = (x) => String(x || '').toLowerCase().replace(/ё/g, 'е');
+  const words = norm(query).split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  return recentItems(entries, { limit: 1000 }).filter((e) => {
+    const n = ' ' + norm(e.name).replace(/[^\p{L}\p{N}]+/gu, ' ');
+    return words.every((w) => n.includes(' ' + w));
+  }).slice(0, limit);
+}
+
+/* Разложить запись-рецепт на записи ингредиентов той же доли (без вложенных рецептов — они тоже раскладываются).
+   resolve(kind, id) → продукт или рецепт. Возвращает [{ ref, name, amount, unit, nutrients }] или [] (нельзя). */
+export function explodeRecipeEntry(entry, resolve, seen = new Set()) {
+  if (!entry || !entry.ref || entry.ref.kind !== 'recipe') return [];
+  const recipe = resolve('recipe', entry.ref.id);
+  if (!recipe || seen.has(recipe.id)) return [];
+  const totals = recipeTotals(recipe, resolve);
+  const kcalAll = totals.nutrients.kcal || 0;
+  const share = kcalAll > 0 ? (entry.nutrients && entry.nutrients.kcal || 0) / kcalAll : (totals.weight > 0 && entry.amount ? entry.amount / totals.weight : 0);
+  if (!(share > 0)) return [];
+  const out = [];
+  (recipe.ingredients || []).forEach((ing) => {
+    const amount = Math.round((Number(ing.amount) || 0) * share * 10) / 10;
+    if (ing.ref.kind === 'recipe') {
+      const sub = resolve('recipe', ing.ref.id);
+      if (!sub) return;
+      const st = recipeTotals(sub, resolve);
+      const fake = { ref: ing.ref, amount, nutrients: st.weight > 0 ? roundNutrients(scaleNutrients(st.nutrients, amount / st.weight), 2) : {} };
+      out.push(...explodeRecipeEntry(fake, resolve, new Set([...seen, recipe.id])));
+      return;
+    }
+    const food = resolve('food', ing.ref.id);
+    if (!food) return;
+    out.push({ ref: { kind: 'food', id: food.id }, name: food.name, amount, unit: food.base && food.base.unit === 'ml' ? 'ml' : 'g', nutrients: foodNutrients(food, amount) });
+  });
+  return out;
 }

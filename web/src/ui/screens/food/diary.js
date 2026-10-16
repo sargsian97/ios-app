@@ -6,7 +6,7 @@ import { Icon } from '../../icons.js';
 import { t, fmtNum, fmtSigned } from '../../../i18n/index.js';
 import { DateNav, Ring, MacroStrip, EntryRow, useEnergy, num, nowTime, addDays, macroLine } from '../../food/parts.js';
 import { dayBudget } from '../../food/budget.js';
-import { dayTotals, timelineHours, mealOf, foodNutrients, servingAmount, copyEntries, moveEntries } from '../../../domain/nutrition.js';
+import { dayTotals, timelineHours, mealOf, foodNutrients, servingAmount, copyEntries, moveEntries, explodeRecipeEntry } from '../../../domain/nutrition.js';
 import { uid } from '../../../data/ids.js';
 import { formatClock } from '../../../domain/units.js';
 import { CheckinBanner } from '../checkin.js';
@@ -70,7 +70,7 @@ export function FoodDiary({ route }) {
       </div>`}>
     <${DateNav} date=${date} onChange=${setDate}/>
     ${date === todayYmd() ? html`<${CheckinBanner}/>` : null}
-    <${Banner} variant=${dp.banner} totals=${totals} budget=${budget} energy=${energy} flags=${flags}/>
+    <${Banner} variant=${dp.banner} totals=${totals} budget=${budget} energy=${energy} flags=${flags} showOver=${!!dp.showOverages} onToggle=${() => repos.dietProfile.update({ banner: dp.banner === 'eaten' ? 'left' : 'eaten' })}/>
 
     <div class="pills sub" style="margin:0 0 12px">
       <button class=${'pill' + (view === 'timeline' ? ' on' : '')} onClick=${() => repos.dietProfile.update({ diaryView: 'timeline' })}>${t('food.view.timeline')}</button>
@@ -113,24 +113,26 @@ export function FoodDiary({ route }) {
 }
 
 /* ---------- баннер «съедено / осталось» ---------- */
-function Banner({ variant, totals, budget, energy, flags }) {
-  const eaten = totals.kcal || 0, target = budget.kcal || 0, left = target - eaten;
+function Banner({ variant, totals, budget, energy, flags, showOver, onToggle }) {
+  const eaten = totals.kcal || 0, target = budget.kcal || 0;
+  /* без «стыда»: перебор по умолчанию не показывается — остаток просто 0 */
+  const rawLeft = target - eaten, over = showOver && rawLeft < 0, left = showOver ? rawLeft : Math.max(0, rawLeft);
   const targets = { protein: budget.protein, fat: budget.fat, carbs: budget.carbs, fiber: budget.fiber };
   let top;
   if (variant === 'eaten' || variant === 'left') {
     const v = variant === 'eaten' ? eaten : Math.abs(left);
-    top = html`<div class="bigstat"><span class="rl">${variant === 'eaten' ? t('food.eaten') : left < 0 ? t('food.over') : t('food.left')}</span>
-      <b class=${variant === 'left' && left < 0 ? 'over' : ''}>${energy.fmt(v)}</b><small>${energy.unit}${target ? ' · ' + t('food.ofGoal', { g: energy.fmt(target) }) : ''}</small></div>`;
+    top = html`<button class="bigstat linkish" aria-label=${t('food.toggleBanner')} onClick=${onToggle}><span class="rl">${variant === 'eaten' ? t('food.eaten') : over ? t('food.over') : t('food.left')}</span>
+      <b class=${variant === 'left' && over ? 'over' : ''}>${energy.fmt(v)}</b><small>${energy.unit}${target ? ' · ' + t('food.ofGoal', { g: energy.fmt(target) }) : ''}</small></button>`;
   } else if (variant === 'progress') {
     const frac = target > 0 ? Math.min(1, eaten / target) : 0;
     top = html`<div class="bigstat"><span class="rl">${t('food.eaten')}</span><b>${energy.fmt(eaten)}</b><small>${target ? t('food.ofGoal', { g: energy.fmt(target) }) + ' ' + energy.unit : energy.unit}</small></div>
-      <div class=${'bar fbar' + (left < 0 ? ' over' : '')}><i style=${'width:' + (frac * 100).toFixed(1) + '%'}></i></div>`;
+      <div class=${'bar fbar' + (over ? ' over' : '')}><i style=${'width:' + (frac * 100).toFixed(1) + '%'}></i></div>`;
   } else {
-    top = html`${target ? html`<${Ring} eaten=${eaten} target=${target} energy=${energy}/>` : null}
+    top = html`${target ? html`<${Ring} eaten=${eaten} target=${target} energy=${energy} showOver=${showOver}/>` : null}
       <div class="rstats">
         <div><b>${target ? energy.fmt(target) : '—'}</b><span>${t('food.goal')}</span></div>
         <div><b>${energy.fmt(eaten)}</b><span>${t('food.eaten')}</span></div>
-        <div><b class=${left < 0 ? 'rover' : ''}>${target ? energy.fmt(Math.abs(left)) : '—'}</b><span>${left < 0 ? t('food.over') : t('food.left')}</span></div>
+        <div><b class=${over ? 'rover' : ''}>${target ? energy.fmt(Math.abs(left)) : '—'}</b><span>${over ? t('food.over') : t('food.left')}</span></div>
       </div>`;
   }
   return html`<div class="card pad fbanner">${top}<${MacroStrip} totals=${totals} targets=${targets}/>${flags}
@@ -233,6 +235,16 @@ function EntrySheet({ entry, onClose, onCopyMove }) {
   const { repos } = useApp();
   const [d, setD] = useState(null);
   const [confirmDel, setConfirmDel] = useState(false);
+  const { store } = useApp();
+  /* разложить рецепт: запись заменяется продуктами в той же доле, время то же */
+  async function explode() {
+    const resolve = (k, id) => (k === 'recipe' ? repos.recipe.get(id) : repos.food.get(id));
+    let parts = [];
+    try { parts = explodeRecipeEntry(entry, resolve); } catch (e) { parts = []; }
+    if (!parts.length) return;
+    await store.batch(parts.map((p) => repos.foodEntry.putOp({ date: entry.date, time: entry.time, ref: p.ref, name: p.name, amount: p.amount, unit: p.unit, nutrients: p.nutrients })).concat([repos.foodEntry.removeOp(entry.id)]));
+    onClose();
+  }
   useEffect(() => {
     if (!entry) { setD(null); return; }
     const food = entry.ref && entry.ref.kind === 'food' ? repos.food.get(entry.ref.id) : null;
@@ -275,6 +287,7 @@ function EntrySheet({ entry, onClose, onCopyMove }) {
       <button class="small danger" onClick=${() => setConfirmDel(true)}>${t('food.delete')}</button>
     </div>
     ${food ? html`<button class="linkbtn" onClick=${() => { onClose(); navigate('/food/item/' + food.id); }}>${t('food.openFood')}</button>` : null}
+    ${entry.ref && entry.ref.kind === 'recipe' ? html`<button class="linkbtn" onClick=${explode}>${t('food.explode')}</button>` : null}
     ${confirmDel ? html`<${Confirm} text=${t('food.confirmDelete', { count: 1 })} yes=${t('food.delete')} danger=${true} onNo=${() => setConfirmDel(false)} onYes=${async () => { setConfirmDel(false); await repos.foodEntry.remove(entry.id); onClose(); }}/>` : null}
   <//>`;
 }

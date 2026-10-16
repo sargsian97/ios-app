@@ -180,6 +180,19 @@ await p.locator('.scanner input[inputmode=numeric]').fill('5901234123457');
 await p.locator('.scanner button[type=submit]').click(); await wait(1000);
 check('штрихкод: неизвестный код предлагает создать продукт', await p.getByRole('button', { name: 'Создать продукт с этим кодом' }).count() === 1);
 
+/* быстрое добавление с алкоголем, перебор не показывается */
+await go('#/food/add?d=2026-10-16');
+await p.reload(); await wait(1500);
+await p.locator('.scbtn').nth(1).click(); await wait(500);
+const qi = p.locator('.sheet .grid2 input');
+await qi.nth(4).fill('140');
+check('быстро: ккал из алкоголя (7 ккал/г)', (await qi.nth(0).getAttribute('placeholder')).replace(/\s/g, '') === '980');
+await p.locator('.sheet button.primary').click(); await wait(800);
+check('запись с алкоголем', (await idbList('foodEntries')).some((e) => e.nutrients.alcohol === 140 && e.nutrients.kcal === 980));
+await go('#/food?d=2026-10-16');
+check('перебор по умолчанию не показывается', await p.locator('.fbanner .over, .fbanner .rover').count() === 0);
+await shot('11b-no-overage');
+
 /* старая история видит новое питание */
 await go('#/more/history');
 await wait(800);

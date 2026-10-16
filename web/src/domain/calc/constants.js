@@ -66,7 +66,8 @@ export const TDEE_RAW_MAX = 6000;              // и сверху, ккал (з�
 export const KCAL_PER_G = freeze({             // коэффициенты Этуотера
   protein: 4,
   fat: 9,
-  carbs: 4
+  carbs: 4,
+  alcohol: 7
 });
 export const CALORIE_FLOOR = freeze({          // нижний порог калорий по полу, ккал
   standard: { male: 1500, female: 1200 },

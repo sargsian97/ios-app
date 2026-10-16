@@ -49,8 +49,8 @@ export function DateNav({ date, onChange }) {
 }
 
 /* Кольцо: съедено из цели */
-export function Ring({ eaten, target, energy }) {
-  const left = target - eaten, over = left < 0;
+export function Ring({ eaten, target, energy, showOver = false }) {
+  const raw = target - eaten, over = showOver && raw < 0, left = showOver ? raw : Math.max(0, raw);
   const frac = target > 0 ? Math.min(1, eaten / target) : 0;
   const pct = target > 0 ? Math.round(eaten / target * 100) : 0;
   const RC = 2 * Math.PI * 88;

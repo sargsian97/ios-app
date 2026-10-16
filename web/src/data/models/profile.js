@@ -48,6 +48,8 @@ export const DietProfile = model({
     diaryView: f.enum(['timeline', 'classic']),
     timeline: f.shape({ startHour: f.number({ def: 6, nullable: false, min: 0, max: 23, int: true }), endHour: f.number({ def: 23, nullable: false, min: 0, max: 23, int: true }), hideEmpty: f.bool() }),
     banner: f.enum(['eaten_left', 'eaten', 'left', 'progress']),
+    showOverages: f.bool(), /* показывать перебор калорий и макросов (по умолчанию нет — без «красных цифр») */
+    loggerMode: f.enum(['context', 'speed']), /* context — карточка продукта; speed — сразу на тарелку с прошлой порцией */
     shortcuts: f.array(f.string({ max: 40 }), { def: () => ['search', 'scan', 'quick', 'photo'], max: 4 }),
     hiddenNutrients: f.array(f.string({ max: 40 }), { max: 100 }),
     pinnedUnits: f.array(f.string({ max: 40 }), { max: 10 }),

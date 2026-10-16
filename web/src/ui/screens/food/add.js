@@ -8,7 +8,8 @@ import { useEnergy, num, nowTime, per100Text, macroLine, Spinner } from '../../f
 import { usePlate, plate } from '../../food/plate.js';
 import { dayBudget } from '../../food/budget.js';
 import { searchLocal, searchOnline, saveOnlineFood, recipeSummary, findBarcode, getUsdaKey } from '../../../services/foodsearch/index.js';
-import { foodNutrients, servingAmount, recipePortion, dayTotals, recentItems, kcalFromMacros } from '../../../domain/nutrition.js';
+import { foodNutrients, servingAmount, recipePortion, dayTotals, recentItems, kcalFromMacros, hourlyGoTos, historyMatches } from '../../../domain/nutrition.js';
+import { addDays } from '../../../domain/calc/index.js';
 import { scaleNutrients, roundNutrients } from '../../../data/models/nutrients.js';
 import { aiPhoto, aiErrorKey, getClaudeKey } from '../../../services/ai-food.js';
 import { Scanner } from './scanner.js';
@@ -103,6 +104,29 @@ export function FoodAdd({ route }) {
     rows = searchLocal(repos, q, { limit: 60 }).filter((x) => tab === 'all' || (tab === 'recipes' ? x.kind === 'recipe' : x.kind === 'food'));
   }
 
+  const speed = repos.dietProfile.get().loggerMode === 'speed';
+  const goTos = tab === 'all' && !q.trim() ? hourlyGoTos(repos.foodEntry.list(), { time, today: date, addDays }) : [];
+  const fromHistory = tab === 'all' && q.trim() ? historyMatches(repos.foodEntry.list(), q) : [];
+  /* быстрый режим: история и продукты сразу на тарелку (порция — как в прошлый раз), иначе — карточка */
+  function openRow(r) {
+    if (r.kind === 'history') {
+      const e = r.entry;
+      const doc = e.ref.kind === 'food' ? repos.food.get(e.ref.id) : e.ref.kind === 'recipe' ? repos.recipe.get(e.ref.id) : null;
+      if (speed) { plate.add({ ref: e.ref, name: e.name, amount: e.amount, unit: e.unit, servingId: e.servingId, quantity: e.quantity, nutrients: e.nutrients }); setMsg(t('food.speed.added', { name: e.name })); return; }
+      if (doc) setItem({ kind: e.ref.kind, doc, preset: { amount: e.amount, servingId: e.servingId, quantity: e.quantity } });
+      else setItem({ kind: 'quick', entry: e });
+      return;
+    }
+    if (speed && r.kind === 'food') {
+      const last = recentItems(repos.foodEntry.list().filter((x) => x.ref && x.ref.kind === 'food' && x.ref.id === r.doc.id), { limit: 1 })[0];
+      const amount = last && last.amount ? last.amount : (r.doc.base && r.doc.base.amount) || 100;
+      plate.add({ ref: { kind: 'food', id: r.doc.id }, name: r.doc.name, amount, unit: r.doc.base && r.doc.base.unit === 'ml' ? 'ml' : 'g', nutrients: foodNutrients(r.doc, amount) });
+      setMsg(t('food.speed.added', { name: r.doc.name }));
+      return;
+    }
+    setItem(r);
+  }
+
   const shortcuts = [
     ['barcode', 'food.sc.scan', () => setScan(true)],
     ['bolt', 'food.sc.quick', () => setQuick(true)],
@@ -125,15 +149,11 @@ export function FoodAdd({ route }) {
     <div class="pills tabs5">${TABS.map(([k, l]) => html`<button class=${'pill' + (tab === k ? ' on' : '')} onClick=${() => setTab(k)}>${t(l)}</button>`)}</div>
     ${msg ? html`<div class="banner">${msg}</div>` : null}
 
+    ${goTos.length ? html`<div class="ltitle">${t('food.goTos')}</div><div class="list">${goTos.map((e) => html`<${ResultRow} r=${{ kind: 'history', entry: e }} energy=${energy} onTap=${() => openRow({ kind: 'history', entry: e })}/>`)}</div>` : null}
+    ${fromHistory.length ? html`<div class="ltitle">${t('food.histBlock')}</div><div class="list">${fromHistory.map((e) => html`<${ResultRow} r=${{ kind: 'history', entry: e }} energy=${energy} onTap=${() => openRow({ kind: 'history', entry: e })}/>`)}</div>
+      <div class="ltitle">${t('food.fromLibrary')}</div>` : null}
     <div class="list results">
-      ${rows.length ? rows.map((r) => html`<${ResultRow} r=${r} energy=${energy} onTap=${() => {
-        if (r.kind === 'history') {
-          const e = r.entry;
-          const doc = e.ref.kind === 'food' ? repos.food.get(e.ref.id) : e.ref.kind === 'recipe' ? repos.recipe.get(e.ref.id) : null;
-          if (doc) setItem({ kind: e.ref.kind, doc, preset: { amount: e.amount, servingId: e.servingId, quantity: e.quantity } });
-          else setItem({ kind: 'quick', entry: e });
-        } else setItem(r);
-      }}/>`) : html`<div class="empty">${tab === 'fav' ? t('food.fav.empty') : tab === 'history' ? t('food.history.empty') : q ? t('food.search.noneLocal') : t('food.search.start')}</div>`}
+      ${rows.length ? rows.map((r) => html`<${ResultRow} r=${r} energy=${energy} onTap=${() => openRow(r)}/>`) : html`<div class="empty">${tab === 'fav' ? t('food.fav.empty') : tab === 'history' ? t('food.history.empty') : q ? t('food.search.noneLocal') : t('food.search.start')}</div>`}
     </div>
 
     ${tab === 'all' && q.trim().length >= 3 ? html`<${OnlineResults} online=${online} energy=${energy} onPick=${pickOnline}/>` : null}
@@ -294,7 +314,7 @@ function QuickSheet({ open, onClose, onLog, onPlate }) {
   if (!open) return null;
   const set = (k, v) => setD(Object.assign({}, d, { [k]: v }));
   const n = {};
-  ['protein', 'fat', 'carbs'].forEach((k) => { if (num(d[k]) != null) n[k] = num(d[k]); });
+  ['protein', 'fat', 'carbs', 'alcohol'].forEach((k) => { if (num(d[k]) != null) n[k] = num(d[k]); });
   n.kcal = num(d.kcal) != null ? (energy.units.energy === 'kj' ? num(d.kcal) / 4.184 : num(d.kcal)) : kcalFromMacros(n);
   const it = { ref: { kind: 'quick', id: null }, name: (d.name || '').trim() || t('food.quick.name'), nutrients: n };
   const ok = n.kcal > 0;
@@ -305,6 +325,7 @@ function QuickSheet({ open, onClose, onLog, onPlate }) {
       <${Field} label=${t('food.n.protein')}><input inputmode="decimal" value=${d.protein || ''} onInput=${(e) => set('protein', e.currentTarget.value)}/><//>
       <${Field} label=${t('food.n.fat')}><input inputmode="decimal" value=${d.fat || ''} onInput=${(e) => set('fat', e.currentTarget.value)}/><//>
       <${Field} label=${t('food.n.carbs')}><input inputmode="decimal" value=${d.carbs || ''} onInput=${(e) => set('carbs', e.currentTarget.value)}/><//>
+      <${Field} label=${t('food.n.alcohol')}><input inputmode="decimal" value=${d.alcohol || ''} onInput=${(e) => set('alcohol', e.currentTarget.value)}/><//>
     </div>
     <div class="hint">${t('food.quick.hint')}</div>
     <div class="grid2" style="margin-top:12px"><button disabled=${!ok} onClick=${() => onPlate(it)}>${t('food.toPlate')}</button><button class="primary" disabled=${!ok} onClick=${() => onLog(it)}>${t('food.logNow')}</button></div>

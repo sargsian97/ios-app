@@ -52,6 +52,11 @@ export function FoodSettings() {
     <//>
     <${Card} title=${t('food.set.banner')} icon="target" color="var(--k-food)">
       <${Segmented} value=${dp.banner} onChange=${(v) => repos.dietProfile.update({ banner: v })} options=${[['eaten_left', t('food.set.b.ring')], ['eaten', t('food.set.b.eaten')], ['left', t('food.set.b.left')], ['progress', t('food.set.b.bar')]]}/>
+      <div style="margin-top:12px"><${Toggle} on=${dp.showOverages} onChange=${(v) => repos.dietProfile.update({ showOverages: v })} label=${t('food.set.overages')} hint=${t('food.set.overagesHint')}/></div>
+    <//>
+    <${Card} title=${t('food.set.logger')} icon="bolt" color="#FFCC00">
+      <${Segmented} value=${dp.loggerMode} onChange=${(v) => repos.dietProfile.update({ loggerMode: v })} options=${[['context', t('food.set.l.context')], ['speed', t('food.set.l.speed')]]}/>
+      <div class="hint">${t('food.set.loggerHint')}</div>
     <//>
   <//>`;
 }
