@@ -28,7 +28,16 @@ export function TrainSettings() {
       <${Toggle} on=${p.bodyweightFromTrend} onChange=${(v) => upd({ bodyweightFromTrend: v })} label=${t('train.set.bw')} hint=${t('train.set.bwHint')}/>
       <div style="margin-top:10px"><${Segmented} label=${t('train.set.prev')} value=${p.previousFrom} onChange=${(v) => upd({ previousFrom: v })} options=${[['any', t('train.set.prev.any')], ['program', t('train.set.prev.program')]]}/></div>
     <//>
+    <${Card} title=${t('train.wu.title')} icon="flame" color="#FF9500" cls="wk-togs">
+      <${Toggle} on=${p.autoWarmup} onChange=${(v) => upd({ autoWarmup: v })} label=${t('train.wu.auto')} hint=${t('train.wu.autoHint')}/>
+      <${Toggle} on=${p.warmupOnlyIfNotWorked} onChange=${(v) => upd({ warmupOnlyIfNotWorked: v })} label=${t('train.wu.onlyNew')} hint=${t('train.wu.onlyNewHint')}/>
+      <${Toggle} on=${p.simplifyWarmupPlates} onChange=${(v) => upd({ simplifyWarmupPlates: v })} label=${t('train.wu.simple')} hint=${t('train.wu.simpleHint')}/>
+      <div style="margin-top:10px"><${Segmented} label=${t('train.wu.scheme')} value=${['short', 'default', 'long'].includes(p.warmupScheme) ? p.warmupScheme : 'default'} onChange=${(v) => upd({ warmupScheme: v })} options=${[['short', t('train.load.sc.short')], ['default', t('train.load.sc.default')], ['long', t('train.load.sc.long')]]}/></div>
+      <div class="hint">${t('train.wu.schemeHint')}</div>
+    <//>
     <${List} title=${t('train.set.more')} foot=${t('train.set.bgNote')}>
+      <${Row} icon="gym" color="var(--k-str)" label=${t('gym.title')} sub=${t('gym.rowSub')} href="/train/gyms"/>
+      <${Row} icon="plate" color="#D7263D" label=${t('plates.title')} href="/train/plates"/>
       <${Row} icon="flame" color="#FF9500" label=${t('more.journalSettings')} sub=${t('more.journalSettings.sub')} href="/more/journal-settings"/>
     <//>
   <//>`;

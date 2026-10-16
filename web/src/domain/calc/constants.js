@@ -151,6 +151,7 @@ export const DEFAULT_BAR_WEIGHT = 20;          // гриф по умолчани
 /* ── Разминка ──
    Временное значение, уточнится в части 2 спецификации. */
 export const WARMUP_MIN_WORKING_WEIGHT = 30;   // рабочий вес меньше — разминку не строим, кг
+export const WARMUP_SIMPLE_MIN_PLATE_KG = 5;   // упрощённая разминка: только блины от этого веса (меньше перевешиваний), кг
 export const WARMUP_SCHEMES = freeze({         // доля рабочего веса и повторы
   default: [{ pct: 0.4, reps: 8 }, { pct: 0.6, reps: 5 }, { pct: 0.8, reps: 3 }],
   short: [{ pct: 0.5, reps: 6 }, { pct: 0.75, reps: 3 }],

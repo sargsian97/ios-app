@@ -14,6 +14,10 @@ import { useExerciseSearch, SearchFilters, ExerciseRow } from '../../train/picke
 import { MuscleMap } from '../../train/muscle-map.js';
 import { NumIn } from '../../train/inputs.js';
 import { fmtRecord } from './history.js';
+import { loadKind, defaultGym, availableLoads, barFor, stackFor } from '../../../domain/gym.js';
+import { parseNum } from '../../train/inputs.js';
+import { barLabel, stackLabel, weightUnit } from '../../train/catalog.js';
+import { toDisplay, fromDisplay } from '../../../domain/units.js';
 
 export function ExerciseLibrary() {
   const { repos } = useApp();
@@ -105,6 +109,7 @@ export function ExerciseCard({ route }) {
       </div>
       <${Field} label=${t('train.ex.myNotes')}><textarea value=${(cfg && cfg.notes) || ''} placeholder=${t('train.ex.myNotesPh')} onInput=${(ev) => saveCfg({ notes: ev.currentTarget.value })}></textarea><//>
     <//>
+    <${LoadSettings} e=${e} cfg=${cfg} saveCfg=${saveCfg}/>
 
     ${e.instructions ? html`<${Card} title=${t('train.ex.howto')} icon="info" color="var(--k-plan)"><p class="about-p">${e.instructions}</p><//>` : null}
     ${e.source === 'library' ? html`<details class="card pad wk-guide"><summary>${t('train.ex.guide')}</summary>
@@ -181,5 +186,35 @@ export function ExerciseEditor({ route }) {
       <${Field} label=${t('train.ex.howto')}><textarea value=${d.instructions} placeholder=${t('train.ex.howtoPh')} onInput=${(e) => set({ instructions: e.currentTarget.value })}></textarea><//>
     </div>
     ${isOverride ? html`<button style="width:100%;margin-bottom:12px" onClick=${async () => { await repos.exercise.remove(id); goBack('/train/exercise/' + encodeURIComponent(id)); }}>${t('train.ex.reset')}</button>` : null}
+  <//>`;
+}
+
+/* Веса и разминка упражнения: гриф или стек зала, свои веса вместо зала, режим и схема разминки */
+function LoadSettings({ e, cfg, saveCfg }) {
+  const { repos } = useApp();
+  useData(['gyms', 'workoutProfile', 'profile']);
+  const units = repos.profile.get().units;
+  const gym = defaultGym(repos.gym.list(), repos.workoutProfile.get());
+  const kind = loadKind(e);
+  const c = cfg || {};
+  const [loadsText, setLoadsText] = useState(null);
+  const loads = c.loads || [];
+  const avail = availableLoads(e, gym, c);
+  const fmtW = (kg) => fmtNum(Math.round(toDisplay('weight', kg, units) * 100) / 100, 2);
+  const preview = avail && avail.length ? avail.slice(0, 8).map(fmtW).join(' · ') + (avail.length > 8 ? ' … ' + fmtW(avail[avail.length - 1]) : '') + ' ' + weightUnit(units) : t('train.load.any');
+  if (e.type === 'cardio') return null;
+  return html`<${Card} title=${t('train.load.title')} icon="plate" color="var(--k-str)">
+    ${gym ? html`<div class="hint" style="margin-top:0">${t('train.load.gym', { name: gym.name })}</div>` : html`<div class="hint" style="margin-top:0">${t('train.load.noGym')}</div>`}
+    ${gym && kind === 'barbell' && (gym.bars || []).length ? html`<div class="lbl">${t('train.load.bar')}</div>
+      <div class="wk-chips pick">${gym.bars.map((b) => html`<button class=${'chip' + (barFor(e, gym, c).id === b.id ? ' on' : '')} onClick=${() => saveCfg({ barId: b.id })}>${barLabel(b.name)} · ${fmtW(b.weight)}</button>`)}</div>` : null}
+    ${gym && kind === 'stack' && (gym.stacks || []).length ? html`<div class="lbl">${t('train.load.stack')}</div>
+      <div class="wk-chips pick">${gym.stacks.map((st) => html`<button class=${'chip' + ((stackFor(e, gym, c) || {}).id === st.id ? ' on' : '')} onClick=${() => saveCfg({ stackId: st.id })}>${stackLabel(st.name)}</button>`)}</div>` : null}
+    <${Field} label=${t('train.load.own')} hint=${t('train.load.ownHint')}>
+      <input inputmode="decimal" value=${loadsText != null ? loadsText : loads.map((x) => fmtW(x)).join('; ')} placeholder=${t('train.load.ownPh')}
+        onInput=${(ev) => setLoadsText(ev.currentTarget.value)}
+        onBlur=${() => { if (loadsText == null) return; const list = loadsText.split(/[;\s]+/).map(parseNum).filter((x) => x != null && x >= 0).map((x) => Math.round(fromDisplay('weight', x, units) * 1e4) / 1e4); saveCfg({ loads: [...new Set(list)].sort((a, b) => a - b) }); setLoadsText(null); }}/><//>
+    <div class="hint">${t('train.load.available')}: ${preview}</div>
+    <${Segmented} label=${t('train.load.warmup')} value=${c.warmup || 'auto'} onChange=${(v) => saveCfg({ warmup: v })} options=${[['auto', t('train.load.wu.auto')], ['always', t('train.load.wu.always')], ['never', t('train.load.wu.never')]]}/>
+    <div style="margin-top:10px"><${Segmented} label=${t('train.load.scheme')} value=${c.warmupScheme || ''} onChange=${(v) => saveCfg({ warmupScheme: v })} options=${[['', t('train.load.sc.def')], ['short', t('train.load.sc.short')], ['default', t('train.load.sc.default')], ['long', t('train.load.sc.long')]]}/></div>
   <//>`;
 }

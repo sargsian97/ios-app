@@ -4,6 +4,7 @@ import { Sheet } from '../kit.js';
 import { t, fmtNum } from '../../i18n/index.js';
 import { SET_TYPES } from '../../data/models/workout.js';
 import { setTypeLabel } from './catalog.js';
+import { BarPreview } from './bar.js';
 
 export function parseNum(s) {
   const v = String(s == null ? '' : s).trim().replace(/\s/g, '').replace(',', '.');
@@ -36,9 +37,13 @@ export function RirSheet({ open, value, target, onPick, onClose }) {
 }
 
 /* Настройки подхода: тип, сторона, частичные повторы, удаление */
-export function SetSheet({ open, set, onChange, onDelete, onClose }) {
+export function SetSheet({ open, set, onChange, onDelete, onClose, loadout = null, units = null }) {
   if (!open || !set) return null;
   return html`<${Sheet} open=${open} onClose=${onClose} title=${t('train.set.title')}>
+    ${loadout && !loadout.belowBar ? html`<div class="ss-plates">
+      <${BarPreview} items=${loadout.items} mode="per_side"/>
+      <div class="hint">${loadout.items.length ? t('plates.perSide') + ': ' + loadout.items.map((p) => fmtNum(p.label, 2)).join(' · ') : t('plates.barOnly')}${loadout.exact ? '' : ' · ' + t('plates.closest', { w: fmtNum(loadout.total, 2) })}</div>
+    </div>` : null}
     <div class="ltitle">${t('train.set.type')}</div>
     <div class="list">${SET_TYPES.map((k) => html`<button class=${'lrow' + (set.type === k ? ' sel' : '')} type="button" onClick=${() => onChange({ type: k })}>
       <span class="ltext"><span class="ll">${setTypeLabel(k)}</span></span>${set.type === k ? html`<span class="lv">✓</span>` : null}</button>`)}</div>

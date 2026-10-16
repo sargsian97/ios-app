@@ -51,7 +51,7 @@ check('шаги перенесены', (await idbList('stepsEntries')).some((s) 
 /* вкладка */
 await go('#/train');
 check('вкладка: карточка «сегодня»', await p.locator('.wk-today').count() === 1);
-check('вкладка: неделя и действия', await p.locator('.wk-actions .scbtn').count() === 4);
+check('вкладка: неделя и действия', await p.locator('.wk-actions .scbtn').count() === 6);
 await shot('01-home');
 
 /* тренировка по шаблону */
@@ -60,13 +60,17 @@ await p.locator('.sheet .lrow', { hasText: 'День A' }).click(); await wait(9
 check('открылась активная тренировка', (await p.evaluate(() => location.hash)) === '#/train/session');
 const firstEx = p.locator('.wk-ex').first();
 check('упражнение из шаблона', /Присед со штангой/.test(await firstEx.innerText()));
-const wIn = firstEx.locator('.wk-set').first().locator('input').first();
+const warm = firstEx.locator('.wk-set.warm');
+check('разминка добавлена автоматически', await warm.count() === 3, await warm.count());
+check('разминка без зала: 22,5 / 35 / 47,5 к 60 кг', (await warm.nth(0).locator('input').first().getAttribute('placeholder')) === '22,5' && (await warm.nth(2).locator('input').first().getAttribute('placeholder')) === '47,5');
+const work1 = firstEx.locator('.wk-set:not(.warm)').first();
+const wIn = work1.locator('input').first();
 check('вес из прошлого раза или шаблона — подсказкой', (await wIn.getAttribute('placeholder')) !== '', await wIn.getAttribute('placeholder'));
-await firstEx.locator('.wk-set').first().locator('input').nth(1).fill('10');
-await firstEx.locator('.wk-chk').first().click(); await wait(500);
+await work1.locator('input').nth(1).fill('10');
+await work1.locator('.wk-chk').click(); await wait(500);
 check('после подхода — таймер отдыха', await p.locator('.wk-rest').count() === 1);
 let sess = (await idbList('workoutSessions'))[0];
-check('подход записан с весом из подсказки', sess && sess.exercises[0].sets[0].done && sess.exercises[0].sets[0].reps === 10 && sess.exercises[0].sets[0].weight > 0, sess && sess.exercises[0].sets[0]);
+check('подход записан с весом из подсказки', sess && sess.exercises[0].sets[3].done && sess.exercises[0].sets[3].reps === 10 && sess.exercises[0].sets[3].weight > 0, sess && sess.exercises[0].sets[3]);
 await shot('02-session', false);
 await p.locator('.wk-rest').getByRole('button', { name: 'Отдых на 15 секунд больше' }).click(); await wait(200);
 sess = (await idbList('workoutSessions'))[0];
@@ -75,10 +79,10 @@ await p.locator('.wk-rest').getByRole('button', { name: 'Пропустить' }
 check('отдых пропущен', await p.locator('.wk-rest').count() === 0);
 
 /* RIR */
-await firstEx.locator('.wk-rir').first().click(); await wait(500);
+await work1.locator('.wk-rir').click(); await wait(500);
 await p.locator('.sheet .lrow', { hasText: 'Ещё 2 повтора' }).click(); await wait(300);
 sess = (await idbList('workoutSessions'))[0];
-check('RIR со шкалой', sess.exercises[0].sets[0].rir === 2);
+check('RIR со шкалой', sess.exercises[0].sets[3].rir === 2);
 
 /* добавить упражнение из справочника */
 await p.locator('.wk-add').click(); await wait(600);
@@ -186,6 +190,47 @@ check('шаги пишутся в новую модель', (await idbList('step
 await go('#/train/settings');
 check('настройки тренировок', await p.locator('.wk-restrow').count() === 5);
 await shot('10-settings');
+
+/* залы: гаражный шаблон */
+await go('#/train/gyms');
+await p.locator('.wk-add').click(); await wait(500);
+await p.locator('.sheet .lrow', { hasText: 'Гаражный зал' }).click(); await wait(900);
+check('редактор зала: блины из шаблона', await p.locator('.gy-row').count() === 6);
+await p.locator('.fld input').first().fill('Мой гараж');
+await p.getByRole('button', { name: 'Сохранить' }).click(); await wait(600);
+const gyms = await idbList('gyms');
+const wp = (await idbList('workoutProfile'))[0];
+check('зал сохранён и стал залом по умолчанию', gyms.length === 1 && gyms[0].name === 'Мой гараж' && wp && wp.defaultGymId === gyms[0].id, { gyms: gyms.map((g) => g.name), def: wp && wp.defaultGymId });
+await go('#/train/gym/' + gyms[0].id);
+await shot('12-gym');
+
+/* калькулятор блинов */
+await go('#/train/plates?w=102.5');
+const res = await p.locator('.pc-res').innerText();
+check('калькулятор: 102,5 = гриф + 20 · 15 · 5 · 1,25 на сторону', /20 · 15 · 5 · 1,25/.test(res), res);
+check('превью грифа: блины с двух сторон', await p.locator('.bp .bp-plate').count() === 8);
+await p.locator('.pc-target input').fill('101'); await wait(300);
+check('калькулятор: точно не собрать — ближайшие веса', /100.*102,5/.test(await p.locator('.banner.warnb').innerText()));
+await shot('13-plates');
+
+/* разминка по залу и раскладка блинов в подходе */
+await go('#/train');
+await p.getByRole('button', { name: 'Другая' }).click(); await wait(500);
+await p.locator('.sheet .lrow', { hasText: 'День A' }).click(); await wait(900);
+const ex1 = p.locator('.wk-ex').first();
+const wph = await ex1.locator('.wk-set.warm').evaluateAll((els) => els.map((e) => e.querySelector('input').getAttribute('placeholder')));
+check('разминка по блинам зала (упрощённо, шаг 10 кг)', wph.join('|') === '20|30|40', wph);
+check('зал в заголовке тренировки', /Мой гараж/.test(await p.locator('.wk-sub').innerText()));
+await ex1.locator('.wk-set:not(.warm) .wk-sn').first().click(); await wait(500);
+check('в подходе — раскладка блинов', await p.locator('.sheet .bp .bp-plate').count() > 0);
+await shot('14-set-plates', false);
+await p.locator('.sheet .sh-top button').click(); await wait(300);
+await p.locator('.wk-ex').first().locator('[aria-label="Действия с упражнением"]').click(); await wait(400);
+await p.locator('.sheet .lrow', { hasText: 'Заменить упражнение' }).click(); await wait(700);
+check('замена: похожие упражнения и фильтр зала', await p.locator('.sheet .ltitle', { hasText: 'Похожие' }).count() === 1 && await p.locator('.sheet .wk-onlygym').count() === 1);
+await shot('15-replace', false);
+await p.locator('.sheet .sh-top button').click(); await wait(300);
+
 
 await go('#/train');
 await shot('11-home-after');

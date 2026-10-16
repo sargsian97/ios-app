@@ -81,6 +81,7 @@ export const WorkoutProfile = model({
     sound: f.bool({ def: true }),
     vibration: f.bool({ def: true }),
     keepAwake: f.bool({ def: true }),
+    autoWarmup: f.bool({ def: true }),
     warmupScheme: f.string({ def: 'default' }),
     warmupOnlyIfNotWorked: f.bool({ def: true }),
     simplifyWarmupPlates: f.bool({ def: true }),

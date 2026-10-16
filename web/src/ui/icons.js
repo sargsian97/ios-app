@@ -36,7 +36,11 @@ const P = {
   link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
   up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
   down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
-  trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5"/>'
+  trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5"/>',
+  gym: '<path d="M3.5 20.5h17M5 20.5V9l7-4.5L19 9v11.5"/><path d="M8.5 14.5h7M9.5 12.5v4M14.5 12.5v4"/>',
+  house: '<path d="M4 11 12 4.5l8 6.5"/><path d="M6 9.5v10.5h12V9.5"/><path d="M10 20v-5.5h4V20"/>',
+  garage: '<path d="M3 10 12 5l9 5"/><path d="M5 9v11.5h14V9"/><path d="M7.5 20.5v-8h9v8M7.5 15h9M7.5 17.8h9"/>',
+  plate: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.2"/><path d="M12 3.5v3M12 17.5v3"/>'
 };
 
 export function Icon({ name, size, cls }) {

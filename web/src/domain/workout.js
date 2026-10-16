@@ -54,7 +54,7 @@ export function targetFor(item, prevSet) {
   return { weight: num(it.weight), reps: num(it.repMax) != null ? it.repMax : num(it.repMin), rir: num(it.rir), timeSec: num(it.timeSec), distanceM: num(it.distanceM), assist: null };
 }
 
-function blankSet(id, type, target, perSide) {
+export function blankSet(id, type, target, perSide) {
   return { id, type: type || 'normal', weight: null, assist: null, reps: null, partials: null, timeSec: null, distanceM: null, rir: null, side: 'both', perSide: !!perSide, done: false, doneAt: null, restSec: null, durSec: null, target };
 }
 
@@ -86,7 +86,7 @@ export function exerciseEntry({ exercise, item = null, prev = null, newId, exerc
 }
 
 /* Новая сессия: из шаблона (с выбором варианта упражнения) или пустая */
-export function buildSession({ plan = null, catalog = {}, logs = [], date, now, bodyweightKg = null, programId = null, previousFrom = 'any', newId, name = '' }) {
+export function buildSession({ plan = null, catalog = {}, logs = [], date, now, bodyweightKg = null, programId = null, previousFrom = 'any', newId, name = '', gymId = null }) {
   const exercises = planItems(plan).map((it) => {
     const id = pickAlternative(it, logs);
     const ex = catalog[id] || null;
@@ -100,7 +100,7 @@ export function buildSession({ plan = null, catalog = {}, logs = [], date, now, 
     date,
     planId: plan ? plan.id : null,
     programId: programId || (plan && plan.programId) || null,
-    gymId: null,
+    gymId: gymId || null,
     name: name || (plan ? plan.name : ''),
     startedAt: now,
     exercises,

@@ -3,7 +3,8 @@ import { html, useApp, useState, useMemo } from '../core.js';
 import { Sheet } from '../kit.js';
 import { Icon } from '../icons.js';
 import { t } from '../../i18n/index.js';
-import { searchExercises, filterExercises, usageCounts, guessFromName, MUSCLE_GROUPS } from '../../domain/exercises.js';
+import { searchExercises, filterExercises, usageCounts, guessFromName, similarExercises, MUSCLE_GROUPS } from '../../domain/exercises.js';
+import { availableInGym } from '../../domain/gym.js';
 import { uid } from '../../data/ids.js';
 import { useCatalog, groupLabel, muscleLabel, equipLabel } from './catalog.js';
 
@@ -50,24 +51,32 @@ export async function createExercise(repos, name) {
   return repos.exercise.create(Object.assign(g, { id: 'u-' + uid(), name: name.trim(), source: 'user' }));
 }
 
-export function ExercisePicker({ open, onClose, onPick, title }) {
+export function ExercisePicker({ open, onClose, onPick, title, similarTo = null, gym = null }) {
   const { repos } = useApp();
   const s = useExerciseSearch({ logs: open ? repos.workout.list() : [] });
   const [limit, setLimit] = useState(60);
+  const [onlyGym, setOnlyGym] = useState(true);
   if (!open) return null;
   const q = s.q.trim();
-  const exact = q && s.results.some((e) => e.name.toLowerCase() === q.toLowerCase());
+  const fits = gym && onlyGym ? (e) => availableInGym(e, gym) : null;
+  const results = fits ? s.results.filter(fits) : s.results;
+  const similar = similarTo && !q ? similarExercises(similarTo, s.cat.list, { available: fits, limit: 12 }) : [];
+  const exact = q && results.some((e) => e.name.toLowerCase() === q.toLowerCase());
   return html`<${Sheet} open=${open} onClose=${onClose} title=${title || t('train.pick.title')}>
     <div class="wk-picker">
       <${SearchFilters} s=${s}/>
+      ${gym ? html`<label class="chkrow wk-onlygym"><input type="checkbox" checked=${onlyGym} onChange=${(e) => setOnlyGym(e.currentTarget.checked)}/>${t('train.pick.onlyGym', { name: gym.name })}</label>` : null}
+      ${similar.length ? html`<div class="ltitle">${t('train.pick.similar')}</div>
+        <div class="list">${similar.map((e) => html`<${ExerciseRow} e=${e} onTap=${() => onPick(e)}/>`)}</div>
+        <div class="ltitle">${t('train.pick.all')}</div>` : null}
       <div class="list results">
         ${q && !exact ? html`<button class="lrow" type="button" onClick=${async () => onPick(await createExercise(repos, q))}>
           <span class="lico" style="--cc:var(--k-str)"><${Icon} name="plus"/></span>
           <span class="ltext"><span class="ll">${t('train.pick.create', { name: q })}</span><span class="ls">${t('train.pick.createSub')}</span></span></button>` : null}
-        ${s.results.slice(0, limit).map((e) => html`<${ExerciseRow} e=${e} onTap=${() => onPick(e)}/>`)}
-        ${!s.results.length ? html`<div class="empty">${s.cat.ready ? t('train.lib.none') : t('train.lib.loading')}</div>` : null}
+        ${results.slice(0, limit).map((e) => html`<${ExerciseRow} e=${e} onTap=${() => onPick(e)}/>`)}
+        ${!results.length ? html`<div class="empty">${s.cat.ready ? t('train.lib.none') : t('train.lib.loading')}</div>` : null}
       </div>
-      ${s.results.length > limit ? html`<button class="wk-more" onClick=${() => setLimit(limit + 100)}>${t('train.lib.more', { count: s.results.length - limit })}</button>` : null}
+      ${results.length > limit ? html`<button class="wk-more" onClick=${() => setLimit(limit + 100)}>${t('train.lib.more', { count: results.length - limit })}</button>` : null}
     </div>
   <//>`;
 }

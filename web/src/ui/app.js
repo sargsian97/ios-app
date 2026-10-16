@@ -27,6 +27,8 @@ import { ExerciseLibrary, ExerciseCard, ExerciseEditor } from './screens/train/l
 import { WorkoutHistory, WorkoutLog } from './screens/train/history.js';
 import { PlanList, PlanEditor } from './screens/train/plans.js';
 import { TrainSettings } from './screens/train/settings.js';
+import { GymList, GymEditor } from './screens/train/gyms.js';
+import { PlateCalculator } from './screens/train/plates.js';
 
 /* Экраны старого журнала: адрес → [вкладка журнала, вид плана, путь «назад»] */
 const LEGACY = {
@@ -55,6 +57,9 @@ const ROUTES = [
   ['/train/plans', PlanList],
   ['/train/plan/:id', PlanEditor],
   ['/train/settings', TrainSettings],
+  ['/train/gyms', GymList],
+  ['/train/gym/:id', GymEditor],
+  ['/train/plates', PlateCalculator],
   ['/more/templates', PlanList],
   ['/more', More],
   ['/onboarding', Onboarding],

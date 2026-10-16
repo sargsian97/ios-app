@@ -1,6 +1,6 @@
 /* Service worker: приложение открывается без интернета.
    При каждом выпуске новой версии меняй VERSION — тогда телефон предложит обновиться. */
-const VERSION = '2026-10-16.3';
+const VERSION = '2026-10-16.4';
 const CACHE = 'journal-' + VERSION;
 const SHELL = [
   './',
@@ -29,11 +29,13 @@ const SHELL = [
   'src/domain/checkin.js',
   'src/domain/exercises.js',
   'src/domain/expenditure.js',
+  'src/domain/gym.js',
   'src/domain/nutrition.js',
   'src/domain/program.js',
   'src/domain/units.js',
   'src/domain/workout.js',
   'src/i18n/index.js',
+  'src/i18n/ru-gym.js',
   'src/i18n/ru-train.js',
   'src/i18n/ru.js',
   'src/services/ai-food.js',
@@ -90,6 +92,7 @@ const SHELL = [
   'src/ui/screens/profile.js',
   'src/ui/screens/program-options.js',
   'src/ui/screens/settings.js',
+  'src/ui/train/bar.js',
   'src/ui/train/catalog.js',
   'src/ui/train/inputs.js',
   'src/ui/train/muscle-map.js',
@@ -107,9 +110,11 @@ const SHELL = [
   'src/ui/screens/food/library.js',
   'src/ui/screens/food/recipes.js',
   'src/ui/screens/food/scanner.js',
+  'src/ui/screens/train/gyms.js',
   'src/ui/screens/train/history.js',
   'src/ui/screens/train/library.js',
   'src/ui/screens/train/plans.js',
+  'src/ui/screens/train/plates.js',
   'src/ui/screens/train/session.js',
   'src/ui/screens/train/settings.js',
   'src/ui/screens/train/train.js',

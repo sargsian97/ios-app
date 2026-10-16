@@ -171,3 +171,23 @@ export function musclesOf(e) {
 
 export function hasMetric(e, m) { return !!e && (e.metrics || []).includes(m); }
 export function isCardio(e) { return !!e && (e.type === 'cardio' || e.category === 'cardio'); }
+
+/* Похожие упражнения для замены: тот же паттерн и общие основные мышцы; available — фильтр (например, по залу) */
+export function similarExercises(ex, list, { available = null, limit = 30 } = {}) {
+  if (!ex) return [];
+  const pm = new Set(ex.primaryMuscles || []);
+  const scored = [];
+  (list || []).forEach((e) => {
+    if (e.id === ex.id || e.archived) return;
+    if (available && !available(e)) return;
+    const common = (e.primaryMuscles || []).filter((m) => pm.has(m)).length;
+    if (!common) return;
+    let score = common * 10;
+    if (e.pattern === ex.pattern) score += 15;
+    if (e.type === ex.type) score += 5;
+    if (e.source !== 'library') score += 3;
+    scored.push([score, e]);
+  });
+  scored.sort((a, b) => b[0] - a[0] || a[1].name.localeCompare(b[1].name, 'ru'));
+  return scored.slice(0, limit).map((x) => x[1]);
+}

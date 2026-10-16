@@ -1,5 +1,6 @@
 /* Русский каталог строк. Ключи: раздел.подраздел. Формы множественного числа — { one, few, many, other }. */
 import train from './ru-train.js';
+import gym from './ru-gym.js';
 
 export default {
   'common.back': 'Назад',
@@ -887,5 +888,6 @@ export default {
   'ci.hist.tdee': 'расход {k}',
   'ci.hist.kcal': 'цель {k} ккал',
 
-  ...train
+  ...train,
+  ...gym
 };

@@ -77,6 +77,12 @@ test('i18n: подписи тренировок — для всех значен
   ['cardio', 'library', 'plans', 'history'].forEach((k) => keys.push('train.act.' + k));
   ['avgHr', 'maxHr', 'kcalWatch', 'kcal', 'steps'].forEach((k) => keys.push('train.stats.' + k));
   ['min', 'km', 'mi', 'speed', 'incline', 'avgHr', 'maxHr', 'kcalWatch', 'kcal', 'steps'].forEach((k) => keys.push('cardio.' + k));
+  const G = await import('../web/src/domain/gym.js');
+  G.EQUIPMENT_CATEGORIES.forEach(([c]) => keys.push('gym.cat.' + c));
+  ['commercial', 'garage', 'home', 'full', 'custom'].forEach((k) => { keys.push('gym.tpl.' + k); keys.push('gym.tplSub.' + k); });
+  Object.values(G.GYM_TEMPLATES).forEach((tp) => { tp.bars.forEach((b) => keys.push('gym.bar.' + b.name)); tp.stacks.forEach((x) => keys.push('gym.stack.' + x.name)); });
+  ['min', 'max', 'step'].forEach((k) => keys.push('gym.' + k));
+  ['plates', 'gyms'].forEach((k) => keys.push('train.act.' + k));
   assert.deepEqual(keys.filter((k) => !hasKey(k)), []);
 });
 

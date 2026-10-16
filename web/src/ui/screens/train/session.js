@@ -9,6 +9,7 @@ import { isCardio } from '../../../domain/exercises.js';
 import { toDisplay, fromDisplay, unitKey } from '../../../domain/units.js';
 import { uid } from '../../../data/ids.js';
 import { useCatalog, exName, fmtSet, fmtClock, setTypeShort, weightUnit } from '../../train/catalog.js';
+import { plateLoadout, warmupSetsForEntry, workingWeightOf, availableInGym, loadKind } from '../../../domain/gym.js';
 import { ExercisePicker } from '../../train/picker.js';
 import { RestBar, useNow, unlockAudio, useWakeLock } from '../../train/timer.js';
 import { NumIn, RirSheet, SetSheet } from '../../train/inputs.js';
@@ -31,11 +32,12 @@ function columnsFor(ex, cardio) {
 export function TrainSession() {
   const app = useApp();
   const { repos, store } = app;
-  useData(['workoutSessions', 'workoutLogs', 'workoutProfile', 'exerciseConfigs', 'profile']);
+  useData(['workoutSessions', 'workoutLogs', 'workoutProfile', 'exerciseConfigs', 'profile', 'gyms']);
   const cat = useCatalog();
   const s = repos.workoutSession.get('current');
   const profile = repos.workoutProfile.get();
   const units = repos.profile.get().units;
+  const gym = s && s.gymId ? repos.gym.get(s.gymId) : null;
   const now = useNow(!!s, 1000);
   const [picker, setPicker] = useState(null); /* { mode: 'add' } | { mode: 'replace', ei } */
   const [rir, setRir] = useState(null); /* { ei, si } */
@@ -112,7 +114,19 @@ export function TrainSession() {
     const e = cur.exercises[ei];
     if (act === 'replace') { setPicker({ mode: 'replace', ei }); return; }
     if (act === 'note') { setNotes(Object.assign({}, notes, { [e.id]: true })); return; }
-    if (act === 'warmup') { updEx(ei, (x) => Object.assign({}, x, { sets: [{ id: uid(), type: 'warmup', side: 'both', done: false, target: null }].concat(x.sets) })); return; }
+    if (act === 'warmup') {
+      /* пересчитать разминку по рабочему весу и залу: невыполненные разминочные заменяются; не вышло — пустой подход */
+      const ws = warmupSetsForEntry(cur, ei, { catalog: cat.byId, gym, configs, profile, newId: uid, force: true });
+      updEx(ei, (x) => {
+        const work = x.sets.filter((y) => y.type !== 'warmup');
+        const doneWarm = x.sets.filter((y) => y.type === 'warmup' && y.done);
+        const sets = ws.length ? doneWarm.concat(ws, work) : [{ id: uid(), type: 'warmup', side: 'both', done: false, target: null }].concat(x.sets);
+        return Object.assign({}, x, { sets });
+      });
+      upd((c) => { const j = c.exercises[ei].sets.findIndex((y) => !y.done); return Object.assign({}, c, { cursor: j >= 0 ? { ei, si: j } : c.cursor }); });
+      return;
+    }
+    if (act === 'plates') { navigate('/train/plates?w=' + (workingWeightOf(e) || '') + (gym ? '&gym=' + encodeURIComponent(gym.id) : '')); return; }
     if (act === 'skip') { updEx(ei, (x) => Object.assign({}, x, { skipped: !x.skipped })); return; }
     if (act === 'delete') { setAsk({ text: t('train.ex.deleteAsk', { name: exName(e, cat.byId) }), yes: t('common.delete'), danger: true, run: () => upd((c) => Object.assign({}, c, { exercises: c.exercises.filter((_, i) => i !== ei), cursor: null, rest: c.rest })) }); return; }
     if (act === 'up' || act === 'down') {
@@ -169,6 +183,12 @@ export function TrainSession() {
   const rirSet = rir ? s.exercises[rir.ei] && s.exercises[rir.ei].sets[rir.si] : null;
   const menuSet = setMenu ? s.exercises[setMenu.ei] && s.exercises[setMenu.ei].sets[setMenu.si] : null;
   const exm = exMenu != null ? s.exercises[exMenu] : null;
+  const exmIsBar = exm && loadKind(cat.byId[exm.exerciseId]) === 'barbell';
+  function setLoadout(set, ei) {
+    const e = s.exercises[ei], ex = cat.byId[e && e.exerciseId];
+    const w = set.weight != null ? set.weight : set.target && set.target.weight;
+    try { return plateLoadout(w, ex, gym, configs[e.exerciseId]); } catch (err) { return null; }
+  }
 
   return html`<div class="wrap page wk-page">
     <div class="wk-head">
@@ -178,7 +198,7 @@ export function TrainSession() {
       <button class="small primary" onClick=${askFinish}>${t('train.finish')}</button>
     </div>
     <div class="top"><h1 class="wk-title">${s.name || t('train.session.untitled')}</h1></div>
-    <div class="hint wk-sub">${s.date !== todayYmd() ? fmtDate(s.date, 'long') + ' · ' : ''}${t('train.session.progress', { done, total })}${sum.volumeKg ? ' · ' + fmtNum(Math.round(toDisplay('weight', sum.volumeKg, units))) + ' ' + weightUnit(units) : ''}</div>
+    <div class="hint wk-sub">${gym ? gym.name + ' · ' : ''}${s.date !== todayYmd() ? fmtDate(s.date, 'long') + ' · ' : ''}${t('train.session.progress', { done, total })}${sum.volumeKg ? ' · ' + fmtNum(Math.round(toDisplay('weight', sum.volumeKg, units))) + ' ' + weightUnit(units) : ''}</div>
     <div class="bar wk-prog"><i style=${'width:' + (total ? Math.round(done / total * 100) : 0) + '%'}></i></div>
 
     ${s.exercises.map((e, ei) => html`<${ExerciseCard} key=${e.id} e=${e} ei=${ei} s=${s} ex=${cat.byId[e.exerciseId]} byId=${cat.byId} prev=${prevByEx[e.exerciseId]} units=${units} profile=${profile}
@@ -205,14 +225,16 @@ export function TrainSession() {
     <${RestBar} rest=${s.rest} sound=${profile.sound} vibration=${profile.vibration} onChange=${(r) => upd((c) => Object.assign({}, c, { rest: r }))}/>
 
     <${ExercisePicker} open=${!!picker} onClose=${() => setPicker(null)} title=${picker && picker.mode === 'replace' ? t('train.ex.replace') : t('train.ex.add')}
+      similarTo=${picker && picker.mode === 'replace' ? cat.byId[s.exercises[picker.ei] && s.exercises[picker.ei].exerciseId] : null} gym=${gym}
       onPick=${(ex) => (picker.mode === 'replace' ? replaceExercise(picker.ei, ex) : addExercise(ex))}/>
     <${RirSheet} open=${!!rirSet} value=${rirSet && rirSet.rir} target=${rirSet && rirSet.target && rirSet.target.rir} onClose=${() => setRir(null)}
       onPick=${(v) => { updSet(rir.ei, rir.si, { rir: v }); setRir(null); }}/>
     <${SetSheet} open=${!!menuSet} set=${menuSet} onClose=${() => setSetMenu(null)} onChange=${(patch) => updSet(setMenu.ei, setMenu.si, patch)}
+      loadout=${menuSet ? setLoadout(menuSet, setMenu.ei) : null} units=${units}
       onDelete=${() => { const { ei, si } = setMenu; setSetMenu(null); updEx(ei, (x) => Object.assign({}, x, { sets: x.sets.filter((_, j) => j !== si) })); upd((c) => Object.assign({}, c, { cursor: null })); }}/>
     <${Sheet} open=${!!exm} onClose=${() => setExMenu(null)} title=${exm ? exName(exm, cat.byId) : ''}>
       ${exm ? html`<div class="list">
-        ${[['replace', 'train.ex.replace', 'swap'], ['note', 'train.ex.note', 'list'], ['warmup', 'train.ex.warmup', 'flame'],
+        ${[['replace', 'train.ex.replace', 'swap'], ['note', 'train.ex.note', 'list'], ['warmup', 'train.ex.warmup', 'flame'], exmIsBar ? ['plates', 'train.ex.plates', 'plate'] : null,
           exm.group ? ['unlink', 'train.ex.unlink', 'link'] : exMenu < s.exercises.length - 1 ? ['link', 'train.ex.link', 'link'] : null,
           exMenu > 0 ? ['up', 'train.ex.up', 'up'] : null, exMenu < s.exercises.length - 1 ? ['down', 'train.ex.down', 'down'] : null,
           ['skip', exm.skipped ? 'train.ex.unskip' : 'train.ex.skip', 'close'], ['delete', 'train.ex.delete', 'trash']].filter(Boolean).map(([a, l, ic]) => html`<button class=${'lrow' + (a === 'delete' ? ' dangerrow' : '')} type="button" onClick=${() => exAction(exMenu, a)}>
@@ -223,6 +245,10 @@ export function TrainSession() {
     <${Sheet} open=${menuOpen} onClose=${() => setMenuOpen(false)} title=${t('train.session.menu')}>
       <${Field} label=${t('train.session.name')}><input value=${s.name} onInput=${(ev) => upd((c) => Object.assign({}, c, { name: ev.currentTarget.value }))}/><//>
       <${Field} label=${t('train.session.date')}><input type="date" value=${s.date} max=${todayYmd()} onChange=${(ev) => { const v = ev.currentTarget.value; if (v) upd((c) => Object.assign({}, c, { date: v })); }}/><//>
+      <div class="lbl">${t('train.session.gym')}</div>
+      <div class="wk-chips pick">${repos.gym.list().map((g) => html`<button class=${'chip' + (s.gymId === g.id ? ' on' : '')} onClick=${() => upd((c) => Object.assign({}, c, { gymId: g.id }))}>${g.name}</button>`)}
+        <button class=${'chip' + (!s.gymId ? ' on' : '')} onClick=${() => upd((c) => Object.assign({}, c, { gymId: null }))}>${t('train.session.noGym')}</button></div>
+      <div class="hint">${t('train.session.gymHint')}</div>
       <button class="danger" style="width:100%;margin-top:8px" onClick=${() => { setMenuOpen(false); setAsk({ text: t('train.discardAsk'), yes: t('train.discard'), danger: true, run: discard }); }}>${t('train.discard')}</button>
     <//>
     ${ask ? html`<${Confirm} text=${ask.text} yes=${ask.yes} danger=${ask.danger} onNo=${() => setAsk(null)} onYes=${() => { const a = ask; setAsk(null); a.run(); }}/>` : null}

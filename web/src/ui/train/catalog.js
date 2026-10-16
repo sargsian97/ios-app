@@ -43,6 +43,11 @@ export const cardioTypeLabel = lab('cardio.t.');
 export const whyLabel = lab('train.why.');
 export const sideShort = lab('side.s.');
 export const wdLabel = lab('wd.');
+export const barLabel = lab('gym.bar.');
+export const stackLabel = lab('gym.stack.');
+export const tplLabel = lab('gym.tpl.');
+export const tplSub = lab('gym.tplSub.');
+export const eqCatLabel = lab('gym.cat.');
 export const wdShort = lab('wd.s.');
 
 /* Длительность: 75 → «1:15», 3725 → «1:02:05» */
