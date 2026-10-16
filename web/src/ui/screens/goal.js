@@ -73,7 +73,7 @@ export function GoalScreen() {
     if (!tdee) { setMsg(t('goal.err.noTdee')); return; }
     if (program.style === 'manual') { setSheet({ kind: 'manual' }); return; }
     const p = repos.profile.get();
-    const plan = planTargets({ tdee: tdee.tdee, goal: { type: goal.type, ratePctPerWeek: goal.ratePctPerWeek || 0 }, weightKg: w.last.trend, sex: p.sex, program });
+    const plan = planTargets({ tdee: tdee.tdee, goal: { type: goal.type, ratePctPerWeek: goal.ratePctPerWeek || 0, targetWeightKg: goal.targetWeightKg }, weightKg: w.last.trend, sex: p.sex, program, version: repos.dietProfile.get().tdeeVersion || 'v2' });
     await writeTargets(app, program, plan.days, today);
     setMsg(t('goal.recomputed', { k: fmtNum(plan.daily.kcal) }) + (plan.warnings.length ? ' ' + plan.warnings.map(warnLabel).join(' ') : ''));
   }
@@ -181,7 +181,7 @@ function ProgramSheet({ open, program, goal, tdee, trendKg, onClose }) {
     const patch = { style: d.style, dietType: d.dietType, proteinLevel: d.proteinLevel, distribution: d.distribution, highDays: d.highDays, floor: d.floor, limits: { kcalMin: n(d.kcalMin), kcalMax: n(d.kcalMax), proteinMin: n(d.proteinMin) } };
     const p = await repos.macroProgram.update(program.id, patch);
     if (p.style !== 'manual' && goal && tdee && trendKg) {
-      const plan = planTargets({ tdee: tdee.tdee, goal: { type: goal.type, ratePctPerWeek: goal.ratePctPerWeek || 0 }, weightKg: trendKg, sex: repos.profile.get().sex, program: p });
+      const plan = planTargets({ tdee: tdee.tdee, goal: { type: goal.type, ratePctPerWeek: goal.ratePctPerWeek || 0, targetWeightKg: goal.targetWeightKg }, weightKg: trendKg, sex: repos.profile.get().sex, program: p, version: repos.dietProfile.get().tdeeVersion || 'v2' });
       await writeTargets(app, p, plan.days, todayYmd());
     }
     onClose();

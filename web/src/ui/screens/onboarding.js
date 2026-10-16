@@ -11,6 +11,10 @@ import { useWeight } from './body/body.js';
 import { Opt, DietOptions, ProteinOptions } from './program-options.js';
 import { validDate } from '../../data/schema.js';
 const WARN = { floored: 'ob.warn.floored', limit_min: 'ob.warn.limit_min', limit_max: 'ob.warn.limit_max', protein_min: 'ob.warn.protein_min', protein_exceeds_kcal: 'ob.warn.protein_exceeds_kcal' };
+const METHOD = { mifflin: 'ob.m.mifflin', cunningham: 'ob.m.cunningham', allometric: 'ob.m.allometric', bodycomp: 'ob.m.bodycomp', athlete: 'ob.m.athlete' };
+const WHY = { mifflin: 'ob.estimate.whyM', cunningham: 'ob.estimate.whyC', allometric: 'ob.estimate.whyA', bodycomp: 'ob.estimate.whyB', athlete: 'ob.estimate.whyT' };
+export function methodLabel(m) { return METHOD[m] ? t(METHOD[m]) : m; }
+function methodWhy(m) { return WHY[m] ? t(WHY[m]) : ''; }
 export function warnLabel(w) { return WARN[w] ? t(WARN[w]) : w; }
 
 const STEPS = ['intro', 'about', 'body', 'history', 'activity', 'training', 'estimate', 'goal', 'program', 'summary'];
@@ -55,7 +59,7 @@ export function Onboarding() {
   const ageOk = validDate(a.birthDate) && a.birthDate <= today;
   const age = ageOk ? ageOn(a.birthDate, today) : null;
   let est = null;
-  try { if (a.sex && ageOk && heightCm && weightKg) est = startingEstimate({ sex: a.sex, birthDate: a.birthDate, heightCm, weightKg, bodyFatPct: fatPct, activity: a.activity, today }); } catch (e) { est = null; }
+  try { if (a.sex && ageOk && heightCm && weightKg) est = startingEstimate({ sex: a.sex, birthDate: a.birthDate, heightCm, weightKg, bodyFatPct: fatPct, activity: a.activity, today, version: repos.dietProfile.get().bmrVersion || 'v2', goalRatePct: a.goalType === 'lose' ? -(a.rate || 0) : a.goalType === 'gain' ? (a.rate || 0) : 0 }); } catch (e) { est = null; }
   const targetKg = a.goalType === 'maintain' ? (n(a.target) != null ? fromDisplay('weight', a.target, units) : weightKg) : fromDisplay('weight', a.target, units);
   const rate = a.goalType === 'maintain' ? 0 : a.rate;
   const goal = { type: a.goalType, ratePctPerWeek: rate };
@@ -63,7 +67,7 @@ export function Onboarding() {
     limits: { kcalMin: n(a.kcalMin), kcalMax: n(a.kcalMax), proteinMin: n(a.proteinMin) } };
   const manual = { sameEveryDay: true, days: [{ kcal: n(a.mKcal), protein: n(a.mProtein), fat: n(a.mFat), carbs: n(a.mCarbs) }] };
   let plan = null;
-  try { if (est) plan = planTargets({ tdee: est.tdee, goal, weightKg, sex: a.sex, leanMassKg: est.leanMassKg, program, manual }); } catch (e) { plan = null; }
+  try { if (est) plan = planTargets({ tdee: est.tdee, goal: Object.assign({ targetWeightKg: targetKg }, goal), weightKg, sex: a.sex, leanMassKg: est.leanMassKg, program, manual, version: repos.dietProfile.get().tdeeVersion || 'v2' }); } catch (e) { plan = null; }
   const tDate = a.goalType !== 'maintain' && targetKg ? targetDate({ startKg: weightKg, targetKg, ratePctPerWeek: rate, start: today }) : null;
 
   function validate() {
@@ -143,9 +147,9 @@ export function Onboarding() {
   if (s === 'estimate') body = html`<h1>${t('ob.estimate.title')}</h1>
     ${est ? html`<div class="card pad obest">
       <div class="rl">${t('ob.estimate.tdee')}</div><div class="wh-v"><b>${fmtNum(est.tdee)}</b><small>${t('unit.kcal')}</small></div>
-      <div class="kv"><span>${t('ob.estimate.bmr', { m: est.bmr.method === 'cunningham' ? t('ob.m.cunningham') : t('ob.m.mifflin') })}</span><span>${fmtNum(est.bmr.kcal)}</span></div>
+      <div class="kv"><span>${t('ob.estimate.bmr', { m: methodLabel(est.bmr.method) })}</span><span>${fmtNum(est.bmr.kcal)}</span></div>
       <div class="kv"><span>${t('ob.estimate.factor')}</span><span>× ${fmtNum(est.factor, 2)}</span></div>
-      <div class="hint">${est.bmr.method === 'cunningham' ? t('ob.estimate.whyC') : t('ob.estimate.whyM')}</div>
+      <div class="hint">${methodWhy(est.bmr.method)}</div>
       <div class="hint">${t('ob.estimate.adapt')}</div>
     </div>` : html`<div class="banner warnb">${t('ob.estimate.need')}</div>`}`;
   if (s === 'goal') body = html`<h1>${t('ob.goal.title')}</h1>

@@ -57,7 +57,11 @@ export function Expenditure() {
       ${dp.tdeeMode === 'fixed' ? html`<div style="margin-top:12px"><${Field} label=${t('tdee.fixedValue')}>
         <input inputmode="numeric" value=${fixed ?? (dp.fixedTdee || '')} onInput=${(e) => setFixed(e.currentTarget.value)} onBlur=${() => { if (fixed != null) { const n = Math.round(Number(fixed)); if (n >= 500 && n <= 10000) repos.dietProfile.update({ fixedTdee: n }); setFixed(null); } }}/><//></div>` : null}
       <div style="margin-top:14px"><${Toggle} on=${dp.stepsBoost} onChange=${(v) => repos.dietProfile.update({ stepsBoost: v })} label=${t('tdee.stepsBoost')} hint=${t('tdee.part2')}/></div>
-      <div style="margin-top:12px"><${Toggle} on=${dp.goalChangeCorrection} onChange=${(v) => repos.dietProfile.update({ goalChangeCorrection: v })} label=${t('tdee.goalCorrection')} hint=${t('tdee.part2')}/></div>
+      <div style="margin-top:12px"><${Toggle} on=${dp.goalChangeCorrection} onChange=${(v) => repos.dietProfile.update({ goalChangeCorrection: v })} label=${t('tdee.goalCorrection')} hint=${t('tdee.goalCorrectionHint')}/></div>
+      <div style="margin-top:12px"><${Toggle} on=${dp.athlete} onChange=${(v) => repos.dietProfile.update({ athlete: v })} label=${t('tdee.athlete')} hint=${t('tdee.athleteHint')}/></div>
+      <div style="margin-top:14px"><${Segmented} label=${t('tdee.version')} value=${dp.tdeeVersion || 'v2'} onChange=${(v) => repos.dietProfile.update({ tdeeVersion: v, bmrVersion: v })} options=${[['v1', t('tdee.ver.v1')], ['v2', t('tdee.ver.v2')]]}/></div>
+      <div style="margin-top:12px"><${Segmented} label=${t('tdee.trendVersion')} value=${dp.trendVersion || 'v3'} onChange=${(v) => repos.dietProfile.update({ trendVersion: v })} options=${[['v1', t('tdee.tver.v1')], ['v2', t('tdee.tver.v2')], ['v3', t('tdee.tver.v3')]]}/></div>
+      <div class="hint">${t('tdee.versionHint')}</div>
     <//>
   <//>`;
 }

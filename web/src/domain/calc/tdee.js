@@ -9,7 +9,12 @@ import {
   TDEE_MIN_INTAKE_DAYS,
   TDEE_MIN_INTAKE_SHARE,
   TDEE_RAW_MIN,
-  TDEE_RAW_MAX
+  TDEE_RAW_MAX,
+  GOAL_RATE_TDEE_FACTOR,
+  GOAL_CHANGE_RAMP_DAYS,
+  KCAL_PER_KG_V2,
+  TDEE_V2_SMOOTHING,
+  TDEE_V2_MAX_MISSING_OF_7
 } from './constants.js';
 import { dayNumber, fromDayNumber } from './dates.js';
 import { isNum, clamp, mean, pickVersion } from './util.js';
@@ -19,11 +24,23 @@ function positive(name, x) {
   return x;
 }
 
-/* Стартовый расход: BMR × коэффициент активности. Неизвестная активность или BMR ≤ 0 — ошибка. */
-export function initialTdee({ bmrKcal, activity } = {}) {
+/* Стартовый расход: BMR × коэффициент активности. Неизвестная активность или BMR ≤ 0 — ошибка.
+   version 'v2': ещё × (1 + 4 × темп цели), темп — % массы в неделю со знаком (похудение −0,5, набор +0,25). */
+export function initialTdee({ bmrKcal, activity, goalRatePct = 0, version = 'v1' } = {}) {
   positive('bmrKcal', bmrKcal);
   if (!Object.hasOwn(ACTIVITY_FACTORS, activity)) throw new Error('unknown activity: ' + activity);
-  return bmrKcal * ACTIVITY_FACTORS[activity];
+  const base = bmrKcal * ACTIVITY_FACTORS[activity];
+  if (version !== 'v2') return base;
+  const r = isNum(goalRatePct) ? goalRatePct : 0;
+  return base * (1 + GOAL_RATE_TDEE_FACTOR * r / 100);
+}
+
+/* Поправка расхода при смене цели (v2): множитель 1 + 4 × (новый − старый темп) / 100, нарастает линейно
+   за GOAL_CHANGE_RAMP_DAYS дней после смены. Темпы — % массы в неделю со знаком. */
+export function goalChangeFactor({ oldRatePct = 0, newRatePct = 0, daysSince = 0 } = {}) {
+  if (!isNum(oldRatePct) || !isNum(newRatePct) || !isNum(daysSince) || daysSince < 0) return 1;
+  const share = Math.min(1, daysSince / GOAL_CHANGE_RAMP_DAYS);
+  return 1 + GOAL_RATE_TDEE_FACTOR * (newRatePct - oldRatePct) / 100 * share;
 }
 
 /* Сколько съедено за день для расчёта: ккал или null (день в расчёт не идёт).
@@ -43,9 +60,9 @@ function intakeMap(days) {
   return m;
 }
 
-/* v1: окно до TDEE_WINDOW_DAYS дней, сырая оценка = среднее потребление − Δтренд × ккал/кг / дни,
+/* Общий расчёт v1/v2: окно до TDEE_WINDOW_DAYS дней, сырая оценка = среднее потребление − Δтренд × ккал/кг / дни,
    затем EMA по дням с долей TDEE_SMOOTHING, начиная со startTdee. */
-function adaptiveV1({ days, trend, startTdee, startDate, endDate }) {
+function adaptiveWith(cfg, { days, trend, startTdee, startDate, endDate }) {
   const s = dayNumber(startDate), e = dayNumber(endDate);
   if (e < s) return [];
   const intake = intakeMap(days);
@@ -83,15 +100,24 @@ function adaptiveV1({ days, trend, startTdee, startDate, endDate }) {
       const v = intake.get(m);
       if (v !== null && v !== undefined) vals.push(v);
     }
-    if (vals.length < Math.max(TDEE_MIN_INTAKE_DAYS, Math.ceil((span + 1) * TDEE_MIN_INTAKE_SHARE))) { hold('few_intake_days'); continue; }
-    const raw = mean(vals) - ((trendAt.get(n) - trendAt.get(a)) * KCAL_PER_KG_TISSUE) / span;
-    est += TDEE_SMOOTHING * (clamp(raw, TDEE_RAW_MIN, TDEE_RAW_MAX) - est);
+    if (cfg.missingRule) {
+      let missing = 0;
+      for (let m = Math.max(s, n - 6); m <= n; m++) { const v = intake.get(m); if (v === null || v === undefined) missing++; }
+      if (missing > TDEE_V2_MAX_MISSING_OF_7 || !vals.length) { hold('few_intake_days'); continue; }
+    } else if (vals.length < Math.max(TDEE_MIN_INTAKE_DAYS, Math.ceil((span + 1) * TDEE_MIN_INTAKE_SHARE))) { hold('few_intake_days'); continue; }
+    const raw = mean(vals) - ((trendAt.get(n) - trendAt.get(a)) * cfg.kcalPerKg) / span;
+    est += cfg.smoothing * (clamp(raw, TDEE_RAW_MIN, TDEE_RAW_MAX) - est);
     out.push({ date, tdee: est, status: 'ok' });
   }
   return out;
 }
 
-const TDEE_VERSIONS = { v1: adaptiveV1 };
+/* v1 — временные константы; v2 — опубликованные правила: пауза при > 3 пропусках из 7, 7716 ккал/кг,
+   шаг сглаживания 0,15 (приближение) */
+const TDEE_VERSIONS = {
+  v1: (o) => adaptiveWith({ kcalPerKg: KCAL_PER_KG_TISSUE, smoothing: TDEE_SMOOTHING, missingRule: false }, o),
+  v2: (o) => adaptiveWith({ kcalPerKg: KCAL_PER_KG_V2, smoothing: TDEE_V2_SMOOTHING, missingRule: true }, o)
+};
 
 /* Адаптивный расход на каждый день startDate..endDate: [{ date, tdee, status, reason? }].
    status: 'initial' — до TDEE_FIRST_UPDATE_DAY-го дня, значение = startTdee;

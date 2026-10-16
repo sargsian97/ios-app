@@ -1,14 +1,14 @@
 /* Программа питания: стартовая оценка расхода, цели на дни недели (coached / collaborative / manual),
    дата достижения цели. Только чистые функции поверх слоя расчётов. */
-import { ageOn, leanMass, bmr, initialTdee, calorieTarget, macroTargets, weeklyDistribution, dayTargets, KCAL_PER_G } from './calc/index.js';
+import { ageOn, leanMass, bmr, initialTdee, calorieTarget, macroTargets, weeklyDistribution, dayTargets, smoothTarget, KCAL_PER_G } from './calc/index.js';
 import { addDays } from './calc/dates.js';
 
 /* Стартовая оценка: { ageYears, bmr: { kcal, method }, factor, tdee, leanMassKg } */
-export function startingEstimate({ sex, birthDate, heightCm, weightKg, bodyFatPct = null, activity, today }) {
+export function startingEstimate({ sex, birthDate, heightCm, weightKg, bodyFatPct = null, activity, today, version = 'v1', goalRatePct = 0, athlete = false }) {
   const ageYears = ageOn(birthDate, today);
   const lean = bodyFatPct != null ? leanMass(weightKg, bodyFatPct) : null;
-  const b = bmr({ sex, weightKg, heightCm, ageYears, bodyFatPct }, { method: 'auto' });
-  const tdee = initialTdee({ bmrKcal: b.kcal, activity });
+  const b = bmr({ sex, weightKg, heightCm, ageYears, bodyFatPct, athlete }, { method: 'auto', version });
+  const tdee = initialTdee({ bmrKcal: b.kcal, activity, goalRatePct, version });
   return { ageYears, bmr: b, factor: tdee / b.kcal, tdee: Math.round(tdee), leanMassKg: lean };
 }
 
@@ -25,7 +25,9 @@ export function targetDate({ startKg, targetKg, ratePctPerWeek, start }) {
    coached — по цели и типу диеты; collaborative — то же, но в рамках ограничений пользователя;
    manual — как задал пользователь (одинаково или по дням).
    Возвращает { daily: { kcal, floored }, days: [7 × { weekday, kcal, protein, fat, carbs }], warnings } */
-export function planTargets({ tdee, goal, weightKg, sex, leanMassKg = null, program, manual = null }) {
+/* version 'v2' — цель по опубликованным правилам (умное поддержание, предел 1200); smoothFrom — прошлая цель
+   на день: новая цель делает к ней лишь шаг (сглаживание чек-ина, v2) */
+export function planTargets({ tdee, goal, weightKg, sex, leanMassKg = null, program, manual = null, version = 'v1', smoothFrom = null }) {
   const warnings = [];
   if (program.style === 'manual') {
     const src = manual && manual.days && manual.days.length ? manual.days : [];
@@ -41,8 +43,9 @@ export function planTargets({ tdee, goal, weightKg, sex, leanMassKg = null, prog
     });
     return { daily: { kcal: Math.round(days.reduce((a, d) => a + d.kcal, 0) / 7), floored: false }, days, warnings };
   }
-  const t = calorieTarget({ tdee, goal: { type: goal.type, ratePctPerWeek: goal.ratePctPerWeek || 0 }, weightKg, sex, floor: program.floor || 'standard' });
+  const t = calorieTarget({ tdee, goal: { type: goal.type, ratePctPerWeek: goal.ratePctPerWeek || 0, targetWeightKg: goal.targetWeightKg }, weightKg, sex, floor: program.floor || 'standard', version });
   let kcal = t.kcal;
+  if (version === 'v2' && smoothFrom > 0 && !t.floored) kcal = Math.round(smoothTarget(smoothFrom, kcal));
   if (t.floored) warnings.push('floored');
   if (program.style === 'collaborative' && program.limits) {
     const { kcalMin, kcalMax } = program.limits;

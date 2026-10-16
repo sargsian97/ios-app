@@ -177,7 +177,7 @@ test('adaptiveTdee: работает с выходом trendWeight и пропу
 });
 
 test('adaptiveTdee: ошибки', () => {
-  assert.throws(() => adaptiveTdee({ startTdee: 2000, startDate: S, endDate: S, version: 'v2' }), /unknown version: v2/);
+  assert.throws(() => adaptiveTdee({ startTdee: 2000, startDate: S, endDate: S, version: 'v9' }), /unknown version: v9/);
   assert.throws(() => adaptiveTdee({ startTdee: NaN, startDate: S, endDate: S }), /startTdee/);
   assert.throws(() => adaptiveTdee({ startTdee: 2000, startDate: 'x', endDate: S }), /invalid date/);
   assert.throws(() => adaptiveTdee({ startTdee: 2000, startDate: S }), /invalid date/);

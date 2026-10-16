@@ -20,7 +20,7 @@ export function useWeight() {
   const { repos } = useApp();
   const dp = repos.dietProfile.get();
   const scale = repos.scaleEntry.list();
-  const trend = trendWeight(scale.map((s) => ({ date: s.date, weight: s.weightKg })), { version: dp.trendVersion || 'v1' });
+  const trend = trendWeight(scale.map((s) => ({ date: s.date, weight: s.weightKg })), { version: dp.trendVersion || 'v3' });
   return { scale, daily: dailyScale(scale), trend, last: trend[trend.length - 1] || null };
 }
 

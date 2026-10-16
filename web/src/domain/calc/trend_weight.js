@@ -1,6 +1,7 @@
 /* Тренд веса, темп и прогноз даты цели. */
 import {
   TREND_V1_ALPHA,
+  TREND_V3_ALPHA,
   TREND_V2_OUTLIER_HALF_WINDOW,
   TREND_V2_OUTLIER_K,
   TREND_V2_SIGMA_MIN,
@@ -41,6 +42,24 @@ function trendV1(points, { alpha = TREND_V1_ALPHA }) {
     const w = byDay.has(n) ? byDay.get(n) : null;
     if (w !== null && n !== first) trend += alpha * (w - trend);
     rows.push({ date: fromDayNumber(n), weight: w, trend });
+  }
+  return rows;
+}
+
+/* v3: пропуски заполняются линейной интерполяцией между взвешиваниями (это «весы» на графике),
+   затем EMA по всем дням. weight остаётся только у дней со взвешиванием. */
+function trendV3(points, { alpha = TREND_V3_ALPHA }) {
+  if (!isNum(alpha) || alpha <= 0 || alpha > 1) throw new Error('invalid alpha: ' + alpha);
+  const rows = [];
+  let trend = points[0].weight;
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i], next = points[i + 1];
+    const end = next ? next.day - 1 : p.day;
+    for (let n = p.day; n <= end; n++) {
+      const scale = next ? p.weight + (next.weight - p.weight) * (n - p.day) / (next.day - p.day) : p.weight;
+      if (n !== points[0].day) trend += alpha * (scale - trend);
+      rows.push({ date: fromDayNumber(n), weight: n === p.day ? p.weight : null, scale, trend });
+    }
   }
   return rows;
 }
@@ -107,7 +126,7 @@ function trendV2(points) {
   return rows;
 }
 
-const TREND_VERSIONS = { v1: trendV1, v2: trendV2 };
+const TREND_VERSIONS = { v1: trendV1, v2: trendV2, v3: trendV3 };
 
 /* Тренд веса: по строке на каждый день от первого до последнего взвешивания.
    entries — [{ date, weight }] в любом порядке, несколько взвешиваний за день усредняются.

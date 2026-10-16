@@ -53,6 +53,16 @@ export const MIGRATIONS = [
       if (!store.ids('stepsEntries').length) ops.push(...stepsOps(store, { now }));
       return ops;
     }
+  },
+  {
+    version: 6,
+    name: 'algorithms-v2',
+    /* Расчёты по опубликованным формулам: расход v2, тренд v3, BMR v2 (старые версии остаются в настройках) */
+    up(store, { now }) {
+      const dp = store.get('dietProfile', 'me');
+      if (!dp) return [];
+      return [{ op: 'put', col: 'dietProfile', id: 'me', data: Object.assign({}, dp, { tdeeVersion: 'v2', trendVersion: 'v3', bmrVersion: 'v2', updatedAt: now }) }];
+    }
   }
 ];
 

@@ -20,11 +20,11 @@ export function checkinDue({ lastCheckin, programStart, weekday, today }) {
 
 /* Модули чек-ина по данным за последние 7 дней (до вчера включительно — сегодня ещё не закончился).
    enabled — { id: bool }, seenIntro — показывалось ли введение. */
-export function checkinModules({ days, scaleEntries, today, enabled = {}, seenIntro = false, hasProgram = true }) {
+export function checkinModules({ days, scaleEntries, today, enabled = {}, seenIntro = false, hasProgram = true, partialVersion = 'v1' }) {
   const from = addDays(today, -7), to = addDays(today, -1);
   const on = (id) => enabled[id] !== false;
   const lastWeigh = scaleEntries.reduce((m, s) => (!m || s.date > m ? s.date : m), null);
-  const partial = findPartialDays(days, { from, to });
+  const partial = findPartialDays(days, { from, to, version: partialVersion });
   const unlogged = unloggedDays(days, { from, to });
   const brk = loggingBreak(days, { from, to });
   const mods = [];

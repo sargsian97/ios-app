@@ -8,7 +8,14 @@ import {
   PROTEIN_USE_LEAN_MASS,
   PROTEIN_G_PER_KG,
   DIET_TYPES,
-  HIGH_DAY_SHARE
+  HIGH_DAY_SHARE,
+  KCAL_PER_KG_V2,
+  CALORIE_FLOOR_V2,
+  MAINTENANCE_BAND_KG,
+  MAINTENANCE_RATE_PCT,
+  PROTEIN_V2_G_PER_KG,
+  FAT_MIN_G_PER_KG,
+  CHECKIN_SMOOTHING
 } from './constants.js';
 import { isNum, checkSex, roundKeepSum } from './util.js';
 
@@ -27,22 +34,30 @@ export function calorieFloor(sex, floor = 'standard') {
 /* Цель по калориям в день: { kcal (целое), floored }.
    lose / gain: tdee ∓ темп % × вес × ккал/кг / 7; maintain: tdee (вес и темп не нужны).
    Ниже порога — поднимаем до порога, floored: true. Даже при floor 'ignore' ниже 0 не опускаемся. */
-export function calorieTarget({ tdee, goal, weightKg, sex, floor = 'standard' } = {}) {
+/* version 'v2': 7716 ккал/кг; поддержание «умное» — если тренд дальше ± 0,7 кг от goal.targetWeightKg,
+   ± 0,15 % массы в неделю в сторону цели; стандартный нижний предел 1200 ккал для всех. */
+export function calorieTarget({ tdee, goal, weightKg, sex, floor = 'standard', version = 'v1' } = {}) {
   positive('tdee', tdee);
   const type = goal && goal.type;
+  const v2 = version === 'v2';
+  const perKg = v2 ? KCAL_PER_KG_V2 : KCAL_PER_KG_TISSUE;
   let kcal;
   if (type === 'maintain') {
     kcal = tdee;
+    if (v2 && isNum(goal.targetWeightKg) && isNum(weightKg)) {
+      const diff = weightKg - goal.targetWeightKg;
+      if (Math.abs(diff) > MAINTENANCE_BAND_KG) kcal = tdee + (diff > 0 ? -1 : 1) * (MAINTENANCE_RATE_PCT / 100) * weightKg * perKg / 7;
+    }
   } else if (type === 'lose' || type === 'gain') {
     const rate = goal.ratePctPerWeek;
     if (!isNum(rate) || rate < 0) throw new Error('invalid ratePctPerWeek: ' + rate);
     positive('weightKg', weightKg);
-    const delta = (rate / 100) * weightKg * KCAL_PER_KG_TISSUE / 7;
+    const delta = (rate / 100) * weightKg * perKg / 7;
     kcal = type === 'lose' ? tdee - delta : tdee + delta;
   } else {
     throw new Error('unknown goal type: ' + type);
   }
-  const min = calorieFloor(sex, floor);
+  const min = v2 && floor === 'standard' ? CALORIE_FLOOR_V2 : calorieFloor(sex, floor);
   const floored = kcal < min || kcal < 0;
   return { kcal: Math.round(floored ? Math.max(min, 0) : kcal), floored };
 }
@@ -104,4 +119,31 @@ export function dayTargets({ distribution, ...macro } = {}) {
   const kcals = distribution === undefined || distribution === null ? Array(7).fill(macro.kcal) : distribution;
   if (!Array.isArray(kcals) || kcals.length !== 7) throw new Error('distribution: нужно 7 чисел');
   return kcals.map((kcal, weekday) => ({ weekday, ...macroTargets({ ...macro, kcal }) }));
+}
+
+/* БЖУ v2: белок по типу тренировок (none | cardio | lift | both) и предпочтению (low | mid | high) в г/кг;
+   при малой калорийности приоритет — жиры не ниже минимума → белок → углеводы. Доля жиров — по типу диеты,
+   на кето углеводы не выше потолка. { kcal, protein, fat, carbs } — целые граммы. */
+export function macroTargetsV2({ kcal, weightKg, training = 'lift', proteinPref = 'mid', dietType = 'balanced' } = {}) {
+  if (!isNum(kcal) || kcal < 0) throw new Error('invalid kcal: ' + kcal);
+  positive('weightKg', weightKg);
+  if (!Object.hasOwn(PROTEIN_V2_G_PER_KG, training)) throw new Error('unknown training: ' + training);
+  if (!Object.hasOwn(DIET_TYPES, dietType)) throw new Error('unknown dietType: ' + dietType);
+  const [lo, hi] = PROTEIN_V2_G_PER_KG[training];
+  const gPerKg = proteinPref === 'low' ? lo : proteinPref === 'high' ? hi : (lo + hi) / 2;
+  const diet = DIET_TYPES[dietType];
+  const fat = Math.max(FAT_MIN_G_PER_KG * weightKg, (kcal * diet.fat) / KCAL_PER_G.fat);
+  const afterFat = Math.max(kcal - fat * KCAL_PER_G.fat, 0);
+  const protein = Math.min(weightKg * gPerKg, afterFat / KCAL_PER_G.protein);
+  let carbs = Math.max(afterFat - protein * KCAL_PER_G.protein, 0) / KCAL_PER_G.carbs;
+  if (isNum(diet.carbsMaxG)) carbs = Math.min(carbs, diet.carbsMaxG);
+  return { kcal: Math.round(kcal), protein: Math.round(protein), fat: Math.round(fat), carbs: Math.round(carbs) };
+}
+
+/* Сглаживание цели на чек-ине: шаг к новому расчёту, а не прыжок (без «калорийных качелей»).
+   prev нет — сразу next. */
+export function smoothTarget(prev, next, { share = CHECKIN_SMOOTHING } = {}) {
+  if (!isNum(next)) throw new Error('invalid next: ' + next);
+  if (!isNum(prev) || prev <= 0) return next;
+  return prev + share * (next - prev);
 }

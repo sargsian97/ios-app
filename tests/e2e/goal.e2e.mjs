@@ -64,7 +64,7 @@ await p.locator('.opt', { hasText: 'Умеренная' }).click();
 await next();
 await next();
 const estText = await p.locator('.obest').innerText();
-check('стартовая оценка с Каннингемом', /Каннингем/.test(estText) && /\d\s?\d{3}/.test(estText), estText.replace(/\s+/g, ' ').slice(0, 160));
+check('стартовая оценка по составу тела (v2)', /по составу тела/.test(estText) && /\d\s?\d{3}/.test(estText), estText.replace(/\s+/g, ' ').slice(0, 160));
 await shot('04-estimate', false);
 await next();
 await p.locator('.opt', { hasText: 'Похудеть' }).click();

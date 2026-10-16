@@ -56,8 +56,10 @@ export const DietProfile = model({
     fixedTdee: f.number({ min: 500, max: 10000 }),
     stepsBoost: f.bool(),
     goalChangeCorrection: f.bool(),
-    trendVersion: f.enum(['v1', 'v2']),
-    tdeeVersion: f.enum(['v1']),
+    trendVersion: f.enum(['v1', 'v2', 'v3'], { def: 'v3' }),
+    tdeeVersion: f.enum(['v1', 'v2'], { def: 'v2' }),
+    bmrVersion: f.enum(['v1', 'v2'], { def: 'v2' }),
+    athlete: f.bool(), /* ≥ 7 ч интенсивных тренировок в неделю — своя формула BMR (v2) */
     /* чек-ин */
     checkInWeekday: WEEKDAY(0),
     /* тело */

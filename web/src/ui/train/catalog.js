@@ -95,7 +95,7 @@ export function currentBodyweight(repos) {
   const scale = repos.scaleEntry.list();
   if (!scale.length) return null;
   const dp = repos.dietProfile.get();
-  const tr = trendWeight(scale.map((s) => ({ date: s.date, weight: s.weightKg })), { version: dp.trendVersion || 'v1' });
+  const tr = trendWeight(scale.map((s) => ({ date: s.date, weight: s.weightKg })), { version: dp.trendVersion || 'v3' });
   const last = tr[tr.length - 1];
   return last && last.trend ? Math.round(last.trend * 10) / 10 : null;
 }

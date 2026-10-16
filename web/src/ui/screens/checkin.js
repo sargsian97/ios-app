@@ -51,7 +51,7 @@ export function Checkin() {
     const days = buildDays({ foodEntries: repos.foodEntry.list(), dayEntries: repos.dayEntry.list(), from: addDays(today, -35), to: today });
     const enabled = {};
     CHECKIN_MODULES.forEach((id) => { enabled[id] = !statuses[id] || statuses[id].enabled !== false; });
-    return Object.assign({ days }, checkinModules({ days, scaleEntries: repos.scaleEntry.list(), today, enabled, seenIntro: !!(statuses.intro && statuses.intro.seen), hasProgram: !!program }));
+    return Object.assign({ days }, checkinModules({ days, scaleEntries: repos.scaleEntry.list(), today, enabled, seenIntro: !!(statuses.intro && statuses.intro.seen), hasProgram: !!program, partialVersion: repos.dietProfile.get().tdeeVersion === 'v2' ? 'v2' : 'v1' }));
   }, []);
   const mods = plan.modules;
   const [step, setStep] = useState(0);
@@ -72,7 +72,9 @@ export function Checkin() {
     else if (ex && ex.current && ex.current.status === 'hold') reason = 'hold';
     else if (ex && ex.current && ex.current.status === 'initial') reason = 'initial';
     else if (ex && ex.current) {
-      try { after = planTargets({ tdee: Math.round(ex.current.tdee), goal: { type: goal.type, ratePctPerWeek: goal.ratePctPerWeek || 0 }, weightKg: w.last.trend, sex: p.sex, program }); } catch (e) { after = null; }
+      const ver = repos.dietProfile.get().tdeeVersion || 'v2';
+      const prevKcal = (() => { const k = [0, 1, 2, 3, 4, 5, 6].map((wd) => repos.dayTarget.on(today, wd)).filter(Boolean).map((d) => d.kcal); return k.length ? k.reduce((a, b) => a + b, 0) / k.length : null; })();
+      try { after = planTargets({ tdee: Math.round(ex.current.tdee), goal: { type: goal.type, ratePctPerWeek: goal.ratePctPerWeek || 0, targetWeightKg: goal.targetWeightKg }, weightKg: w.last.trend, sex: p.sex, program, version: ver, smoothFrom: prevKcal }); } catch (e) { after = null; }
     }
   }
   const wkAgo = w.trend.filter((r) => r.date <= addDays(today, -7)).pop();
