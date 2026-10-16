@@ -1,6 +1,6 @@
 /* Service worker: приложение открывается без интернета.
    При каждом выпуске новой версии меняй VERSION — тогда телефон предложит обновиться. */
-const VERSION = '2026-10-16.2';
+const VERSION = '2026-10-16.3';
 const CACHE = 'journal-' + VERSION;
 const SHELL = [
   './',
@@ -9,6 +9,8 @@ const SHELL = [
   'app.js',
   'ai.js',
   'manifest.webmanifest',
+  'data/exercise-guides.json',
+  'data/exercises.json',
   'icons/apple-touch-icon.png',
   'icons/icon-192.png',
   'icons/icon-512.png',
@@ -25,15 +27,19 @@ const SHELL = [
   'src/data/store.js',
   'src/domain/body.js',
   'src/domain/checkin.js',
+  'src/domain/exercises.js',
   'src/domain/expenditure.js',
   'src/domain/nutrition.js',
   'src/domain/program.js',
   'src/domain/units.js',
+  'src/domain/workout.js',
   'src/i18n/index.js',
+  'src/i18n/ru-train.js',
   'src/i18n/ru.js',
   'src/services/ai-food.js',
   'src/services/ai-planned.js',
   'src/services/barcode.js',
+  'src/services/exercise-library.js',
   'src/services/sync.js',
   'src/services/usage.js',
   'src/ui/app.js',
@@ -84,6 +90,11 @@ const SHELL = [
   'src/ui/screens/profile.js',
   'src/ui/screens/program-options.js',
   'src/ui/screens/settings.js',
+  'src/ui/train/catalog.js',
+  'src/ui/train/inputs.js',
+  'src/ui/train/muscle-map.js',
+  'src/ui/train/picker.js',
+  'src/ui/train/timer.js',
   'src/ui/screens/body/body.js',
   'src/ui/screens/body/cycle.js',
   'src/ui/screens/body/history.js',
@@ -96,6 +107,12 @@ const SHELL = [
   'src/ui/screens/food/library.js',
   'src/ui/screens/food/recipes.js',
   'src/ui/screens/food/scanner.js',
+  'src/ui/screens/train/history.js',
+  'src/ui/screens/train/library.js',
+  'src/ui/screens/train/plans.js',
+  'src/ui/screens/train/session.js',
+  'src/ui/screens/train/settings.js',
+  'src/ui/screens/train/train.js',
   'vendor/anthropic-0.131.0.mjs',
   'vendor/preact-htm-10.29.8.mjs',
   'vendor/zxing-upcean-0.23.0.mjs'

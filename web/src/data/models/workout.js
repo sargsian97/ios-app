@@ -9,6 +9,9 @@ export const MUSCLES = Object.freeze([
 export const PATTERNS = Object.freeze(['squat', 'hinge', 'lunge', 'push_horizontal', 'push_vertical', 'pull_horizontal', 'pull_vertical', 'isolation', 'carry', 'core', 'cardio', 'other']);
 export const METRICS = Object.freeze(['weight', 'reps', 'time', 'distance', 'assist']);
 export const SET_TYPES = Object.freeze(['normal', 'warmup', 'failure', 'drop', 'myo', 'rest_pause']);
+export const EX_TYPES = Object.freeze(['compound', 'isolation', 'core', 'cardio']);
+export const EX_CATEGORIES = Object.freeze(['strength', 'stretching', 'plyometrics', 'powerlifting', 'olympic', 'strongman', 'cardio']);
+export const EQUIPMENT_KEYS = Object.freeze(['barbell', 'dumbbell', 'kettlebell', 'ez_bar', 'smith', 'cable', 'machine', 'bench', 'pullup_bar', 'dip_bars', 'band', 'medicine_ball', 'exercise_ball', 'foam_roll', 'bodyweight', 'other']);
 
 const muscleList = () => f.array(f.enum(MUSCLES), { max: 20 });
 const scale5 = () => f.number({ min: 1, max: 5, int: true });
@@ -18,8 +21,11 @@ export const Exercise = model({
   collection: 'exercises',
   fields: {
     name: f.string({ nullable: false, def: '', max: 160 }),
+    nameEn: f.string({ def: '', max: 160 }),
     synonyms: f.array(f.string({ max: 160 }), { max: 30 }),
-    type: f.enum(['compound', 'isolation', 'core', 'cardio']),
+    type: f.enum(EX_TYPES),
+    category: f.enum(EX_CATEGORIES),
+    level: f.enum(['beginner', 'intermediate', 'expert']),
     pattern: f.enum(PATTERNS, { def: 'other' }),
     region: f.enum(['upper', 'lower', 'core', 'full']),
     laterality: f.enum(['bilateral', 'unilateral', 'alternating']),
@@ -90,6 +96,8 @@ const PlanExercise = f.shape({
   sets: f.number({ min: 0, max: 50, int: true }),
   repMin: f.number({ min: 0, max: 500, int: true }),
   repMax: f.number({ min: 0, max: 500, int: true }),
+  timeSec: f.number({ min: 0, max: 86400 }),
+  distanceM: f.number({ min: 0, max: 1e6 }),
   rir: f.number({ min: 0, max: 10 }),
   setType: f.enum(SET_TYPES),
   weight: f.number({ min: 0 }),
@@ -157,13 +165,29 @@ const SetLog = f.shape({
   target: f.shape({ weight: f.number({ min: 0 }), reps: f.number({ min: 0 }), rir: f.number({ min: 0 }) }, { nullable: true })
 });
 
+/* Кардио-сессия: время и дистанция — в подходе, остальное здесь */
+const CardioLog = f.shape({
+  speedKmh: f.number({ min: 0, max: 100 }),
+  inclinePct: f.number({ min: -50, max: 50 }),
+  avgHr: f.number({ min: 0, max: 260, int: true }),
+  maxHr: f.number({ min: 0, max: 260, int: true }),
+  kcalWatch: f.number({ min: 0, max: 20000 }),
+  kcal: f.number({ min: 0, max: 20000 }),
+  rpe: f.number({ min: 0, max: 10 }),
+  steps: f.number({ min: 0, max: 200000, int: true }),
+  inSteps: f.bool({ def: true }) /* шаги сессии уже входят в шаги дня */
+}, { nullable: true });
+
 const ExerciseLog = f.shape({
   id: f.string({ def: '' }),
   exerciseId: f.ref(),
   name: f.string({ def: '' }),
   planItemId: f.string({ def: '' }),
   group: f.string({ def: '' }),
+  groupKind: f.enum(['superset', 'circuit'], { nullable: true }),
+  target: f.shape({ sets: f.number({ min: 0 }), repMin: f.number({ min: 0 }), repMax: f.number({ min: 0 }), timeSec: f.number({ min: 0 }), rir: f.number({ min: 0 }), weight: f.number({ min: 0 }), restSec: f.number({ min: 0 }) }, { nullable: true }),
   sets: f.array(SetLog, { max: 100 }),
+  cardio: CardioLog,
   notes: f.string({ def: '' }),
   skipped: f.bool()
 });
@@ -177,7 +201,9 @@ const sessionFields = {
   startedAt: f.timestamp(),
   exercises: f.array(ExerciseLog, { max: 60 }),
   notes: f.string({ def: '' }),
-  bodyweightKg: f.number({ min: 20, max: 400 })
+  bodyweightKg: f.number({ min: 20, max: 400 }),
+  /* пульс и калории с часов, шаги в зале, «ккал в расчёт» — для расхода за день */
+  stats: f.shape({ avgHr: f.number({ min: 0, max: 260, int: true }), maxHr: f.number({ min: 0, max: 260, int: true }), kcalWatch: f.number({ min: 0, max: 20000 }), kcal: f.number({ min: 0, max: 20000 }), steps: f.number({ min: 0, max: 200000, int: true }) })
 };
 
 /* Идущая сейчас тренировка (одна) */
@@ -185,7 +211,8 @@ export const WorkoutSession = model({
   name: 'WorkoutSession',
   collection: 'workoutSessions',
   fields: Object.assign({}, sessionFields, {
-    rest: f.shape({ startedAt: f.timestamp(), targetSec: f.number({ min: 0 }), exerciseId: f.string({ def: '' }) }, { nullable: true }),
+    rest: f.shape({ startedAt: f.timestamp(), targetSec: f.number({ min: 0 }), exerciseId: f.string({ def: '' }), kind: f.string({ def: '' }) }, { nullable: true }),
+    cursor: f.shape({ ei: f.number({ min: 0, int: true }), si: f.number({ min: 0, int: true }) }, { nullable: true }),
     events: f.array(f.shape({ at: f.timestamp(), kind: f.string({ def: '' }), data: f.any() }), { max: 2000 })
   })
 });

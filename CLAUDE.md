@@ -11,6 +11,7 @@
   - `web/app.js` — старый журнал (экраны тренировок, питания, замеров, истории). Заменяется новыми экранами по этапам.
   - `web/src/` — новый код: `ui/` (экраны на Preact + htm), `data/` (хранилище, миграции, репозитории), `domain/calc/` (расчёты), `services/`, `i18n/`.
   - `web/sw.js` — офлайн-кэш. **При каждом выпуске меняй `VERSION`** (и `APP_VERSION` в `web/src/version.js`); список файлов `SHELL` обновляет `npm run shell` (тест `tests/sw.test.js` проверит).
+- `web/data/` — встроенный справочник упражнений (из free-exercise-db). Пересборка: `node scripts/build-exercises.mjs [exercises.json]`; русские названия и синонимы — `scripts/exercises/ru.json`.
 - `tests/` — юнит-тесты (`node:test`).
 
 ## Правила по контенту
@@ -40,6 +41,7 @@ npm run serve     # http://localhost:8000 — приложение из web/
 
 ```sh
 node tests/e2e/shell.e2e.mjs light   # или dark; снимки — в .e2e-shots/
+# остальные наборы: food, body, goal, checkin, train
 ```
 
 Для проверок используй выдуманную копию `tests/fixtures/backup-sample.json`; личные данные пользователя в git не кладём.

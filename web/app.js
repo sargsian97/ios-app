@@ -1421,6 +1421,7 @@ function ensurePlan(){
 function setSet(k,v){if(!S.setDraft)S.setDraft={};S.setDraft[k]=v;markSet();}
 function delDayDocs(id){
   if(!S.db)return;
+  if(HOST.deleteDay){HOST.deleteDay(id);return;}
   ['workouts','days','food'].filter(function(col){return !(col==='food'&&HOST.foodProjection);}).forEach(function(col){
     var key=({workouts:'w',days:'d',food:'f'})[col];
     if((col==='workouts'&&S.workouts[id])||(col==='days'&&S.days[id])||(col==='food'&&S.food[id]))
@@ -1498,6 +1499,7 @@ function onClick(e){
   if(a==='saveNow'){S.draftDirty=true;persistDraft();persistDay();return;}
   if(a==='wDel'){ask('Удалить тренировку за '+fmt(S.date)+'?','Удалить',function(){var did=S.date;if(S.db)trackWrite('w',function(){return S.db.doc('workouts/'+did).delete();});S.draft=buildFromTemplate(S.day,S.date);S.draftDirty=false;render(true);});return;}
   if(a==='hOpen'){var id=el.dataset.id;S.histOpen[id]=!S.histOpen[id];render(true);return;}
+  if(a==='hGo'&&HOST.openDay){HOST.openDay(el.dataset.id);return;}
   if(a==='hGo'){persistAll();S.dayManual=false;S.date=el.dataset.id;var w2=S.workouts[S.date];if(w2&&w2.day)S.day=w2.day;loadAll();S.tab='train';render(true);window.scrollTo(0,0);return;}
   if(a==='hDel'){var did2=el.dataset.id;ask('Удалить всё за '+fmt(did2)+' (тренировку, шаги, питание)?','Удалить',function(){delDayDocs(did2);render(true);});return;}
   if(a==='metric'){S.metric=el.dataset.m;render(true);return;}
@@ -2090,7 +2092,13 @@ function init(db){
   S.db=db;
   render(true);
   setupAI();
-  sub('workouts','w',function(m){S.workouts=m;if(S.draft&&!pend.w&&!S.draftDirty)loadDraft();});
+  /* тренировки, кардио и шаги живут в новой модели (этап 7); журнал читает их в своём формате */
+  if(HOST.workoutsProjection)HOST.workoutsProjection(function(m){
+    S.workouts=m;S.ready.w=1;
+    if(allReady()&&!S.draft){loadAll();}
+    render();if(HOST.onChange)HOST.onChange();
+  });
+  else sub('workouts','w',function(m){S.workouts=m;if(S.draft&&!pend.w&&!S.draftDirty)loadDraft();});
   /* взвешивания и замеры живут в новой модели; журнал читает их в своём формате */
   if(HOST.bodyProjection)HOST.bodyProjection(function(m){
     S.body=m;S.ready.b=1;if(!S.bodyDirtyForm)loadBodyForm();
@@ -2103,7 +2111,13 @@ function init(db){
     ['A','B','C'].forEach(function(x){if(!S.tplDirty[x]){if(m[x])S.tplDraft[x]=clone(m[x]);else delete S.tplDraft[x];}});
     if(S.draft&&!S.draftDirty&&!S.workouts[S.date])S.draft=buildFromTemplate(S.day,S.date);
   });
-  sub('days','d',function(m){S.days=m;if(S.dayDraft&&!pend.d&&!S.dayDirty)loadDay();});
+  if(HOST.daysProjection)HOST.daysProjection(function(m){
+    S.days=m;S.ready.d=1;
+    if(allReady()&&!S.draft){loadAll();}
+    else if(S.dayDraft&&!S.dayDirty)loadDay();
+    render();if(HOST.onChange)HOST.onChange();
+  });
+  else sub('days','d',function(m){S.days=m;if(S.dayDraft&&!pend.d&&!S.dayDirty)loadDay();});
   /* питание живёт в новой модели (foodEntries); журнал получает его в своём формате только для чтения */
   if(HOST.foodProjection)HOST.foodProjection(function(m){
     S.food=m;S.ready.f=1;

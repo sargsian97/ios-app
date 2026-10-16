@@ -21,12 +21,16 @@ import { GoalScreen, MicroGoals } from './screens/goal.js';
 import { Expenditure } from './screens/expenditure.js';
 import { Checkin, CheckinSettings } from './screens/checkin.js';
 import { computeExpenditure } from './food/expenditure.js';
+import { TrainHome } from './screens/train/train.js';
+import { TrainSession } from './screens/train/session.js';
+import { ExerciseLibrary, ExerciseCard, ExerciseEditor } from './screens/train/library.js';
+import { WorkoutHistory, WorkoutLog } from './screens/train/history.js';
+import { PlanList, PlanEditor } from './screens/train/plans.js';
+import { TrainSettings } from './screens/train/settings.js';
 
 /* Экраны старого журнала: адрес → [вкладка журнала, вид плана, путь «назад»] */
 const LEGACY = {
-  '/train': ['train'],
   '/more/history': ['hist', null, '/more'],
-  '/more/templates': ['plan', 'tpl', '/more'],
   '/more/journal-settings': ['plan', 'set', '/more']
 };
 
@@ -41,6 +45,17 @@ const ROUTES = [
   ['/food/library', FoodLibrary],
   ['/food/settings', FoodSettings],
   ['/food/days', FoodDays],
+  ['/train', TrainHome],
+  ['/train/session', TrainSession],
+  ['/train/library', ExerciseLibrary],
+  ['/train/exercise/:id', ExerciseCard],
+  ['/train/exercise-edit/:id', ExerciseEditor],
+  ['/train/history', WorkoutHistory],
+  ['/train/log/:id', WorkoutLog],
+  ['/train/plans', PlanList],
+  ['/train/plan/:id', PlanEditor],
+  ['/train/settings', TrainSettings],
+  ['/more/templates', PlanList],
   ['/more', More],
   ['/onboarding', Onboarding],
   ['/more/goal', GoalScreen],

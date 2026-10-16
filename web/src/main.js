@@ -5,10 +5,11 @@ import { createRepos } from './data/repos/index.js';
 import { pickSyncProvider } from './services/sync.js';
 import { setLang, t } from './i18n/index.js';
 import { startLegacy, showLegacy, legacyOpenAdd, legacyPersist, legacyBudget, legacyWeekStats } from '../app.js';
-import { foodForLegacy, bodyForLegacy } from './data/legacy.js';
+import { foodForLegacy, bodyForLegacy, workoutsForLegacy, daysForLegacy } from './data/legacy.js';
 import { idbBlobs, memoryBlobs } from './data/store.js';
 import { mealOf } from './domain/nutrition.js';
 import { mountApp } from './ui/app.js';
+import { navigate, todayYmd } from './ui/core.js';
 
 const PREVIEW = window.JOURNAL_PREVIEW || null;
 const root = document.getElementById('root');
@@ -69,7 +70,12 @@ async function boot() {
   const legacySubs = new Set();
   const foodProjection = (cb) => { const push = () => cb(foodForLegacy(store, mealOf)); setTimeout(push, 0); store.subscribe('foodEntries', push); };
   const bodyProjection = (cb) => { const push = () => cb(bodyForLegacy(store)); setTimeout(push, 0); store.subscribe(['scaleEntries', 'bodyEntries'], push); };
-  startLegacy({ store, container, afterImport, foodProjection, bodyProjection, onChange: () => legacySubs.forEach((f) => f()) });
+  const workoutsProjection = (cb) => { const push = () => cb(workoutsForLegacy(store)); setTimeout(push, 0); store.subscribe('workoutLogs', push); };
+  const daysProjection = (cb) => { const push = () => cb(daysForLegacy(store, todayYmd())); setTimeout(push, 0); store.subscribe(['stepsEntries', 'workoutLogs', 'foodEntries'], push); };
+  /* «Удалить день» в истории журнала: питание, тренировки и шаги новой модели */
+  const deleteDay = (date) => store.batch(['foodEntries', 'workoutLogs', 'stepsEntries'].flatMap((col) => store.list(col).filter((d) => d.date === date).map((d) => ({ op: 'remove', col, id: d.id }))));
+  const openDay = (date) => navigate('/train?d=' + date);
+  startLegacy({ store, container, afterImport, foodProjection, bodyProjection, workoutsProjection, daysProjection, deleteDay, openDay, onChange: () => legacySubs.forEach((f) => f()) });
 
   const ctx = {
     store, repos, afterImport,

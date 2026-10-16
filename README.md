@@ -58,3 +58,4 @@ npm run serve   # http://localhost:8000
 | zxing (штрихкоды EAN/UPC) | [github.com/zxing-js/library](https://github.com/zxing-js/library) | Apache 2.0 (`web/vendor/LICENSE-zxing.txt`) |
 | Продукты: Open Food Facts | [openfoodfacts.org](https://world.openfoodfacts.org) — запросы из приложения | база — ODbL, описания продуктов — DbCL |
 | Продукты: USDA FoodData Central | [fdc.nal.usda.gov](https://fdc.nal.usda.gov) — со своим ключом api.data.gov | общественное достояние (CC0) |
+| Упражнения: free-exercise-db | [github.com/yuhonas/free-exercise-db](https://github.com/yuhonas/free-exercise-db) — 876 упражнений, встроены в `web/data/` скриптом `scripts/build-exercises.mjs` | общественное достояние (Unlicense); русские названия, синонимы, паттерны (`scripts/exercises/ru.json`) и карта мышц — наши |

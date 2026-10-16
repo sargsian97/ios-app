@@ -20,7 +20,7 @@ function Tile({ icon, color, label, value, unit, sub, href }) {
 
 export function Dashboard() {
   const { store, repos } = useApp();
-  useData(['foodEntries', 'dayEntries', 'scaleEntries', 'dietProfile', 'workouts', 'days', 'profile']);
+  useData(['foodEntries', 'dayEntries', 'scaleEntries', 'dietProfile', 'workoutLogs', 'stepsEntries', 'profile']);
   const today = todayYmd();
   const profile = repos.profile.get();
   const units = profile.units;
@@ -57,7 +57,7 @@ export function Dashboard() {
       <${Tile} icon="train" color="var(--k-str)" label=${t('dash.train')} value=${fmtNum(trainings)}
         sub=${t('dash.train.sub', { count: trainings })} href="/train"/>
       <${Tile} icon="steps" color="var(--k-steps)" label=${t('dash.steps')} value=${steps != null ? fmtNum(steps) : '—'}
-        sub=${steps != null ? t('dash.steps.sub') : t('dash.steps.empty')} href="/train"/>
+        sub=${steps != null ? t('dash.steps.sub') : t('dash.steps.empty')} href="/more/body"/>
     </div>
     <div class="hint dnote">${t('dash.note')}</div>
   <//>`;

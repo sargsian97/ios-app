@@ -103,12 +103,11 @@ check('цель сохранена', (await idbList('goals')).some((g) => g.targ
 check('прогноз или пояснение', await p.locator('.banner.forecast').count() === 1);
 check('линия цели на графике', await p.locator('.ch-goal').count() === 1);
 
-/* шаги → журнал */
+/* шаги → новая модель */
 await p.locator('.card', { hasText: 'Шаги' }).locator('input').fill('11500');
 await p.locator('.card', { hasText: 'Шаги' }).locator('input').blur();
 await wait(500);
-const days = await idbList('days');
-check('шаги записаны в день журнала', days.some((d) => Number(d.steps) === 11500));
+check('шаги записаны в stepsEntries', (await idbList('stepsEntries')).some((d) => d.steps === 11500));
 await shot('04-after');
 
 /* фото */
@@ -133,9 +132,9 @@ await shot('06-cycle');
 /* история и старый расход видят новый вес */
 await go('#/more/body/history');
 check('история: взвешивание 79,4', /79,4/.test(await p.locator('.wrap').innerText()));
-await go('#/train');
-await wait(800);
-check('расход журнала берёт вес из новой модели', /79,4/.test(await p.locator('#app').innerText()));
+/* расход журнала (запасная цель) считает шаги по весу из новой модели: ккал на 1000 шагов = 0,37 × вес */
+const lb = await p.evaluate(async () => { const m = await import('/app.js'); const d = new Date(); return m.legacyBudget(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')); });
+check('расход журнала берёт вес и шаги из новой модели', lb && Math.abs(lb.k / 0.37 - 79.4) < 0.01 && lb.steps === 11500, lb && { k: lb.k, steps: lb.steps });
 
 const overflow = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
 check('нет горизонтальной прокрутки', !overflow);

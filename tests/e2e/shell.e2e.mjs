@@ -62,7 +62,7 @@ for (const [name, file, sel] of tabs) {
   await shot(file);
 }
 await p.locator('.tabs .tab', { hasText: 'Тренировка' }).click(); await wait();
-check('Тренировка: экран журнала внутри оболочки', await p.locator('.legacy-host #app .card').count() > 0);
+check('Тренировка: новый экран вкладки', await p.locator('.wk-today, .wk-active').count() === 1);
 
 /* разделы «Ещё» */
 const sub = [['Тело и замеры', '07-body'], ['История', '08-history'], ['Шаблоны тренировок', '09-templates'], ['Расход, нормы и ключ Claude', '10-journal-settings'], ['О приложении', '11-about']];

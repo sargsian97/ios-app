@@ -30,7 +30,13 @@ const P = {
   close: '<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   steps: '<path d="M8 4.5c1.8 0 2.8 1.8 2.8 4.2S9.7 13 8 13 5.2 11.1 5.2 8.7 6.2 4.5 8 4.5zM16 9.5c1.8 0 2.8 1.8 2.8 4.2S17.7 18 16 18s-2.8-1.9-2.8-4.3 1-4.2 2.8-4.2z"/><path d="M6.3 15.5h3.4M14.3 20h3.4"/>',
-  target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".9"/>'
+  target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".9"/>',
+  timer: '<circle cx="12" cy="13.5" r="7"/><path d="M12 13.5V10M9.5 3h5M18.5 7l1.3-1.3"/>',
+  swap: '<path d="M7 7.5h11.5l-3-3M17 16.5H5.5l3 3"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5"/>'
 };
 
 export function Icon({ name, size, cls }) {

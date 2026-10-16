@@ -7,7 +7,7 @@ import { DateChart, MiniBars } from '../../chart.js';
 import { toDisplay, unitKey } from '../../../domain/units.js';
 import { trendWeight, weightRate, forecastGoalDate, bodyFatEstimate, bodyRatios, cycleSummary, ageOn } from '../../../domain/calc/index.js';
 import { latestMeasure, seriesOf, lastDays, dailyScale } from '../../../domain/body.js';
-import { addDays, stepsOn, setStepsOp } from '../../../data/legacy.js';
+import { addDays, stepsOn } from '../../../data/legacy.js';
 import { WeighSheet, MeasureSheet, GoalSheet } from './sheets.js';
 import { PhotoThumbs } from './photos.js';
 import { measureLabel, fatMethodLabel } from './labels.js';
@@ -26,7 +26,7 @@ export function useWeight() {
 
 export function Body({ route }) {
   const { repos, store } = useApp();
-  useData(['scaleEntries', 'bodyEntries', 'profile', 'dietProfile', 'goals', 'days', 'progressPhotos', 'periodEntries']);
+  useData(['scaleEntries', 'bodyEntries', 'profile', 'dietProfile', 'goals', 'stepsEntries', 'progressPhotos', 'periodEntries']);
   useLegacy();
   const today = todayYmd();
   const profile = repos.profile.get();
@@ -125,7 +125,7 @@ export function Body({ route }) {
       <div class="hint">${t('body.ratio.hint')}</div>
     <//>
 
-    <${StepsCard} today=${today} stepsToday=${stepsToday} steps7=${steps7} onSave=${(v) => store.batch([setStepsOp(store, today, v)])}/>
+    <${StepsCard} today=${today} stepsToday=${stepsToday} steps7=${steps7} onSave=${(v) => saveSteps(repos, today, v)}/>
 
     <${Card} title=${t('body.photos')} icon="camera" color="#FF9500">
       <${PhotoThumbs} limit=${4}/>
@@ -144,6 +144,13 @@ export function Body({ route }) {
     <${MeasureSheet} open=${sheet && sheet.kind === 'measure'} date=${(sheet && sheet.date) || today} onClose=${() => setSheet(null)}/>
     <${GoalSheet} open=${sheet && sheet.kind === 'goal'} trendKg=${w.last && w.last.trend} onClose=${() => setSheet(null)}/>
   <//>`;
+}
+
+/* Шаги за день: одна запись на дату; пусто — удалить */
+export function saveSteps(repos, date, steps) {
+  if (steps == null) return repos.stepsEntry.get(date) ? repos.stepsEntry.remove(date) : null;
+  const cur = repos.stepsEntry.get(date);
+  return repos.stepsEntry.save(Object.assign({}, cur || { id: date, date, source: 'manual' }, { steps }));
 }
 
 function StepsCard({ today, stepsToday, steps7, onSave }) {

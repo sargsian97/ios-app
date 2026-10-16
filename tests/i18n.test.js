@@ -52,6 +52,34 @@ test('i18n: ключи, собранные из частей, есть в кат
   assert.deepEqual(keys.filter((k) => !hasKey(k)), []);
 });
 
+test('i18n: подписи тренировок — для всех значений моделей', async () => {
+  const W = await import('../web/src/data/models/workout.js');
+  const { MUSCLE_GROUPS } = await import('../web/src/domain/exercises.js');
+  const keys = [];
+  W.MUSCLES.forEach((k) => keys.push('muscle.' + k));
+  MUSCLE_GROUPS.forEach(([g]) => keys.push('muscle.g.' + g));
+  W.EQUIPMENT_KEYS.forEach((k) => keys.push('equip.' + k));
+  W.EX_TYPES.forEach((k) => keys.push('extype.' + k));
+  W.EX_CATEGORIES.forEach((k) => keys.push('excat.' + k));
+  W.PATTERNS.forEach((k) => keys.push('pattern.' + k));
+  W.METRICS.forEach((k) => keys.push('metric.' + k));
+  W.SET_TYPES.forEach((k) => { keys.push('settype.' + k); keys.push('settype.s.' + k); });
+  ['upper', 'lower', 'core', 'full'].forEach((k) => keys.push('region.' + k));
+  ['bilateral', 'unilateral', 'alternating'].forEach((k) => keys.push('lat.' + k));
+  ['beginner', 'intermediate', 'expert'].forEach((k) => keys.push('level.' + k));
+  ['e1rm', 'weight', 'reps', 'volume', 'timeSec', 'distanceM'].forEach((k) => keys.push('record.' + k));
+  ['treadmill', 'outdoor', 'elliptical', 'bike', 'stepper', 'rower', 'other'].forEach((k) => keys.push('cardio.t.' + k));
+  ['today', 'missed', 'next', 'cycle'].forEach((k) => keys.push('train.why.' + k));
+  [0, 1, 2, 3, 4, 5].forEach((k) => keys.push('train.rir.' + k));
+  [0, 1, 2, 3, 4, 5, 6].forEach((k) => keys.push('wd.s.' + k));
+  ['left', 'right'].forEach((k) => keys.push('side.s.' + k));
+  ['compound', 'isolation', 'sides', 'warmup', 'exercises'].forEach((k) => keys.push('train.set.rest.' + k));
+  ['cardio', 'library', 'plans', 'history'].forEach((k) => keys.push('train.act.' + k));
+  ['avgHr', 'maxHr', 'kcalWatch', 'kcal', 'steps'].forEach((k) => keys.push('train.stats.' + k));
+  ['min', 'km', 'mi', 'speed', 'incline', 'avgHr', 'maxHr', 'kcalWatch', 'kcal', 'steps'].forEach((k) => keys.push('cardio.' + k));
+  assert.deepEqual(keys.filter((k) => !hasKey(k)), []);
+});
+
 test('i18n: числа со знаком', async () => {
   const { fmtSigned } = await import('../web/src/i18n/index.js');
   assert.equal(fmtSigned(-643.4), '−643');

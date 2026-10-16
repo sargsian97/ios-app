@@ -71,7 +71,7 @@ function useRestore() {
 /* Карточка на дашборде при первом запуске, если данных ещё нет */
 export function ImportCard() {
   const { store } = useApp();
-  useData(['workouts', 'body', 'food', 'foods', 'templates', 'days']);
+  useData(['workouts', 'body', 'food', 'foods', 'templates', 'days', 'foodEntries', 'scaleEntries', 'workoutLogs']);
   const [skipped, setSkipped] = useState(lsGet(WELCOME_KEY) === '1');
   const r = useRestore();
   if (skipped || !store.isEmpty()) return null;

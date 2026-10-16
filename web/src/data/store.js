@@ -218,7 +218,7 @@ export async function createStore(backend, preloaded) {
       return () => subs.delete(s);
     },
     flush() { return chain; },
-    isEmpty(cols = ['workouts', 'body', 'templates', 'days', 'food', 'foods']) {
+    isEmpty(cols = ['workouts', 'body', 'templates', 'days', 'food', 'foods', 'foodEntries', 'foodItems', 'scaleEntries', 'workoutLogs', 'workoutPlans', 'stepsEntries']) {
       return cols.every((c) => !Object.keys(mem[c] || {}).length);
     },
     counts(data, cols = LEGACY_COLLECTIONS) {
