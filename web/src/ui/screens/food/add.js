@@ -11,7 +11,9 @@ import { searchLocal, searchOnline, saveOnlineFood, recipeSummary, findBarcode, 
 import { foodNutrients, servingAmount, recipePortion, dayTotals, recentItems, kcalFromMacros, hourlyGoTos, historyMatches } from '../../../domain/nutrition.js';
 import { addDays } from '../../../domain/calc/index.js';
 import { scaleNutrients, roundNutrients } from '../../../data/models/nutrients.js';
-import { aiPhoto, aiErrorKey, getClaudeKey } from '../../../services/ai-food.js';
+import { aiPhoto, aiErrorKey, aiReady } from '../../../services/ai-food.js';
+import { isArtifact } from '../../../services/env.js';
+import { artifactAiStatus } from '../../../services/ai-sample.js';
 import { Scanner } from './scanner.js';
 import { nutrientLabel, unitLabel, sourceLabel, periodLabel } from '../../food/labels.js';
 import { NUTRIENT_UNITS } from '../../../data/models/nutrients.js';
@@ -81,7 +83,7 @@ export function FoodAdd({ route }) {
       if (f) { setMsg(''); setItem({ kind: 'food', doc: f }); }
       else setMsg(t('food.scan.notFound', { code }));
       if (!f) setNotFound(code);
-    } catch (e) { setMsg(t('food.scan.error')); }
+    } catch (e) { setMsg(isArtifact() ? t('food.scan.errorArtifact') : t('food.scan.error')); }
   }
   const [notFound, setNotFound] = useState(null);
 
@@ -204,7 +206,7 @@ function ResultRow({ r, energy, onTap }) {
 
 function OnlineResults({ online, energy, onPick }) {
   const block = (list, label, err) => html`<div class="ltitle row">${label}${online.busy ? html`<${Spinner}/>` : null}</div>
-    ${err ? html`<div class="lfoot">${err.code === 'bad_key' ? t('food.online.badKey') : t('food.online.error')}</div>` : null}
+    ${err ? html`<div class="lfoot">${err.code === 'bad_key' ? t('food.online.badKey') : isArtifact() ? t('food.online.errorArtifact') : t('food.online.error')}</div>` : null}
     ${list.length ? html`<div class="list results">${list.map((f) => html`<button class="lrow rrow" onClick=${() => onPick(f)}>
       <span class="ltext"><span class="ll">${f.name}</span><span class="ls">${(f.brand ? f.brand + ' · ' : '') + per100Text(f.nutrients, energy)}</span></span>
       <${Icon} name="plus" cls="radd"/></button>`)}</div>` : (!online.busy && !err ? html`<div class="lfoot">${t('food.online.none')}</div>` : null)}`;
@@ -343,7 +345,9 @@ function PhotoSheet({ open, date, onClose, onPlate }) {
   const cam = useRef(null), gal = useRef(null);
   useEffect(() => { if (!open) { if (ctl.current) ctl.current.abort(); setSt({ busy: false, rows: [], msg: '', note: '' }); } }, [open]);
   if (!open) return null;
-  const hasKey = !!getClaudeKey();
+  const hasKey = aiReady();
+  const artifact = isArtifact();
+  const noPhoto = artifact && artifactAiStatus().status === 'ready' && !artifactAiStatus().photo;
 
   async function analyze(file) {
     if (!file) return;
@@ -376,7 +380,9 @@ function PhotoSheet({ open, date, onClose, onPlate }) {
   return html`<${Sheet} open=${true} onClose=${onClose} title=${t('food.photo.title')}>
     <input ref=${cam} type="file" accept="image/*" capture="environment" hidden onChange=${(e) => analyze(e.currentTarget.files[0])}/>
     <input ref=${gal} type="file" accept="image/*" hidden onChange=${(e) => analyze(e.currentTarget.files[0])}/>
-    ${!hasKey ? html`<div class="banner">${t('food.photo.noKey')}</div><button class="primary" style="width:100%" onClick=${() => { onClose(); navigate('/more/settings'); }}>${t('food.photo.toSettings')}</button>` : html`
+    ${!hasKey && artifact ? html`<div class="banner">${t('ai.artifact.unavailable')}</div>`
+    : noPhoto ? html`<div class="banner">${t('ai.err.images_unavailable')}</div>`
+    : !hasKey ? html`<div class="banner">${t('food.photo.noKey')}</div><button class="primary" style="width:100%" onClick=${() => { onClose(); navigate('/more/settings'); }}>${t('food.photo.toSettings')}</button>` : html`
       <div class="hint" style="margin:0 0 10px">${t('food.photo.hint')}</div>
       <div class="grid2"><button class="ib" disabled=${st.busy} onClick=${() => pick(cam)}><${Icon} name="camera"/>${t('food.photo.camera')}</button><button class="ib" disabled=${st.busy} onClick=${() => pick(gal)}><${Icon} name="search"/>${t('food.photo.gallery')}</button></div>`}
     ${st.msg ? html`<div class="prev" style="margin-top:12px">${st.busy ? html`<${Spinner}/> ` : null}${st.msg}</div>` : null}

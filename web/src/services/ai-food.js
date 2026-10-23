@@ -1,11 +1,23 @@
-/* ИИ для питания через ключ Claude пользователя: автозаполнение продукта по названию и распознавание фото
+/* ИИ для питания через ключ Claude пользователя (в артефакте claude.ai — через аккаунт Claude, см. ai-sample.js): автозаполнение продукта по названию и распознавание фото
    (тарелка или этикетка). Перед запросом проверяются лимиты (config.js), после — счётчик +1.
    Остальные ИИ-функции спецификации (описание текстом, рецепт по ссылке, скан стека) — пока заглушки. */
 import { usageStatus, recordUseOp } from './usage.js';
+import { isArtifact, lsGet, lsSet, lsRemove } from './env.js';
+import { getArtifactSample, artifactAiStatus } from './ai-sample.js';
 
 const KEY_LS = 'journal.apiKey';
-export function getClaudeKey() { try { return localStorage.getItem(KEY_LS) || ''; } catch (e) { return ''; } }
-export function setClaudeKey(k) { try { if (k) localStorage.setItem(KEY_LS, k); else localStorage.removeItem(KEY_LS); } catch (e) { /* приватный режим */ } }
+export function getClaudeKey() { return lsGet(KEY_LS) || ''; }
+export function setClaudeKey(k) { if (k) lsSet(KEY_LS, k); else lsRemove(KEY_LS); }
+
+/* В артефакте claude.ai ИИ идёт через аккаунт Claude (возможность sample), ключ не нужен */
+if (isArtifact()) getArtifactSample();
+
+/* Можно ли показывать кнопки ИИ: в артефакте — пока sample не оказался недоступен, иначе — есть ключ */
+export function aiReady() {
+  if (!isArtifact()) return !!getClaudeKey();
+  const s = artifactAiStatus().status;
+  return s !== 'unavailable' && s !== 'denied';
+}
 
 function err(code, extra) { return Object.assign(new Error(code), { code }, extra || {}); }
 
@@ -78,22 +90,23 @@ export function parsePhoto(r) {
 
 /* ---------- вызовы с лимитами ---------- */
 
-async function run(store, feature, { today, now, limits }, call) {
-  const key = getClaudeKey();
-  if (!key) throw err('no_key');
+async function run(store, feature, { today, now, limits, artifact = isArtifact(), getSample = getArtifactSample }, call) {
+  const key = artifact ? null : getClaudeKey();
+  if (!artifact && !key) throw err('no_key');
   const st = usageStatus(store, feature, today, limits);
   if (!st.allowed) throw err('limit', { period: st.blockedBy, limit: st.limit[st.blockedBy] });
-  const sample = await sampleFor(key);
+  const sample = artifact ? await getSample() : await sampleFor(key);
+  if (!sample) throw err('unavailable');
   const res = await call(sample);
   await store.batch([recordUseOp(store, feature, today, now)]);
   return res;
 }
 
 /* Питательность продукта по названию: { per100, note } */
-export async function aiFill(store, name, { grams, signal, today, now, limits } = {}) {
+export async function aiFill(store, name, { grams, signal, today, now, limits, artifact, getSample } = {}) {
   const n = String(name || '').trim();
   if (!n) throw err('no_name');
-  return run(store, 'ai_fill', { today, now, limits }, async (sample) => {
+  return run(store, 'ai_fill', { today, now, limits, artifact, getSample }, async (sample) => {
     const r = await sample.json(fillPrompt(n, Number(grams) || 0), { modelTier: 'quick', signal, schema: 'nutrition' });
     const per100 = parsePer100(r);
     if (!per100) throw err('unsure');
@@ -102,17 +115,19 @@ export async function aiFill(store, name, { grams, signal, today, now, limits } 
 }
 
 /* Продукты на фото: { items: [{ name, grams, per100, src, note }], note } */
-export async function aiPhoto(store, file, { signal, today, now, limits } = {}) {
+export async function aiPhoto(store, file, { signal, today, now, limits, artifact, getSample } = {}) {
   if (!file) throw err('no_file');
-  return run(store, 'ai_photo', { today, now, limits }, async (sample) => {
+  return run(store, 'ai_photo', { today, now, limits, artifact, getSample }, async (sample) => {
     const r = await sample.json(PHOTO_PROMPT, { images: file, modelTier: 'default', signal, schema: 'photo' });
     return parsePhoto(r);
   });
 }
 
-/* Ключ сообщения об ошибке для t() */
-export function aiErrorKey(e) {
+/* Ключ сообщения об ошибке для t(); в артефакте часть сообщений своя (нет ключа и счёта API) */
+export const AI_ERR_CODES = Object.freeze(['no_key', 'limit', 'cancelled', 'bad_key', 'no_credit', 'network', 'rate_limited', 'invalid_json', 'image_rejected', 'refused', 'not_granted', 'unsure', 'no_name', 'images_unavailable', 'session_expired', 'unavailable']);
+export const AI_ERR_ARTIFACT = Object.freeze(['limit', 'not_granted', 'no_key']);
+export function aiErrorKey(e, artifact = isArtifact()) {
   const c = e && e.code;
-  const known = ['no_key', 'limit', 'cancelled', 'bad_key', 'no_credit', 'network', 'rate_limited', 'invalid_json', 'image_rejected', 'refused', 'not_granted', 'unsure', 'no_name'];
-  return 'ai.err.' + (known.includes(c) ? c : 'other');
+  if (artifact && AI_ERR_ARTIFACT.includes(c)) return 'ai.err.artifact.' + c;
+  return 'ai.err.' + (AI_ERR_CODES.includes(c) ? c : 'other');
 }

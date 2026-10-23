@@ -1,14 +1,46 @@
 /* Ключи внешних сервисов: Claude (фото еды и автозаполнение) и USDA FoodData Central (поиск продуктов).
    Хранятся только на этом телефоне и не попадают в резервную копию. */
-import { html, useApp, useData, useState, todayYmd } from '../core.js';
+import { html, useApp, useData, useState, useEffect, todayYmd } from '../core.js';
 import { Card } from '../kit.js';
 import { t } from '../../i18n/index.js';
 import { getClaudeKey, setClaudeKey, testClaudeKey } from '../../services/ai-food.js';
 import { getUsdaKey, setUsdaKey } from '../../services/foodsearch/index.js';
 import { usageStatus } from '../../services/usage.js';
 import { AI_LIMITS } from '../../config.js';
+import { isArtifact } from '../../services/env.js';
+import { getArtifactSample, artifactAiStatus, onArtifactAiStatus } from '../../services/ai-sample.js';
+
+function usageLines(store) {
+  return ['ai_photo', 'ai_fill'].map((f) => {
+    const st = usageStatus(store, f, todayYmd());
+    return t(f === 'ai_photo' ? 'keys.usage.photo' : 'keys.usage.fill', { d: st.used.day, dl: AI_LIMITS[f].day, m: st.used.month, ml: AI_LIMITS[f].month });
+  });
+}
+
+/* Артефакт claude.ai: ключ не нужен, ИИ идёт через аккаунт Claude */
+function ClaudeAccountCard() {
+  const { store } = useApp();
+  useData('usage');
+  const [st, setSt] = useState(artifactAiStatus());
+  useEffect(() => {
+    const off = onArtifactAiStatus(() => setSt(artifactAiStatus()));
+    getArtifactSample().then(() => setSt(artifactAiStatus()));
+    return off;
+  }, []);
+  const text = st.status === 'ready' ? (st.photo ? t('keys.claude.st.ready') : t('keys.claude.st.readyNoPhoto'))
+    : st.status === 'unavailable' ? t('keys.claude.st.unavailable') : st.status === 'denied' ? t('keys.claude.st.denied') : t('keys.claude.st.checking');
+  return html`<${Card} title=${t('keys.claude.title')} icon="key" color="#D97757">
+    <div class="hint" style="margin:0 0 12px">${t('keys.claude.artifact')}</div>
+    <div class="hint io">${text}</div>
+    <div class="hint">${usageLines(store).join(' · ')}</div>
+  <//>`;
+}
 
 export function ClaudeKeyCard() {
+  return isArtifact() ? html`<${ClaudeAccountCard}/>` : html`<${ClaudeKeyFormCard}/>`;
+}
+
+function ClaudeKeyFormCard() {
   const { store } = useApp();
   useData('usage');
   const [key, setKey] = useState('');
@@ -31,10 +63,7 @@ export function ClaudeKeyCard() {
     setClaudeKey(k); setHas(true); setKey('');
     check(k);
   }
-  const used = ['ai_photo', 'ai_fill'].map((f) => {
-    const st = usageStatus(store, f, todayYmd());
-    return f === 'ai_photo' ? t('keys.usage.photo', { d: st.used.day, dl: AI_LIMITS[f].day, m: st.used.month, ml: AI_LIMITS[f].month }) : t('keys.usage.fill', { d: st.used.day, dl: AI_LIMITS[f].day, m: st.used.month, ml: AI_LIMITS[f].month });
-  });
+  const used = usageLines(store);
   return html`<${Card} title=${t('keys.claude.title')} icon="key" color="#D97757">
     <div class="hint" style="margin:0 0 12px">${t('keys.claude.text')}</div>
     ${has ? html`<div class="kv"><span>${t('keys.claude.saved')}</span><span>••••</span></div>
@@ -51,6 +80,7 @@ export function UsdaKeyCard() {
   const [msg, setMsg] = useState('');
   return html`<${Card} title=${t('keys.usda.title')} icon="search" color="#34C759">
     <div class="hint" style="margin:0 0 12px">${t('keys.usda.text')}</div>
+    ${isArtifact() ? html`<div class="hint" style="margin:0 0 12px">${t('keys.usda.artifact')}</div>` : null}
     ${has ? html`<div class="kv"><span>${t('keys.usda.saved')}</span><span>••••</span></div>
       <button class="danger" style="width:100%;margin-top:10px" onClick=${() => { setUsdaKey(''); setHas(false); setMsg(t('keys.deleted')); }}>${t('keys.delete')}</button>`
     : html`<div class="row"><input type="password" autocomplete="off" placeholder=${t('keys.usda.ph')} value=${key} onInput=${(e) => setKey(e.currentTarget.value)}/><button class="primary" onClick=${() => { const k = key.trim(); if (k.length < 20) { setMsg(t('keys.usda.format')); return; } setUsdaKey(k); setHas(true); setKey(''); setMsg(t('keys.usda.ok')); }}>${t('common.save')}</button></div>`}

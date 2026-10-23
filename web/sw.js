@@ -1,6 +1,6 @@
 /* Service worker: приложение открывается без интернета.
    При каждом выпуске новой версии меняй VERSION — тогда телефон предложит обновиться. */
-const VERSION = '2026-10-16.11';
+const VERSION = '2026-10-23.1';
 const CACHE = 'journal-' + VERSION;
 const SHELL = [
   './',
@@ -18,6 +18,7 @@ const SHELL = [
   'src/config.js',
   'src/main.js',
   'src/version.js',
+  'src/data/artifact-backend.js',
   'src/data/ids.js',
   'src/data/legacy-migrate.js',
   'src/data/legacy.js',
@@ -41,7 +42,10 @@ const SHELL = [
   'src/i18n/ru.js',
   'src/services/ai-food.js',
   'src/services/ai-planned.js',
+  'src/services/ai-sample.js',
+  'src/services/ai-schemas.js',
   'src/services/barcode.js',
+  'src/services/env.js',
   'src/services/exercise-library.js',
   'src/services/sync.js',
   'src/services/usage.js',

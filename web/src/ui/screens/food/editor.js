@@ -7,7 +7,8 @@ import { t, fmtNum } from '../../../i18n/index.js';
 import { num, Spinner } from '../../food/parts.js';
 import { NUTRIENT_KEYS, NUTRIENT_UNITS, MACROS } from '../../../data/models/nutrients.js';
 import { perServingTo100, kcalFromMacros } from '../../../domain/nutrition.js';
-import { aiFill, aiPhoto, aiErrorKey, getClaudeKey } from '../../../services/ai-food.js';
+import { aiFill, aiPhoto, aiErrorKey, aiReady } from '../../../services/ai-food.js';
+import { isArtifact } from '../../../services/env.js';
 import { nutrientLabel, unitLabel, periodLabel } from '../../food/labels.js';
 
 const GROUPS = [['carbs', 'food.group.carbs'], ['fats', 'food.group.fats'], ['protein', 'food.group.protein'], ['vitamins', 'food.group.vitamins'], ['minerals', 'food.group.minerals'], ['other', 'food.group.other']];
@@ -105,12 +106,12 @@ export function FoodEditor({ route }) {
       </div>
     <//>
     <${Card} title=${t('food.editor.ai')} icon="bolt" color="#FF9500">
-      ${getClaudeKey() ? html`<div class="grid2">
+      ${aiReady() ? html`<div class="grid2">
           <button disabled=${ai.busy || !d.name.trim()} onClick=${fillByName}>${t('food.editor.aiName')}</button>
           <button disabled=${ai.busy} onClick=${() => { photo.current.value = ''; photo.current.click(); }}>${t('food.editor.aiLabel')}</button>
         </div>
         <input ref=${photo} type="file" accept="image/*" hidden onChange=${(e) => fillByPhoto(e.currentTarget.files[0])}/>`
-      : html`<div class="hint" style="margin:0">${t('food.photo.noKey')}</div>`}
+      : html`<div class="hint" style="margin:0">${isArtifact() ? t('ai.artifact.unavailable') : t('food.photo.noKey')}</div>`}
       ${ai.msg ? html`<div class="hint io">${ai.busy ? html`<${Spinner}/> ` : null}${ai.msg}</div>` : null}
     <//>
     <${Card} title=${t('food.editor.label')} icon="list" color="var(--k-food)">

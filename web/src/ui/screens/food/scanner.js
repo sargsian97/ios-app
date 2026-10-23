@@ -3,6 +3,7 @@ import { html, useEffect, useRef, useState } from '../../core.js';
 import { Icon } from '../../icons.js';
 import { t } from '../../../i18n/index.js';
 import { decodeImageData, decodeFile, validBarcode } from '../../../services/barcode.js';
+import { isArtifact } from '../../../services/env.js';
 
 export function Scanner({ onCode, onClose }) {
   const video = useRef(null);
@@ -73,7 +74,7 @@ export function Scanner({ onCode, onClose }) {
       <button class="small icn" aria-label=${t('common.close')} onClick=${onClose}><${Icon} name="close" size=${16}/></button>
     </div>
     <div class="sc-bottom">
-      <div class="sc-msg">${msg || (state === 'scanning' ? t('food.scan.aim') : state === 'denied' ? t('food.scan.denied') : state === 'unsupported' ? t('food.scan.unsupported') : t('food.scan.starting'))}</div>
+      <div class="sc-msg">${msg || (state === 'scanning' ? t('food.scan.aim') : state === 'denied' ? (isArtifact() ? t('food.scan.deniedArtifact') : t('food.scan.denied')) : state === 'unsupported' ? (isArtifact() ? t('food.scan.deniedArtifact') : t('food.scan.unsupported')) : t('food.scan.starting'))}</div>
       <form class="row" onSubmit=${submit}>
         <input inputmode="numeric" placeholder=${t('food.scan.manual')} value=${manual} onInput=${(e) => setManual(e.currentTarget.value)} aria-label=${t('food.scan.manual')}/>
         <button class="primary" type="submit">${t('food.scan.find')}</button>

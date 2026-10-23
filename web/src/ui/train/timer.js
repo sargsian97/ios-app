@@ -54,11 +54,11 @@ export function useWakeLock(on) {
   useEffect(() => {
     if (!on || !('wakeLock' in navigator)) return;
     let lock = null, alive = true;
-    const req = () => { if (document.visibilityState === 'visible' && !lock) navigator.wakeLock.request('screen').then((l) => { if (!alive) { l.release(); return; } lock = l; l.addEventListener('release', () => { lock = null; }); }).catch(() => {}); };
+    const req = () => { try { if (document.visibilityState === 'visible' && !lock) navigator.wakeLock.request('screen').then((l) => { if (!alive) { l.release(); return; } lock = l; l.addEventListener('release', () => { lock = null; }); }).catch(() => {}); } catch (e) { /* песочница или нет поддержки */ } };
     req();
     const vis = () => req();
     document.addEventListener('visibilitychange', vis);
-    return () => { alive = false; document.removeEventListener('visibilitychange', vis); if (lock) lock.release().catch(() => {}); };
+    return () => { alive = false; document.removeEventListener('visibilitychange', vis); if (lock) { try { lock.release().catch(() => {}); } catch (e) { /* уже снят */ } } };
   }, [on]);
 }
 

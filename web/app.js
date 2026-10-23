@@ -1,6 +1,8 @@
 /* Экраны старого журнала: тренировки, питание, замеры, история, шаблоны и настройки.
    Работают внутри новой оболочки (web/src/ui) и заменяются новыми экранами по этапам. */
 import { parseBackup } from './src/data/store.js';
+import { t } from './src/i18n/index.js';
+import { isArtifact } from './src/services/env.js';
 
 /* ---------- helpers ---------- */
 var DOW=['вс','пн','вт','ср','чт','пт','сб'];
@@ -827,7 +829,7 @@ function renderSheet(){
       +'<div style="margin-top:8px"><label class="lbl">Граммы</label><input id="g" class="bigin" data-f="sh_g" inputmode="decimal" placeholder="г" value="'+esc(sh.grams)+'"></div>'
       +'<div class="chips">'+[30,50,100,150,200].map(function(x){return '<button class="chip" data-act="gset" data-v="'+x+'">'+x+'</button>';}).join('')+'</div>'
       +(S.sample?'<button class="ib" style="width:100%" data-act="aiFill">'+ico('spark')+'Заполнить автоматически</button>':'')
-      +'<div class="hint" id="aist" style="min-height:18px;margin-top:6px">'+esc(sh.status||(S.sample?'Введи название и граммы — остальное заполню сам. Всё можно поправить.':'Автозаполнение работает с ключом Claude API («План → Настройки»). Пока введи значения вручную.'))+'</div>'
+      +'<div class="hint" id="aist" style="min-height:18px;margin-top:6px">'+esc(sh.status||(S.sample?'Введи название и граммы — остальное заполню сам. Всё можно поправить.':(ARTIFACT?t('ai.artifact.legacyFill'):'Автозаполнение работает с ключом Claude API («План → Настройки»). Пока введи значения вручную.')))+'</div>'
       +macroBlock(sh)
       +'<div class="chkrow"><input type="checkbox" id="sv" data-f="sh_save"'+(sh.save?' checked':'')+'><label for="sv">Сохранить в мои продукты</label></div>'
       +'<button class="primary" style="width:100%" data-act="addGo">Добавить</button>';
@@ -906,7 +908,7 @@ function editGo(){
 /* ---------- photo ---------- */
 function photoHint(){
   if(S.photo===true)return 'Фото еды: определю продукты и вес. Фото этикетки: возьму точные значения с упаковки.';
-  if(S.photo===false)return 'Распознавание фото работает с ключом Claude API. Добавь его во вкладке «План → Настройки».';
+  if(S.photo===false)return ARTIFACT?(S.sample?t('ai.err.images_unavailable'):t('ai.artifact.legacyPhoto')):'Распознавание фото работает с ключом Claude API. Добавь его во вкладке «План → Настройки».';
   return 'Проверяю, доступно ли распознавание фото…';
 }
 function photoButtons(){
@@ -1925,7 +1927,7 @@ function scheduleSample(){
   sampleTimer=setTimeout(function(){sampleTimer=null;flushSample();},900);
 }
 async function flushSample(){
-  if(I18N.busy||!S.sample||LANG!=='en')return;
+  if(I18N.busy||!S.sample||S.sample.artifact||LANG!=='en')return;
   var keys=Object.keys(I18N.pending).filter(function(k){return !I18N.user[k]&&k.length<=300;}).slice(0,40);
   if(!keys.length)return;
   if(Date.now()-I18N.last<4000){sampleTimer=setTimeout(function(){sampleTimer=null;flushSample();},4300-(Date.now()-I18N.last));return;}
@@ -1977,9 +1979,19 @@ function langCard(){
 /* ---------- приложение на iPhone: ключ Claude, резервные копии ---------- */
 var KEY_LS='journal.apiKey';
 var PREVIEW=window.JOURNAL_PREVIEW||null;
+var ARTIFACT=isArtifact();
 function getKey(){try{return localStorage.getItem(KEY_LS)||'';}catch(e){return '';}}
 function setKey(k){try{if(k)localStorage.setItem(KEY_LS,k);else localStorage.removeItem(KEY_LS);}catch(e){}}
 function setupAI(){
+  if(ARTIFACT){
+    /* артефакт claude.ai: ИИ через аккаунт Claude (возможность sample), ключ не нужен */
+    S.sampleChecked=false;S.photo=null;
+    return import('./src/services/ai-sample.js').then(function(m){return m.getArtifactSample();}).then(function(sm){
+      S.sample=sm||null;S.sampleChecked=true;S.photoMax=0;
+      if(!sm){S.photo=false;S.photoWhy='';render(true);return;}
+      return sm.limits().then(function(c){S.photo=!!(c&&c.images);if(S.sheet)render(true);});
+    }).catch(function(){S.sample=null;S.sampleChecked=true;S.photo=false;S.photoWhy='';});
+  }
   var key=getKey();
   if(!key){S.sample=null;S.sampleChecked=true;S.photo=false;S.photoWhy='нет ключа';return Promise.resolve();}
   S.sampleChecked=false;S.photo=null;

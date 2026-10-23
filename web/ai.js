@@ -1,39 +1,10 @@
 /* Claude API для автозаполнения продуктов, распознавания фото и перевода.
    Ключ хранится только на этом телефоне и уходит напрямую в api.anthropic.com. */
 import Anthropic from './vendor/anthropic-0.131.0.mjs';
+import { SCHEMAS } from './src/services/ai-schemas.js';
 
 const MODEL = 'claude-opus-5-5';
 const MAX_SIDE = 1568;
-
-const NUM = { type: 'number' };
-const SCHEMAS = {
-  nutrition: {
-    type: 'object',
-    properties: { kcal: NUM, p: NUM, f: NUM, c: NUM, fib: NUM, pa: NUM, pv: NUM, note: { type: 'string' } },
-    required: ['kcal', 'p', 'f', 'c', 'fib', 'pa', 'pv', 'note'],
-    additionalProperties: false
-  },
-  photo: {
-    type: 'object',
-    properties: {
-      items: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            name: { type: 'string' }, grams: NUM, kcal: NUM, p: NUM, f: NUM, c: NUM, fib: NUM, pa: NUM, pv: NUM,
-            src: { type: 'string', enum: ['estimate', 'label'] }, note: { type: 'string' }
-          },
-          required: ['name', 'grams', 'kcal', 'p', 'f', 'c', 'fib', 'pa', 'pv', 'src', 'note'],
-          additionalProperties: false
-        }
-      },
-      note: { type: 'string' }
-    },
-    required: ['items', 'note'],
-    additionalProperties: false
-  }
-};
 
 function err(code, message) { const e = new Error(message || code); e.code = code; return e; }
 
