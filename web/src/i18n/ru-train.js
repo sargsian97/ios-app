@@ -159,6 +159,7 @@ export default {
   'train.active': 'Идёт тренировка',
   'train.continue': 'Продолжить',
   'train.doneToday': 'Сегодня сделано',
+  'train.another': 'Ещё одна тренировка',
   'train.dayLogs': 'Тренировки за день',
   'train.dayEmpty': 'За этот день тренировок нет.',
   'train.logForDay': 'Записать тренировку за этот день',

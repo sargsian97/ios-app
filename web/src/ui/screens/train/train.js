@@ -63,20 +63,23 @@ export function TrainHome({ route }) {
   const perDay = Array.from({ length: 7 }, (_, i) => week.filter((w) => w.date === addDays(ws, i)).reduce((n, w) => n + workoutSummary(w).sets, 0));
   const dayLogs = sortLogs(logs.filter((w) => w.date === date));
   const recent = sortLogs(logs).filter((w) => w.date !== date).slice(0, 5);
+  /* тренировка за сегодня уже записана: она сверху, предложение плана — скромно, как «ещё одна» */
+  const doneToday = isToday && dayLogs.length > 0;
 
   return html`<${Page} title=${isToday ? t('nav.train') : fmtDate(date, 'long')} icon="train" color="linear-gradient(135deg,#9B99FF,#5856D6)"
       back=${isToday ? null : '/train'} backLabel=${t('nav.train')}
       right=${html`<button class="small icn" aria-label=${t('train.settings')} onClick=${() => navigate('/train/settings')}><${Icon} name="gear"/></button>`}>
     ${s ? html`<${ActiveCard} s=${s}/>` : null}
+    ${dayLogs.length ? html`<div class="ltitle">${isToday ? t('train.doneToday') : t('train.dayLogs')}</div><div class="list">${dayLogs.map((w) => html`<${LogRow} w=${w} byId=${cat.byId} units=${units}/>`)}</div>` : !isToday ? html`<div class="card empty">${t('train.dayEmpty')}</div>` : null}
     ${!s ? html`<div class="card pad wk-today">
       ${sug ? html`
-        <div class="rl">${isToday ? t('train.today') : t('train.forDay')}</div>
+        <div class="rl">${doneToday ? t('train.another') : isToday ? t('train.today') : t('train.forDay')}</div>
         ${prog && sug.plan.programId === prog.id && pwk && !pwk.finished ? html`<button class="wk-progline" onClick=${() => navigate('/train/programs')}>${prog.name} · ${t('prog.weekOf', { n: pwk.week + 1, total: pwk.weeks })}${pwk.deload ? ' · ' + t('prog.deload') : pwk.mods && pwk.mods.heavy != null ? ' · ' + t(pwk.mods.heavy ? 'prog.heavy' : 'prog.light') : ''}</button>` : null}
-        <div class="wk-today-h"><b>${sug.plan.name}</b><span class="hint">${isToday ? whyLabel(sug.why) + (sug.why === 'missed' || sug.why === 'next' ? ' · ' + fmtDate(sug.date, 'long') : '') : ''}</span></div>
-        <div class="wk-preview">${planItems(sug.plan).slice(0, 8).map((it) => html`<span>${cat.byId[it.exerciseId] && !(it.alternatives && it.alternatives.length > 1) ? cat.byId[it.exerciseId].name : it.name}</span>`)}${planItems(sug.plan).length > 8 ? html`<span>+${planItems(sug.plan).length - 8}</span>` : null}</div>
-        <${GymLine}/>
+        <div class="wk-today-h"><b>${sug.plan.name}</b><span class="hint">${isToday && !doneToday ? whyLabel(sug.why) + (sug.why === 'missed' || sug.why === 'next' ? ' · ' + fmtDate(sug.date, 'long') : '') : ''}</span></div>
+        ${doneToday ? null : html`<div class="wk-preview">${planItems(sug.plan).slice(0, 8).map((it) => html`<span>${cat.byId[it.exerciseId] && !(it.alternatives && it.alternatives.length > 1) ? cat.byId[it.exerciseId].name : it.name}</span>`)}${planItems(sug.plan).length > 8 ? html`<span>+${planItems(sug.plan).length - 8}</span>` : null}</div>
+        <${GymLine}/>`}
         <div class="row">
-          <button class="primary grow" disabled=${!cat.ready} onClick=${() => start(sug.plan)}>${t('train.start')}</button>
+          <button class=${doneToday ? 'grow' : 'primary grow'} disabled=${!cat.ready} onClick=${() => start(sug.plan)}>${t('train.start')}</button>
           <button onClick=${() => setChoose(true)}>${t('train.other')}</button>
         </div>` : html`
         <div class="rl">${t('train.today')}</div>
@@ -84,7 +87,6 @@ export function TrainHome({ route }) {
         <div class="row"><button class="primary grow" disabled=${!cat.ready} onClick=${() => start(null)}>${t('train.empty')}</button><button onClick=${() => navigate('/train/plan/new')}>${t('train.plan.new')}</button></div>`}
     </div>` : null}
 
-    ${dayLogs.length ? html`<div class="ltitle">${isToday ? t('train.doneToday') : t('train.dayLogs')}</div><div class="list">${dayLogs.map((w) => html`<${LogRow} w=${w} byId=${cat.byId} units=${units}/>`)}</div>` : !isToday ? html`<div class="card empty">${t('train.dayEmpty')}</div>` : null}
 
     <div class="scgrid wk-actions">
       ${[['heart', 'train.act.cardio', () => setCardio(true)], ['search', 'train.act.library', () => navigate('/train/library')], ['list', 'train.act.plans', () => navigate('/train/plans')], ['bolt', 'train.act.programs', () => navigate('/train/programs')], ['cal', 'train.act.history', () => navigate('/train/history')], ['target', 'train.act.levels', () => navigate('/train/levels')], ['plate', 'train.act.plates', () => navigate('/train/plates')], ['gym', 'train.act.gyms', () => navigate('/train/gyms')]].map(([ic, l, fn]) => html`<button class="scbtn" onClick=${fn}><${Icon} name=${ic}/><span>${t(l)}</span></button>`)}
