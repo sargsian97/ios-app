@@ -546,6 +546,22 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .wk-head .small{height:34px}
 .wk-clock{display:inline-flex;align-items:center;gap:4px;font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:var(--k-str)}
 .wk-clock .i{width:17px;height:17px}
+.wk-headmid{display:flex;flex-direction:column;align-items:center;line-height:1.1;min-width:0}
+.wk-pos{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.wk-ex.done{display:flex;align-items:center;gap:10px;width:100%;height:auto;padding:12px 14px;text-align:left;color:var(--ink);font-weight:600;font-size:16px;opacity:.88}
+.wk-ex.done span:last-child{color:var(--muted);font-family:var(--num);font-variant-numeric:tabular-nums;font-size:14px;font-weight:500;white-space:nowrap}
+.wk-ok{width:26px;height:26px;border-radius:50%;background:var(--ok);color:#fff;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.wk-ok .i{width:16px;height:16px;stroke-width:2.6}
+.wk-warm{display:flex;align-items:center;gap:8px;margin:4px 0 8px;padding:4px 4px 4px 10px;border-radius:12px;background:var(--card2);font-size:14px}
+.wk-warm b{color:var(--k-steps);font-family:var(--num);font-weight:800;flex:none}
+.wk-warm .t{flex:1;min-width:0;height:auto;min-height:36px;padding:6px 0;background:none;box-shadow:none;text-align:left;color:var(--ink2);font-weight:500;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk-warm .ok{width:36px;height:36px;padding:0;border-radius:10px;background:var(--input);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;flex:none}
+.wk-warm .ok .i{width:18px;height:18px;stroke-width:2.6}
+.wk-warm.done .ok{background:var(--ok);color:#fff}
+.keybar{position:fixed;left:0;right:0;z-index:12;height:50px;display:flex;align-items:center;gap:6px;padding:0 8px;background:var(--glass);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:.5px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.08)}
+.keybar button{height:38px;min-width:52px;padding:0 10px;border-radius:9px;background:var(--input);color:var(--ink);font-family:var(--num);font-weight:600;font-size:15px;flex:none}
+.keybar .go{background:var(--k-str);color:#fff}
+.keybar .done{background:transparent;color:var(--accent);font-family:inherit;font-weight:700}
 .wk-title{font-size:28px}
 .wk-sub{margin:-8px 0 8px}
 .wk-prog{margin:0 0 12px}
@@ -578,7 +594,6 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .chk.on{background:var(--ok);color:#fff;box-shadow:0 6px 16px color-mix(in srgb,var(--ok) 40%,transparent)}
 .wk-chk{width:46px;height:44px}
 .wk-chk .i{width:22px;height:22px;stroke-width:2.6}
-.wk-donebtn{width:100%;height:34px;font-size:13px;margin-bottom:6px;color:var(--muted)}
 .wk-cardio{margin-top:6px}
 .wk-note{margin-top:8px;min-height:60px}
 .wk-add{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;margin:4px 0 12px}

@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildSession, completeSet, uncompleteSet, nextPointer, finishSession, findRecords, workoutSummary, suggestPlan,
-  pickAlternative, previousSets, restFor, targetFor, weekdayOf, cardioExerciseId, legacyCardioType, cardioPace, setVolume
+  pickAlternative, previousSets, restFor, targetFor, weekdayOf, cardioExerciseId, legacyCardioType, cardioPace, setVolume,
+  completeWarmups, propagateEdit, planFromSession, retargetEntry
 } from '../web/src/domain/workout.js';
 
 let n = 0;
@@ -154,4 +155,55 @@ test('объём подхода с весом тела и помощью', () =>
   assert.equal(setVolume({ reps: 10 }, { bodyweightKg: 80, bodyweightShare: 1 }), 800);
   assert.equal(setVolume({ assist: 30, reps: 10 }, { bodyweightKg: 80, bodyweightShare: 1 }), 500);
   assert.equal(setVolume({ weight: 20, reps: null }), 0);
+});
+
+test('разминка одной строкой: все разминочные отмечаются, курсор на рабочий, отдых как после разминки', () => {
+  let s = buildSession({ plan: PLAN, catalog: CAT, logs: [], date: '2026-10-16', now: T0, newId });
+  const warm = [{ id: 'w1', type: 'warmup', side: 'both', done: false, target: { weight: 20, reps: 8 } }, { id: 'w2', type: 'warmup', side: 'both', done: false, target: { weight: 30, reps: 5 } }];
+  s = Object.assign({}, s, { exercises: s.exercises.map((e, i) => (i === 0 ? Object.assign({}, e, { sets: warm.concat(e.sets) }) : e)), cursor: { ei: 0, si: 0 } });
+  const r = completeWarmups(s, 0, { now: at(30), profile: PROFILE });
+  assert.deepEqual(r.exercises[0].sets.slice(0, 2).map((x) => [x.done, x.weight, x.reps]), [[true, 20, 8], [true, 30, 5]]);
+  assert.deepEqual(r.cursor, { ei: 0, si: 2 }, 'курсор на первый рабочий');
+  assert.equal(r.rest.targetSec, 60, 'отдых после разминочного');
+  assert.equal(r.workStart, null);
+  assert.equal(completeWarmups(r, 0, { now: at(40), profile: PROFILE }), r, 'повторно нечего отмечать');
+});
+
+test('правка подхода переносится в цели следующих, умная прогрессия их не трогает', () => {
+  const sets = [0, 1, 2].map((i) => ({ id: 's' + i, type: 'normal', weight: null, reps: null, done: false, target: { weight: 60, reps: 10 } }));
+  const entry = { exerciseId: 'sq', target: { repMin: 8, repMax: 12, rir: 2 }, sets };
+  const e2 = propagateEdit(Object.assign({}, entry, { sets: sets.map((x, i) => (i === 0 ? Object.assign({}, x, { weight: 65 }) : x)) }), 0, { weight: 65 });
+  assert.deepEqual(e2.sets.map((x) => [x.target.weight, !!x.target.pinned]), [[60, false], [65, true], [65, true]]);
+  const e3 = propagateEdit(e2, 1, { reps: 8 });
+  assert.deepEqual(e3.sets[2].target, { weight: 65, reps: 8, pinned: true });
+  assert.equal(propagateEdit(entry, 0, { rir: 1 }), entry, 'RIR не переносится');
+  const re = retargetEntry(e2, { exercise: CAT.sq, progression: { enabled: true, available: { step: 2.5, min: 20 } } });
+  assert.equal(re.sets[1].target.weight, 65, 'закреплённая цель осталась');
+  const warmFirst = { exerciseId: 'sq', sets: [{ id: 'w', type: 'warmup', weight: null, reps: null, done: false, target: { weight: 20, reps: 8 } }].concat(sets) };
+  assert.equal(propagateEdit(warmFirst, 0, { weight: 25 }).sets[1].target.weight, 60, 'разминка на рабочие не влияет');
+});
+
+test('подход не под курсором: идущий отдых не перезапускается', () => {
+  let s = buildSession({ plan: PLAN, catalog: CAT, logs: [], date: '2026-10-16', now: T0, newId });
+  s = completeSet(s, 0, 0, { now: at(60), catalog: CAT, profile: PROFILE });
+  const rest = s.rest;
+  s = completeSet(s, 0, 2, { now: at(90), catalog: CAT, profile: PROFILE });
+  assert.equal(s.rest, rest, 'отдых тот же');
+  assert.equal(s.exercises[0].sets[2].done, true);
+});
+
+test('шаблон после тренировки: состав и порядок, рабочие веса', () => {
+  const plan = { id: 'p', name: 'A', sections: [{ id: 'm', kind: 'main', items: [{ id: 'i1', exerciseId: 'sq', name: 'Присед', sets: 3, repMin: 8, repMax: 12, weight: 60 }, { id: 'i2', exerciseId: 'curl', name: 'Бицепс', sets: 3, weight: 10 }] }] };
+  const session = { exercises: [
+    { exerciseId: 'curl', name: 'Бицепс', sets: [{ type: 'normal', done: true, weight: 12, reps: 12 }, { type: 'normal', done: true, weight: 12.5, reps: 10 }] },
+    { exerciseId: 'sq', name: 'Присед', sets: [{ type: 'warmup', done: true, weight: 40, reps: 5 }, { type: 'normal', done: true, weight: 65, reps: 10 }, { type: 'normal', done: false, weight: null, reps: null }] },
+    { exerciseId: 'new', name: 'Новое', target: { rir: 2 }, sets: [{ type: 'normal', done: true, weight: 20, reps: 15 }] },
+    { exerciseId: 'skip', name: 'Пропуск', sets: [{ type: 'normal', done: false }] }
+  ] };
+  const w = planFromSession(plan, session, { weights: true });
+  assert.deepEqual(w.sections[0].items.map((i) => [i.exerciseId, i.weight]), [['sq', 65], ['curl', 12.5]], 'веса — последний рабочий, порядок прежний');
+  const c = planFromSession(plan, session, { composition: true });
+  assert.deepEqual(c.sections[0].items.map((i) => [i.exerciseId, i.sets, i.weight]), [['curl', 2, 10], ['sq', 1, 60], ['new', 1, undefined]], 'состав как в тренировке, пропущенное и несделанное — нет');
+  assert.deepEqual([c.sections[0].items[2].repMin, c.sections[0].items[2].repMax, c.sections[0].items[2].rir], [15, 15, 2]);
+  assert.equal(planFromSession(plan, session, {}), plan, 'без галочек не меняется');
 });

@@ -1,5 +1,6 @@
 /* Поля ввода тренировки: число с запятой (текст хранится, пока поле в фокусе), шкала RIR, настройки подхода. */
-import { html, useState } from '../core.js';
+import { html, useState, useEffect } from '../core.js';
+import { setActiveField, clearActiveField } from './keybar.js';
 import { Sheet } from '../kit.js';
 import { t, fmtNum } from '../../i18n/index.js';
 import { SET_TYPES } from '../../data/models/workout.js';
@@ -13,14 +14,18 @@ export function parseNum(s) {
   return isFinite(n) ? n : null;
 }
 
-/* Число: value — число или null; onCommit(число|null) на каждый ввод */
-export function NumIn({ value, onCommit, placeholder, mode = 'decimal', label, digits = 2, cls }) {
+/* Число: value — число или null; onCommit(число|null) на каждый ввод.
+   bar — описание для панели над клавиатурой: { kind, step, stepLabel, onStep(dir), onNext, onPlates } */
+export function NumIn({ value, onCommit, placeholder, mode = 'decimal', label, digits = 2, cls, bar = null }) {
   const [text, setText] = useState(null);
-  const shown = text != null ? text : value == null ? '' : fmtNum(Math.round(value * 10 ** digits) / 10 ** digits, digits).replace(/\s/g, '');
+  const fmt = (v) => (v == null ? '' : fmtNum(Math.round(v * 10 ** digits) / 10 ** digits, digits).replace(/\s/g, ''));
+  const shown = text != null ? text : fmt(value);
+  /* значение поменяли снаружи (кнопки −/+), пока поле в фокусе — показываем новое */
+  useEffect(() => { if (text != null && parseNum(text) !== value) setText(fmt(value)); }, [value]);
   return html`<input class=${cls || ''} inputmode=${mode} value=${shown} placeholder=${placeholder == null ? '' : placeholder} aria-label=${label}
-    onFocus=${(e) => { setText(shown); setTimeout(() => { try { e.target.select(); } catch (x) { /* iOS */ } }, 0); }}
+    onFocus=${(e) => { setText(shown); if (bar) setActiveField(Object.assign({ input: e.target }, bar)); setTimeout(() => { try { e.target.select(); } catch (x) { /* iOS */ } }, 0); }}
     onInput=${(e) => { const v = e.currentTarget.value; setText(v); onCommit(parseNum(v)); }}
-    onBlur=${() => setText(null)}/>`;
+    onBlur=${(e) => { setText(null); if (bar) clearActiveField(e.target); }}/>`;
 }
 
 const RIR = [[0, 'train.rir.0'], [1, 'train.rir.1'], [2, 'train.rir.2'], [3, 'train.rir.3'], [4, 'train.rir.4'], [5, 'train.rir.5']];

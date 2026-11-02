@@ -103,7 +103,7 @@ export function retargetEntry(entry, { exercise, progression }) {
   const working = entry.sets.filter((x) => x.type !== 'warmup');
   let changed = false;
   const sets = entry.sets.map((x) => {
-    if (x.done || x.type === 'warmup' || x.weight != null || x.reps != null) return x;
+    if (x.done || x.type === 'warmup' || x.weight != null || x.reps != null || (x.target && x.target.pinned)) return x;
     const idx = working.indexOf(x);
     const tg = smartTarget({ item: entry.target, exercise, today: working, index: idx, progression: prog });
     if (!tg) return x;
@@ -263,9 +263,74 @@ export function completeSet(session, ei, si, { now, catalog = {}, configs = {}, 
   const kind = !np ? 'none' : np.kind === 'superset' ? 'none' : np.kind;
   const sec = restFor({ exercise, entry, config: configs[entry.exerciseId], profile, set, kind });
   next.cursor = np ? { ei: np.ei, si: np.si } : null;
-  next.rest = sec > 0 ? { startedAt: now, targetSec: sec, exerciseId: entry.exerciseId || '', kind } : null;
+  /* отмечен подход не под курсором (задним числом), пока идёт отдых — отдых не перезапускаем */
+  const atCursor = !session.cursor || (session.cursor.ei === ei && session.cursor.si === si);
+  next.rest = atCursor || !session.rest ? (sec > 0 ? { startedAt: now, targetSec: sec, exerciseId: entry.exerciseId || '', kind } : null) : session.rest;
   next.workStart = null;
   return next;
+}
+
+/* Разминка одним движением: все несделанные разминочные подходы упражнения заполняются целью и отмечаются,
+   курсор — на первый рабочий, отдых — один, как после разминочного */
+export function completeWarmups(session, ei, { now, profile = null }) {
+  const exs = session.exercises.map((e) => Object.assign({}, e, { sets: e.sets.slice() }));
+  const entry = exs[ei];
+  if (!entry) return session;
+  let any = false;
+  entry.sets = entry.sets.map((x) => { if (x.type !== 'warmup' || x.done) return x; any = true; return Object.assign(fillFromTarget(x), { done: true, doneAt: now }); });
+  if (!any) return session;
+  const next = Object.assign({}, session, { exercises: exs });
+  const j = entry.sets.findIndex((x) => !x.done);
+  const np = j >= 0 ? { ei, si: j } : nextPointer(next, ei, entry.sets.length - 1);
+  next.cursor = np ? { ei: np.ei, si: np.si } : null;
+  const sec = restFor({ profile, set: { type: 'warmup' } });
+  next.rest = sec > 0 ? { startedAt: now, targetSec: sec, exerciseId: entry.exerciseId || '', kind: 'set' } : null;
+  next.workStart = null;
+  return next;
+}
+
+/* Правка веса или повторов подхода si переносится в цели следующих несделанных подходов того же типа,
+   в которые ещё ничего не вводили; такие цели помечаются pinned — умная прогрессия их не перепишет */
+export function propagateEdit(entry, si, patch) {
+  const src = entry.sets[si];
+  if (!src) return entry;
+  const keys = ['weight', 'reps'].filter((k) => patch[k] != null);
+  if (!keys.length) return entry;
+  let changed = false;
+  const sets = entry.sets.map((x, j) => {
+    if (j <= si || x.done || x.type !== src.type || x.weight != null || x.reps != null) return x;
+    const target = Object.assign({}, x.target || {}, { pinned: true });
+    keys.forEach((k) => { target[k] = patch[k]; });
+    changed = true;
+    return Object.assign({}, x, { target });
+  });
+  return changed ? Object.assign({}, entry, { sets }) : entry;
+}
+
+/* Шаблон после тренировки: composition — состав и порядок упражнений как в тренировке (новые — с целями по факту),
+   weights — рабочий вес каждого упражнения = вес последнего выполненного рабочего подхода */
+export function planFromSession(plan, session, { composition = false, weights = false } = {}) {
+  if (!plan || (!composition && !weights)) return plan;
+  const done = (session.exercises || []).filter((e) => !e.skipped && e.sets.some((s) => s.done));
+  const lastWorking = (e) => { const w = e.sets.filter((s) => s.done && s.type !== 'warmup' && s.weight != null); return w.length ? w[w.length - 1].weight : null; };
+  const sections = (plan.sections || []).map((sec) => Object.assign({}, sec, { items: sec.items.slice() }));
+  const main = sections.find((s) => s.kind === 'main') || sections[0];
+  if (!main) return plan;
+  if (composition) {
+    const old = sections.flatMap((s) => s.items);
+    main.items = done.map((e) => {
+      const was = old.find((it) => it.exerciseId && it.exerciseId === e.exerciseId) || null;
+      const working = e.sets.filter((s) => s.done && s.type !== 'warmup');
+      const reps = working.map((s) => s.reps).filter((r) => r != null);
+      return Object.assign({}, was || { id: '', exerciseId: e.exerciseId || null, name: e.name || '', repMin: reps.length ? Math.min(...reps) : null, repMax: reps.length ? Math.max(...reps) : null, rir: e.target ? e.target.rir : null },
+        { sets: working.length || (was ? was.sets : null), group: e.group || '', groupKind: e.groupKind || null });
+    });
+    sections.forEach((s) => { if (s !== main) s.items = []; });
+  }
+  if (weights) {
+    sections.forEach((s) => { s.items = s.items.map((it) => { const e = done.find((x) => x.exerciseId && x.exerciseId === it.exerciseId); const w = e ? lastWorking(e) : null; return w != null ? Object.assign({}, it, { weight: w }) : it; }); });
+  }
+  return Object.assign({}, plan, { sections });
 }
 
 /* Снять отметку выполнения (данные подхода остаются) */

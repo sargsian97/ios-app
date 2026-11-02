@@ -3,6 +3,31 @@ import { html, render, createContext, useContext, useEffect, useLayoutEffect, us
 export { html, render, useContext, useEffect, useLayoutEffect, useState, useReducer, useRef, useMemo, useCallback, Fragment };
 
 export const AppCtx = createContext(null);
+
+/* memo для функционального компонента: Preact вызывает его с this = экземпляр, поэтому можно задать shouldComponentUpdate.
+   eq(prev, next) — равны ли пропсы; по умолчанию — поверхностное сравнение */
+function shallowEq(a, b) {
+  if (a === b) return true;
+  const ka = Object.keys(a), kb = Object.keys(b);
+  return ka.length === kb.length && ka.every((k) => a[k] === b[k]);
+}
+export function memo(C, eq = shallowEq) {
+  function Memo(props) {
+    if (this && !this.shouldComponentUpdate) this.shouldComponentUpdate = (next) => !eq(this.props, next);
+    return C(props);
+  }
+  Memo.displayName = 'memo(' + (C.displayName || C.name || '') + ')';
+  return Memo;
+}
+
+/* Отложенные записи (debounce): перед уходом со страницы или сворачиванием всё сбрасывается в хранилище */
+const flushers = new Set();
+export function registerFlush(fn) { flushers.add(fn); return () => flushers.delete(fn); }
+export function flushAll() { flushers.forEach((f) => { try { f(); } catch (e) { /* не мешаем остальным */ } }); }
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAll(); });
+  window.addEventListener('pagehide', flushAll);
+}
 export function useApp() { return useContext(AppCtx); }
 
 /* Перерисовать компонент, когда меняются указанные коллекции (null — любые) */

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   gymFromTemplate, GYM_TEMPLATES, EQUIPMENT_CATEGORIES, platesKg, loadKind, barFor, stackFor, availableLoads, roundForGym,
-  plateLoadout, loadoutFor, warmupPlan, workedMuscles, defaultGym, availableInGym, addWarmups, warmupSetsForEntry, workingWeightOf, KG_PER_LB
+  plateLoadout, loadoutFor, warmupPlan, workedMuscles, defaultGym, availableInGym, addWarmups, warmupSetsForEntry, workingWeightOf, KG_PER_LB, nextLoad
 } from '../web/src/domain/gym.js';
 import { EQUIPMENT_KEYS } from '../web/src/data/models/workout.js';
 import { Gym } from '../web/src/data/models/workout.js';
@@ -142,4 +142,15 @@ test('похожие упражнения для замены: общие мыш
   const home = gymFromTemplate('home');
   assert.deepEqual(similarExercises(SQ, list, { available: (e) => availableInGym(e, home) }).map((e) => e.id), ['gs']);
   assert.deepEqual(similarExercises(null, list), []);
+});
+
+test('следующий вес: по списку зала или шагом 2,5', () => {
+  assert.equal(nextLoad(60, [50, 55, 60, 62.5, 70], 1), 62.5);
+  assert.equal(nextLoad(60, [50, 55, 60, 62.5, 70], -1), 55);
+  assert.equal(nextLoad(61, [50, 55, 60, 62.5, 70], 1), 62.5);
+  assert.equal(nextLoad(70, [50, 55, 60, 62.5, 70], 1), 70, 'выше максимума не прыгаем');
+  assert.equal(nextLoad(50, [50, 55], -1), 50);
+  assert.equal(nextLoad(60, null, 1), 62.5);
+  assert.equal(nextLoad(1, null, -1), 0, 'не ниже нуля');
+  assert.equal(nextLoad(null, [], 1), 2.5);
 });

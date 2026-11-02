@@ -104,6 +104,7 @@ const SHELL = [
   'src/ui/train/bar.js',
   'src/ui/train/catalog.js',
   'src/ui/train/inputs.js',
+  'src/ui/train/keybar.js',
   'src/ui/train/muscle-map.js',
   'src/ui/train/picker.js',
   'src/ui/train/timer.js',

@@ -1,7 +1,7 @@
 /* Залы и оборудование: шаблоны залов, какие веса доступны упражнению в зале (блины на грифе, ряд гантелей,
    стек тренажёра, свои веса упражнения), округление до них, раскладка блинов, разминка с учётом зала.
    Чистые функции; веса — в кг (блины в фунтах переводятся). Расчёты блинов и разминки — в domain/calc. */
-import { platesFor, achievableLoads, warmupSets, needsWarmup, roundToAvailable, WARMUP_SIMPLE_MIN_PLATE_KG, DEFAULT_BAR_WEIGHT } from './calc/index.js';
+import { platesFor, achievableLoads, warmupSets, needsWarmup, roundToAvailable, WARMUP_SIMPLE_MIN_PLATE_KG, DEFAULT_BAR_WEIGHT, DEFAULT_WEIGHT_STEP } from './calc/index.js';
 import { EQUIPMENT_KEYS } from '../data/models/workout.js';
 import { blankSet } from './workout.js';
 
@@ -228,6 +228,18 @@ export function addWarmups(session, opts) {
     return w.length ? Object.assign({}, e, { sets: w.concat(e.sets) }) : e;
   });
   return Object.assign({}, session, { exercises, cursor: exercises.length ? { ei: 0, si: 0 } : null });
+}
+
+/* Следующий доступный вес вверх (dir > 0) или вниз от текущего: по списку весов зала, иначе шагом */
+export function nextLoad(weight, loads, dir, step = DEFAULT_WEIGHT_STEP) {
+  const w = weight == null || !isFinite(weight) ? 0 : weight;
+  const list = (loads || []).filter((x) => isFinite(x)).sort((a, b) => a - b);
+  if (list.length) {
+    const next = dir > 0 ? list.find((x) => x > w + 1e-9) : list.slice().reverse().find((x) => x < w - 1e-9);
+    if (next != null) return next;
+    return dir > 0 ? list[list.length - 1] : list[0];
+  }
+  return Math.max(0, Math.round((w + dir * step) * 100) / 100);
 }
 
 /* Настройки умной прогрессии для сессии: доступные веса — из зала и своих весов упражнения */

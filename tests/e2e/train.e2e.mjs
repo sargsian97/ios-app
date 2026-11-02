@@ -61,6 +61,8 @@ await p.locator('.sheet .lrow', { hasText: 'День A' }).click(); await wait(9
 check('открылась активная тренировка', (await p.evaluate(() => location.hash)) === '#/train/session');
 const firstEx = p.locator('.wk-ex').first();
 check('упражнение из шаблона', /Присед со штангой/.test(await firstEx.innerText()));
+check('разминка одной строкой', await firstEx.locator('.wk-warm').count() === 1);
+await firstEx.locator('.wk-warm .t').click(); await wait(200);
 const warm = firstEx.locator('.wk-set.warm');
 check('разминка добавлена автоматически', await warm.count() === 3, await warm.count());
 const wph0 = await warm.evaluateAll((els) => els.map((e) => e.querySelector('input').getAttribute('placeholder')));
@@ -112,8 +114,9 @@ await shot('04-session-full');
 
 /* завершение */
 await p.getByRole('button', { name: 'Завершить' }).first().click(); await wait(400);
-check('предупреждение о невыполненных', /Не все подходы/.test(await p.locator('.modal').innerText()));
-await p.locator('.modal .primary').click(); await wait(900);
+check('сводка перед сохранением: время и подходы', await p.locator('.sheet .wk-tiles').count() === 1);
+check('предупреждение о невыполненных', /Не все подходы/.test(await p.locator('.sheet').innerText()));
+await p.locator('.sheet button.primary').click(); await wait(900);
 check('после завершения — итог', /#\/train\/log\/.+\?done=1/.test(await p.evaluate(() => location.hash)));
 check('итог: «сохранена»', await p.locator('.wk-saved').count() === 1);
 const logs1 = await idbList('workoutLogs');
@@ -222,6 +225,7 @@ await go('#/train');
 await p.getByRole('button', { name: 'Другая' }).click(); await wait(500);
 await p.locator('.sheet .lrow', { hasText: 'День A' }).click(); await wait(900);
 const ex1 = p.locator('.wk-ex').first();
+await ex1.locator('.wk-warm .t').click(); await wait(200);
 const wph = await ex1.locator('.wk-set.warm').evaluateAll((els) => els.map((e) => e.querySelector('input').getAttribute('placeholder')));
 check('разминка по блинам зала (упрощённо, шаг 10 кг) к 62,5 кг', wph.join('|') === '20|30|50', wph);
 check('зал в заголовке тренировки', /Мой гараж/.test(await p.locator('.wk-sub').innerText()));
