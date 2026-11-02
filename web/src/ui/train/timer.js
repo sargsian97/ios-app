@@ -62,9 +62,10 @@ export function useWakeLock(on) {
   }, [on]);
 }
 
-/* Плашка отдыха над нижней панелью: остаток, −15 / +15 с, пропуск; по окончании — звук и вибрация */
-export function RestBar({ rest, sound, vibration, onChange }) {
-  const now = useNow(!!rest, 500);
+/* Плашка отдыха над нижней панелью: остаток, −15 / +15 с, пропуск; по окончании — звук и вибрация.
+   work — время нажатия «Начать подход»: тогда вместо отдыха идёт таймер подхода; canStart/onStart — кнопка «Начать подход». */
+export function RestBar({ rest, work = null, canStart = false, sound, vibration, onChange, onStart = null }) {
+  const now = useNow(!!rest || !!work, 500);
   const fired = useRef(null);
   const elapsed = rest ? (now - Date.parse(rest.startedAt)) / 1000 : 0;
   const left = rest ? rest.targetSec - elapsed : 0;
@@ -74,7 +75,17 @@ export function RestBar({ rest, sound, vibration, onChange }) {
     fired.current = rest.startedAt;
     if (elapsed - rest.targetSec < 5) { if (sound) beep(); if (vibration) vibrate(); } /* не пищим, если отдых кончился, пока приложение было свёрнуто */
   }, [over, rest && rest.startedAt]);
-  if (!rest) return null;
+  const startBtn = onStart ? html`<button class="small primary" onClick=${onStart}>${t('train.rest.start')}</button>` : null;
+  if (!rest && work) {
+    const w = Math.max(0, (now - Date.parse(work)) / 1000);
+    return html`<div class="wk-rest work" role="timer"><div class="wk-rest-row">
+      <div class="wk-rest-t"><small>${t('train.rest.work')} · ${t('train.rest.workHint')}</small><b>${fmtClock(w)}</b></div>
+    </div></div>`;
+  }
+  if (!rest) {
+    if (!canStart || !startBtn) return null;
+    return html`<div class="wk-rest"><div class="wk-rest-row"><div class="wk-rest-t"><small>${t('train.rest.ready')}</small></div>${startBtn}</div></div>`;
+  }
   const pct = Math.max(0, Math.min(100, (elapsed / Math.max(1, rest.targetSec)) * 100));
   const adj = (d) => onChange(Object.assign({}, rest, { targetSec: Math.max(5, Math.round(rest.targetSec + d)) }));
   return html`<div class=${'wk-rest' + (over ? ' over' : '')} role="timer" aria-live="polite">
@@ -83,7 +94,7 @@ export function RestBar({ rest, sound, vibration, onChange }) {
       <button class="small icn" onClick=${() => adj(-15)} aria-label=${t('train.rest.minus')}>−15</button>
       <div class="wk-rest-t"><small>${over ? t('train.rest.over') : t('train.rest.title')}</small><b>${over ? '+' + fmtClock(-left) : fmtClock(left)}</b></div>
       <button class="small icn" onClick=${() => adj(15)} aria-label=${t('train.rest.plus')}>+15</button>
-      <button class="small" onClick=${() => onChange(null)}>${over ? t('common.done') : t('train.rest.skip')}</button>
+      ${startBtn || html`<button class="small" onClick=${() => onChange(null)}>${over ? t('common.done') : t('train.rest.skip')}</button>`}
     </div>
   </div>`;
 }

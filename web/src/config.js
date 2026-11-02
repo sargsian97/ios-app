@@ -8,5 +8,6 @@ export const AI_LIMITS = Object.freeze({
   ai_label: { day: 20, week: 100, month: 300 },    /* фото этикетки */
   ai_text: { day: 30, week: 150, month: 500 },     /* описание еды текстом */
   ai_recipe: { day: 10, week: 40, month: 120 },    /* импорт рецепта по ссылке */
-  ai_stack: { day: 10, week: 30, month: 60 }       /* скан весового стека тренажёра */
+  ai_stack: { day: 10, week: 30, month: 60 },      /* скан весового стека тренажёра */
+  ai_zepp: { day: 20, week: 100, month: 300 }      /* скриншот итогов тренировки с часов (Zepp) */
 });

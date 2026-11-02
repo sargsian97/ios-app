@@ -200,8 +200,8 @@ const hist = await p.locator('#app').innerText();
 check('история журнала показывает питание из новой модели', /Овсянка|ккал/.test(hist));
 await shot('12-history');
 
-/* нутриенты: оценка полноты и строки по группам */
-await go('#/food/nutrients');
+/* нутриенты: оценка полноты и строки по группам (день с записями из копии, а не «сегодня») */
+await go('#/food/nutrients?d=2026-10-16');
 check('нутриенты: есть оценка полноты', await p.locator('.nut-big b').count() === 1);
 check('нутриенты: строки нутриентов', await p.locator('.nut-row').count() >= 4);
 await p.locator('.nut-row').first().click();

@@ -34,6 +34,8 @@ for (let k = -21; k <= -1; k++) {
   const kcal = k === -5 ? 500 : 2300; /* неполный день */
   data.foodEntries['f' + k] = { id: 'f' + k, date: d, time: '13:00', ref: { kind: 'quick', id: null }, name: 'Еда', nutrients: { kcal, protein: 150, fat: 70, carbs: 230 }, createdAt: now, updatedAt: now };
 }
+/* сегодня тоже есть еда — иначе в понедельник неделя на обзоре пуста и карточки нет */
+data.foodEntries.f0 = { id: 'f0', date: today, time: '09:00', ref: { kind: 'quick', id: null }, name: 'Завтрак', nutrients: { kcal: 600, protein: 40, fat: 20, carbs: 60 }, createdAt: now, updatedAt: now };
 /* вес падает на ~0,09 кг/день при 2300 ккал — расход по данным должен выйти выше 2300 */
 Object.values(data.scaleEntries).forEach((s, i) => { s.weightKg = Math.round((88 - 0.09 * i) * 100) / 100; });
 const file = OUT + 'checkin-backup.json';

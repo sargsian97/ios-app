@@ -29,6 +29,13 @@ export const SCHEMAS = Object.freeze({
     },
     required: ['items', 'note'],
     additionalProperties: false
+  },
+  /* итоги тренировки со скриншота часов: чего нет на экране — 0 */
+  zepp: {
+    type: 'object',
+    properties: { isWorkout: { type: 'boolean' }, durationMin: NUM, avgHr: NUM, maxHr: NUM, minHr: NUM, kcal: NUM, vo2max: NUM, load: NUM, teAer: NUM, teAna: NUM },
+    required: ['isWorkout', 'durationMin', 'avgHr', 'maxHr', 'minHr', 'kcal', 'vo2max', 'load', 'teAer', 'teAna'],
+    additionalProperties: false
   }
 });
 

@@ -38,9 +38,11 @@ function setupUpdates() {
       if (reg.waiting && navigator.serviceWorker.controller) set(reg.waiting);
       reg.addEventListener('updatefound', () => { if (reg.installing) watch(reg.installing); });
     }).catch(() => {});
+    /* перезагружаемся только при смене уже работавшего воркера: при первой установке страница и так свежая из сети */
     let reloading = false;
+    const hadController = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (reloading) return;
+      if (reloading || !hadController) return;
       reloading = true;
       legacyPersist().finally(() => setTimeout(() => location.reload(), 150));
     });

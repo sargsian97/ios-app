@@ -16,3 +16,4 @@ export * from './body_fat.js';
 export * from './cycle.js';
 export * from './checkin.js';
 export * from './periodization.js';
+export * from './strength_kcal.js';

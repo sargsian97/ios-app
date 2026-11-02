@@ -50,7 +50,8 @@ test('подход: заполняется из цели, отдых по тип
   assert.deepEqual(s.rest && [s.rest.targetSec, s.rest.kind], [150, 'set']);
   assert.deepEqual(s.cursor, { ei: 0, si: 1 });
   s = completeSet(s, 0, 1, { now: at(250), catalog: CAT, profile: PROFILE });
-  assert.equal(s.exercises[0].sets[1].restSec, 190, 'фактический отдых');
+  assert.equal(s.exercises[0].sets[1].restSec, 190 - 54, 'фактический отдых: пауза минус оценка подхода (24 + 3 × 10 повторов)');
+  assert.ok(s.exercises[0].sets[1].durSec == null, 'без «Начать подход» длительность не известна');
   s = completeSet(s, 0, 2, { now: at(400), catalog: CAT, profile: PROFILE });
   assert.deepEqual([s.rest.targetSec, s.rest.kind], [120, 'exercise'], 'между упражнениями');
   assert.deepEqual(s.cursor, { ei: 1, si: 0 });
@@ -65,6 +66,20 @@ test('подход: заполняется из цели, отдых по тип
   assert.equal(s.rest, null, 'всё сделано');
   s = uncompleteSet(s, 2, 1);
   assert.equal(s.exercises[2].sets[1].done, false);
+});
+
+test('подход: «Начать подход» даёт точные отдых и длительность, затем сбрасывается', () => {
+  let s = buildSession({ plan: PLAN, catalog: CAT, logs: [], date: '2026-10-16', now: T0, newId });
+  s = completeSet(s, 0, 0, { now: at(60), catalog: CAT, profile: PROFILE });
+  s = Object.assign({}, s, { workStart: at(200), rest: null });
+  s = completeSet(s, 0, 1, { now: at(250), catalog: CAT, profile: PROFILE });
+  assert.equal(s.exercises[0].sets[1].restSec, 140, 'отдых — от прошлого подхода до «Начать подход»');
+  assert.equal(s.exercises[0].sets[1].durSec, 50, 'длительность — от «Начать подход» до галочки');
+  assert.equal(s.workStart, null, 'после галочки подход не идёт');
+  s = Object.assign({}, s, { workStart: at(10) });
+  s = completeSet(s, 0, 2, { now: at(400), catalog: CAT, profile: PROFILE });
+  assert.ok(s.exercises[0].sets[2].durSec == null, 'workStart раньше прошлого подхода — не верим');
+  assert.equal(s.exercises[0].sets[2].restSec, 150 - 54);
 });
 
 test('отдых: разминка, свой для упражнения, между сторонами', () => {

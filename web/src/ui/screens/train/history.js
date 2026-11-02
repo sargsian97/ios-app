@@ -8,6 +8,7 @@ import { toDisplay, fromDisplay, unitKey } from '../../../domain/units.js';
 import { useCatalog, exName, fmtSet, fmtDuration, recordLabel, weightUnit, fmtWeight, setTypeShort, cardioTypeLabel } from '../../train/catalog.js';
 import { NumIn } from '../../train/inputs.js';
 import { startWorkout } from './train.js';
+import { StrengthKcalCard } from '../../train/zepp.js';
 
 /* Строка тренировки в списке */
 export function LogRow({ w, byId, units }) {
@@ -103,12 +104,14 @@ export function WorkoutLog({ route }) {
       ${e.notes ? html`<div class="hint">${e.notes}</div>` : null}
     </div>`)}
 
+    ${!cardioOnly(w) ? html`<${StrengthKcalCard} log=${w} onStats=${(stats) => upd({ stats })}/>` : null}
+
     ${edit ? html`<div class="card pad">
       <${Field} label=${t('train.session.name')}><input value=${w.name} onInput=${(ev) => upd({ name: ev.currentTarget.value })}/><//>
       <${Field} label=${t('train.session.date')}><input type="date" value=${w.date} onChange=${(ev) => { const v = ev.currentTarget.value; if (v) upd({ date: v }); }}/><//>
       <div class="grid2">
         <label class="fld"><span class="lbl">${t('train.sum.durationMin')}</span><${NumIn} mode="numeric" value=${w.durationSec != null ? Math.round(w.durationSec / 60) : null} label=${t('train.sum.durationMin')} onCommit=${(v) => upd({ durationSec: v == null ? null : Math.round(v * 60) })}/></label>
-        ${[['avgHr', 'train.stats.avgHr'], ['kcalWatch', 'train.stats.kcalWatch'], ['kcal', 'train.stats.kcal'], ['steps', 'train.stats.steps']].map(([k, l]) => html`<label class="fld"><span class="lbl">${t(l)}</span><${NumIn} mode="numeric" value=${w.stats && w.stats[k]} label=${t(l)} onCommit=${(v) => upd({ stats: Object.assign({}, w.stats, { [k]: v == null ? null : Math.round(v) }) })}/></label>`)}
+        ${cardioOnly(w) ? [['avgHr', 'train.stats.avgHr'], ['kcalWatch', 'train.stats.kcalWatch'], ['steps', 'train.stats.steps']].map(([k, l]) => html`<label class="fld"><span class="lbl">${t(l)}</span><${NumIn} mode="numeric" value=${w.stats && w.stats[k]} label=${t(l)} onCommit=${(v) => upd({ stats: Object.assign({}, w.stats, { [k]: v == null ? null : Math.round(v) }) })}/></label>`) : null}
       </div>
       <${Field} label=${t('train.session.notes')}><textarea value=${w.notes} onInput=${(ev) => upd({ notes: ev.currentTarget.value })}></textarea><//>
       <button class="danger" style="width:100%" onClick=${() => setAsk(true)}>${t('train.log.delete')}</button>
@@ -141,7 +144,10 @@ function cardioLine(e, units) {
   return parts.join(' · ');
 }
 
+/* Только кардио: пульс и калории с часов показываются строкой; у силовой — карточка «Расход силовой» */
+const cardioOnly = (w) => (w.exercises || []).length > 0 && w.exercises.every((e) => e.cardio);
 function statsLine(w) {
+  if (!cardioOnly(w)) return '';
   const st = w.stats || {}, parts = [];
   if (st.avgHr) parts.push(t('cardio.hrV', { v: st.avgHr }));
   if (st.kcalWatch) parts.push(t('cardio.kcalV', { v: fmtNum(st.kcalWatch) }));

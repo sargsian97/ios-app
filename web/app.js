@@ -3,6 +3,7 @@
 import { parseBackup } from './src/data/store.js';
 import { t } from './src/i18n/index.js';
 import { isArtifact } from './src/services/env.js';
+import { strengthEstimate } from './src/domain/calc/strength_kcal.js';
 
 /* ---------- helpers ---------- */
 var DOW=['вс','пн','вт','ср','чт','пт','сб'];
@@ -59,7 +60,7 @@ function trackWrite(kind,fn){
 function allReady(){var r=S.ready;return r.w&&r.b&&r.t&&r.d&&r.f&&r.l&&r.s&&r.i;}
 
 /* ---------- settings ---------- */
-var DEF={base:2000,trainKcal:500,corrPct:0,offset:0,protein:140,fat:60,fiber:30,height:173,age:29};
+var DEF={base:2000,trainKcal:500,gymSteps:3000,corrPct:0,offset:0,protein:140,fat:60,fiber:30,height:173,age:29};
 function cfg(){
   var s=S.setDraft||S.settings.main||{},o={};
   Object.keys(DEF).forEach(function(k){o[k]=nz(s[k])?Number(s[k]):DEF[k];});
@@ -142,22 +143,12 @@ function strengthStats(w){
 }
 function strengthKcal(date){
   var w=(date===S.date&&S.draft)?S.draft:S.workouts[date];if(!w)return null;
-  var st=strengthStats(w);
-  if(st.done<3||(!nz(w.durationMin)&&st.n<0.6*st.done))return null;
-  var f=3.5*weightOn(date)/200/60; /* ккал на 1 MET за секунду */
-  var other=nz(w.durationMin)?Math.max(0,Number(w.durationMin)*60-st.work-st.rest):0; /* переходы между упражнениями, разминка */
-  /* модель: подход 6 MET, отдых 2.5 MET (быстрый темп, пульс не падает до покоя), +10% на восстановление после нагрузки */
-  var model=(st.work*(6.0-1)+st.rest*(2.5-1)+other*(2.5-1))*f*1.1;
-  var kcal=model,kw=null,src='model',bb=Number(cfg().base)||2000;
-  if(nz(w.durationMin)&&Number(w.durationMin)>0){
-    if(nz(w.kcalWatch)){ /* часы: берём как есть, вычитая только покой (он уже в базовых 2000) */
-      kw=Math.max(0,Number(w.kcalWatch)-Number(w.durationMin)*bb/1440);kcal=kw;src='watch';
-    }else{ /* часы не вписаны: личный средний расход ккал/мин по прошлым тренировкам с часами */
-      var rt=[];Object.keys(S.workouts).forEach(function(d){var o=S.workouts[d];if(o&&d!==date&&nz(o.kcalWatch)&&nz(o.durationMin)&&Number(o.durationMin)>0)rt.push(Number(o.kcalWatch)/Number(o.durationMin));});
-      if(rt.length){var r=rt.reduce(function(x,y){return x+y;},0)/rt.length;kw=Math.max(0,(r-bb/1440)*Number(w.durationMin));kcal=kw;src='personal';}
-    }
-  }
-  return {kcal:kcal,src:src,model:model,watch:kw,work:st.work,rest:st.rest,other:other,n:st.n,done:st.done};
+  /* расчёт — чистой функцией strengthEstimate (web/src/domain/calc/strength_kcal.js): по подходам и по пульсу, без покоя */
+  var ex=(w.exercises||[]).map(function(e){var plank=/планк|plank/i.test(e.name||'');
+    return {name:e.name,sets:(e.sets||[]).map(function(x){return {reps:plank?null:x.r,timeSec:plank?x.r:null,dur:x.dur,rest:x.rest,done:x.done};})};});
+  var r=strengthEstimate({exercises:ex,durationMin:w.durationMin,avgHr:w.avgHr,vo2max:w.vo2max,weightKg:weightOn(date),age:cfg().age,base:cfg().base});
+  if(r)r.watch=nz(w.kcalWatch)?Number(w.kcalWatch):null;
+  return r;
 }
 function burn(date){
   var c=cfg(),di=dayInfo(date),w=weightOn(date);
@@ -165,11 +156,11 @@ function burn(date){
   var cNet=0,cSteps=0;
   if(di.cardioOn)(di.cardio||[]).forEach(function(s){var e=cardioEst(s,w,c.base);cNet+=e.kcal;cSteps+=e.steps;});
   var k=c.kPer1000!==''?c.kPer1000:0.37*w; /* ккал на 1000 шагов */
-  var wk=(date===S.date&&S.draft)?S.draft:S.workouts[date],gs=(di.lifted&&wk&&nz(wk.gymSteps))?Number(wk.gymSteps):0; /* шаги в зале уже учтены в ккал силовой */
+  var gs=di.lifted?(Number(c.gymSteps)||0):0; /* шаги в зале уже учтены в ккал силовой: в день тренировки вычитаем настройку */
   var stepsEff=Math.max(0,steps-cSteps-gs);
   var stepK=stepsEff*k/1000;
-  var sk=di.lifted&&!nz(di.trainKcal)?strengthKcal(date):null;
-  var train=di.lifted?(nz(di.trainKcal)?Number(di.trainKcal):(sk?sk.kcal:c.trainKcal)):0;
+  var sk=di.lifted?strengthKcal(date):null;
+  var train=di.lifted?(sk?sk.kcal:c.trainKcal):0;
   var raw=c.base+stepK+train+cNet;
   var burned=raw*(1+c.corrPct/100);
   return {base:c.base,steps:steps,gymSteps:gs,cardioSteps:Math.min(cSteps,steps),cardioOn:!!di.cardioOn,cardioNet:cNet,k:k,stepK:stepK,train:train,trainTimer:!!sk,lifted:di.lifted,skipped:(!di.lifted&&!!SCHED[parseD(date).getDay()]),raw:raw,corr:c.corrPct,burned:burned,goal:burned+c.offset,offset:c.offset,hasSteps:nz(di.steps)};
@@ -408,9 +399,9 @@ function metricTilesHtml(){
 function burnInner(b){
   var h=h2i('flame','var(--k-burn)','Расход калорий за день');
   h+='<div class="kv"><span>Базовый обмен (BMR) + переваривание</span><span>'+th(b.base)+'</span></div>';
-  h+='<div class="kv"><span>Шаги: '+(b.hasSteps?th(b.steps)+(b.cardioSteps?' (без '+th(b.cardioSteps)+' из кардио)':'')+' · ≈'+fmtN(b.k)+' на 1000':'не внесены')+'</span><span>'+(b.hasSteps?'≈ '+th(b.stepK):'—')+'</span></div>';
+  h+='<div class="kv"><span>Шаги: '+(b.hasSteps?th(b.steps)+(b.cardioSteps||b.gymSteps?' (без '+[b.cardioSteps?th(b.cardioSteps)+' из кардио':'',b.gymSteps?th(Math.min(b.gymSteps,Math.max(0,b.steps-b.cardioSteps)))+' в зале':''].filter(Boolean).join(' и ')+')':'')+' · ≈'+fmtN(b.k)+' на 1000':'не внесены')+'</span><span>'+(b.hasSteps?'≈ '+th(b.stepK):'—')+'</span></div>';
   if(b.cardioOn)h+='<div class="kv"><span>Кардио (без покоя)</span><span>≈ '+th(b.cardioNet)+'</span></div>';
-  h+='<div class="kv"><span>Силовая тренировка'+(b.trainTimer?' (по таймеру)':'')+'</span><span>'+(b.lifted?th(b.train):(b.skipped?'пропущена, 0':'нет'))+'</span></div>';
+  h+='<div class="kv"><span>Силовая тренировка'+(b.lifted?(b.trainTimer?' (расчёт)':' (нет данных, по умолчанию)'):'')+'</span><span>'+(b.lifted?th(b.train):'нет')+'</span></div>';
   if(b.corr)h+='<div class="kv"><span>Поправка '+(b.corr>0?'+':'')+b.corr+'%</span><span>'+(b.burned-b.raw>0?'+':'')+th(b.burned-b.raw)+'</span></div>';
   h+='<div class="kv tot"><span>Итого расход</span><span>≈ '+th(b.burned)+' ккал</span></div>';
   if(b.offset)h+='<div class="kv"><span>Цель по еде ('+(b.offset>0?'+':'')+b.offset+')</span><span>'+th(b.goal)+' ккал</span></div>';
@@ -509,7 +500,7 @@ function renderTrain(){
     h+='<div class="card pad">'+h2i('dumb','var(--k-str)','Добавить упражнение')+'<div class="row"><input id="newEx" placeholder="Название"><button class="primary" data-act="exAdd">+</button></div></div>';
     h+='<div class="card pad">'+h2i('dumb','var(--k-str)','Итоги силовой')+'<div class="grid2">'
       +fld('Длительность, мин','s_durationMin',d.durationMin,'numeric')+fld('Средний пульс','s_avgHr',d.avgHr,'numeric')
-      +fld('Шаги за тренировку','s_gymSteps',d.gymSteps,'numeric','вычтем из шагов дня')+fld('Ккал по часам','s_kcalWatch',d.kcalWatch,'numeric')+fld('Ккал в расчёт','d_trainKcal',dd.trainKcal,'numeric',String((function(){var k=strengthKcal(S.date);return k?Math.round(k.kcal):cfg().trainKcal;})()))+'</div>'+strengthLine()
+      +fld('Ккал по часам (для сравнения)','s_kcalWatch',d.kcalWatch,'numeric')+'</div>'+strengthLine()
       +'<label class="lbl" style="margin-top:10px">Заметка</label><textarea data-f="note" placeholder="Самочувствие, локти, плечо…">'+esc(d.note)+'</textarea></div>';
     h+='<div class="row" style="margin-bottom:12px"><button class="primary grow" data-act="saveNow">Сохранить</button>'
       +(S.workouts[S.date]?'<button class="danger" data-act="wDel">Удалить</button>':'')+'</div>';
@@ -1355,7 +1346,8 @@ function renderSettings(){
   var s=S.setDraft||{},c=cfg(),w=weightOn(S.date);
   var h=langCard()+'<div class="card pad">'+h2i('flame','var(--k-burn)','Расход калорий')+'<div class="grid2">'
     +fld('Базовый обмен + переваривание, ккал','c_base',nz(s.base)?s.base:'','numeric',String(DEF.base))
-    +fld('Ккал за силовую','c_trainKcal',nz(s.trainKcal)?s.trainKcal:'','numeric',String(DEF.trainKcal))
+    +fld('Ккал за силовую, если нет данных','c_trainKcal',nz(s.trainKcal)?s.trainKcal:'','numeric',String(DEF.trainKcal))
+    +fld('Шагов за силовую (вычтем из дня)','c_gymSteps',nz(s.gymSteps)?s.gymSteps:'','numeric',String(DEF.gymSteps))
     +fld('Ккал на 1000 шагов','c_kPer1000',nz(s.kPer1000)?s.kPer1000:'','decimal','авто: '+Math.round(0.37*w))
     +fld('Поправка к расходу, %','c_corrPct',nz(s.corrPct)?s.corrPct:'','decimal','0')
     +fld('Рост, см','c_height',nz(s.height)?s.height:'','numeric',String(DEF.height))
@@ -1703,9 +1695,15 @@ var RI={
   close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
 };
 function strengthLine(){
-  var st=strengthStats(S.draft);if(!st.n)return '';
   var sk=strengthKcal(S.date);
-  return '<div class="hint" style="margin-top:8px">Подходы: '+fmtMS(st.work)+' · отдых между ними: '+fmtMS(st.rest)+(sk?' · ≈ '+th(sk.kcal)+' ккал (идёт в расчёт вместо '+cfg().trainKcal+(sk.other>0?'; с учётом переходов между упражнениями':'; впиши длительность, чтобы учесть переходы')+')':' · записано подходов '+st.n+' из '+st.done+': для расчёта по времени нужно хотя бы 60%')+'</div>';
+  if(!sk)return '<div class="hint" style="margin-top:8px">Впиши длительность и средний пульс с часов — посчитаю расход силовой.</div>';
+  return '<div class="hint" style="margin-top:8px">'+strengthExplain(sk)+'</div>';
+}
+function strengthExplain(sk){
+  var p=[];
+  if(sk.bySets!=null)p.push('по подходам ≈ '+th(sk.bySets));
+  if(sk.byHr!=null)p.push('по пульсу ≈ '+th(sk.byHr));
+  return 'В расход: ≈ '+th(sk.kcal)+' ккал'+(p.length>1?' (среднее: '+p.join(', ')+')':' ('+p[0]+')')+'. Покой за '+Math.round(sk.durationMin)+' мин уже в базе и вычтен. Подходы '+sk.done+', работа '+fmtMS(sk.work)+(sk.timed?' (по таймеру '+sk.timed+')':'')+', отдых и переходы '+fmtMS(sk.rest)+(sk.watch!=null?'. Часы показали '+th(sk.watch)+' (с покоем, в расчёт не идёт)':'');
 }
 function nextUndone(ei,from){
   var ex=S.draft&&S.draft.exercises[ei];if(!ex)return -1;

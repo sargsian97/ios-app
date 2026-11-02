@@ -1,10 +1,11 @@
 /* Тренировка: сборка сессии из шаблона, предыдущие значения, цели подходов, отдых, переходы
    (суперсеты), завершение, итоги и рекорды, выбор тренировки на сегодня, кардио журнала.
    Чистые функции: время и id передаются параметрами. Веса — в кг, время — в секундах, дистанция — в метрах. */
-import { e1rm, isWorkingSet, addDays, nextSetTarget, DEFAULT_TARGET_RIR, applyWeek } from './calc/index.js';
+import { e1rm, isWorkingSet, addDays, nextSetTarget, DEFAULT_TARGET_RIR, applyWeek, STRENGTH_KCAL } from './calc/index.js';
 import { isCardio } from './exercises.js';
 
 const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
+const SET_SEC = STRENGTH_KCAL.SET_SEC;
 const pos = (v) => (num(v) != null && v > 0 ? v : null);
 
 /* Упражнения шаблона по порядку секций */
@@ -245,7 +246,15 @@ export function completeSet(session, ei, si, { now, catalog = {}, configs = {}, 
   const set = fillFromTarget(entry.sets[si]);
   set.done = true;
   set.doneAt = now;
-  if (lastDone && t - lastDone < 3600e3) set.restSec = Math.round((t - lastDone) / 1000);
+  /* отдых и длительность подхода: если нажимали «Начать подход» (workStart) — точно; иначе из паузы вычитается оценка длительности подхода */
+  const ws = session.workStart ? Date.parse(session.workStart) : NaN;
+  if (isFinite(ws) && ws <= t && t - ws < 1800e3 && (!lastDone || ws >= lastDone)) {
+    set.durSec = Math.round((t - ws) / 1000);
+    if (lastDone && ws - lastDone < 3600e3) set.restSec = Math.round((ws - lastDone) / 1000);
+  } else if (lastDone && t - lastDone < 3600e3) {
+    const gap = Math.round((t - lastDone) / 1000), est = set.reps > 0 ? SET_SEC.base + SET_SEC.perRep * set.reps : SET_SEC.unknown;
+    set.restSec = Math.max(0, gap - est);
+  }
   entry.sets[si] = set;
   if (progression && set.type !== 'warmup') exs[ei] = retargetEntry(entry, { exercise: catalog[entry.exerciseId] || null, progression });
   const next = Object.assign({}, session, { exercises: exs });
@@ -255,6 +264,7 @@ export function completeSet(session, ei, si, { now, catalog = {}, configs = {}, 
   const sec = restFor({ exercise, entry, config: configs[entry.exerciseId], profile, set, kind });
   next.cursor = np ? { ei: np.ei, si: np.si } : null;
   next.rest = sec > 0 ? { startedAt: now, targetSec: sec, exerciseId: entry.exerciseId || '', kind } : null;
+  next.workStart = null;
   return next;
 }
 

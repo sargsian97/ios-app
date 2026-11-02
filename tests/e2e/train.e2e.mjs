@@ -77,8 +77,9 @@ await shot('02-session', false);
 await p.locator('.wk-rest').getByRole('button', { name: 'Отдых на 15 секунд больше' }).click(); await wait(200);
 sess = (await idbList('workoutSessions'))[0];
 check('+15 с к отдыху', sess.rest && sess.rest.targetSec >= 165, sess.rest);
-await p.locator('.wk-rest').getByRole('button', { name: 'Пропустить' }).click(); await wait(300);
-check('отдых пропущен', await p.locator('.wk-rest').count() === 0);
+await p.locator('.wk-rest').getByRole('button', { name: 'Начать подход' }).click(); await wait(300);
+sess = (await idbList('workoutSessions'))[0];
+check('«Начать подход»: отдых кончился, идёт подход', !sess.rest && !!sess.workStart && await p.locator('.wk-rest.work').count() === 1, { rest: sess.rest, workStart: sess.workStart });
 
 /* RIR */
 await work1.locator('.wk-rir').click(); await wait(500);

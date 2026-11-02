@@ -65,24 +65,26 @@ export function workoutsForLegacy(store) {
   store.list('workoutLogs').slice().sort(byTime).forEach((w) => {
     if (!isStrength(w)) return;
     const st = w.stats || {};
-    const o = out[w.date] || (out[w.date] = { date: w.date, day: '', exercises: [], durationMin: '', avgHr: '', kcalWatch: '', gymSteps: '', note: '' });
+    const o = out[w.date] || (out[w.date] = { date: w.date, day: '', exercises: [], durationMin: '', avgHr: '', maxHr: '', vo2max: '', kcalWatch: '', gymSteps: '', note: '' });
     if (!o.day && w.planId && /^legacy-[A-C]$/.test(w.planId)) o.day = w.planId.slice(7);
     (w.exercises || []).filter((e) => !e.cardio).forEach((e) => {
       o.exercises.push({ name: e.name, sets: (e.sets || []).map((s) => ({ w: v(s.weight), r: s.reps != null ? s.reps : v(s.timeSec), done: s.done !== false, dur: v(s.durSec), rest: v(s.restSec) })) });
     });
     const add = (k, x) => { if (x != null) o[k] = (Number(o[k]) || 0) + x; };
-    add('durationMin', w.durationSec != null ? Math.round(w.durationSec / 60) : null);
+    add('durationMin', st.durMin != null ? st.durMin : w.durationSec != null ? Math.round(w.durationSec / 60) : null); /* длительность с часов точнее таймера приложения */
     add('kcalWatch', st.kcalWatch);
     add('gymSteps', st.steps);
     if (o.avgHr === '' && st.avgHr != null) o.avgHr = st.avgHr;
+    if (o.maxHr === '' && st.maxHr != null) o.maxHr = st.maxHr;
+    if (o.vo2max === '' && st.vo2max != null) o.vo2max = st.vo2max;
     if (w.notes) o.note = o.note ? o.note + ' · ' + w.notes : w.notes;
   });
   return out;
 }
 
 /* Дни журнала из новой модели: { дата: { date, steps, lifted, trainKcal, cardioOn, cardio: [...] } }.
-   lifted — была ли силовая; для прошедших дней без тренировки — false (журнал иначе считал бы тренировку по расписанию),
-   сегодня и дальше без записи — не задано (журнал берёт расписание). */
+   lifted — была ли силовая: true только при записанной тренировке; для всех дней по сегодня включительно без записи — false
+   (с 31.10 расписание пн/ср/пт не считается: калории за силовую появляются, когда тренировка проведена). */
 export function daysForLegacy(store, today) {
   const out = {};
   const day = (d) => out[d] || (out[d] = { date: d });
@@ -105,8 +107,9 @@ export function daysForLegacy(store, today) {
     });
   });
   const dates = Object.keys(out).concat(store.ids('foodEntries').length ? store.list('foodEntries').map((e) => e.date) : []).sort();
-  if (dates.length && today) {
-    for (let d = dates[0]; d < today; d = addDays(d, 1)) { const o = day(d); if (o.lifted == null) o.lifted = false; }
+  if (today) {
+    const first = dates.length && dates[0] < today ? dates[0] : today;
+    for (let d = first; d <= today; d = addDays(d, 1)) { const o = day(d); if (o.lifted == null) o.lifted = false; }
   }
   return out;
 }

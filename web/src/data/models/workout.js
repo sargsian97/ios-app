@@ -207,8 +207,13 @@ const sessionFields = {
   exercises: f.array(ExerciseLog, { max: 60 }),
   notes: f.string({ def: '' }),
   bodyweightKg: f.number({ min: 20, max: 400 }),
-  /* пульс и калории с часов, шаги в зале, «ккал в расчёт» — для расхода за день */
-  stats: f.shape({ avgHr: f.number({ min: 0, max: 260, int: true }), maxHr: f.number({ min: 0, max: 260, int: true }), kcalWatch: f.number({ min: 0, max: 20000 }), kcal: f.number({ min: 0, max: 20000 }), steps: f.number({ min: 0, max: 200000, int: true }) })
+  /* данные с часов для расхода за день: пульс, длительность, VO2max, калории часов (для сравнения), нагрузка и тренировочный эффект;
+     kcal и steps — старые поля «ккал в расчёт» и «шаги в зале» (с 31.10 расход считается сам, шаги в зале — настройка) */
+  stats: f.shape({
+    avgHr: f.number({ min: 0, max: 260, int: true }), maxHr: f.number({ min: 0, max: 260, int: true }), minHr: f.number({ min: 0, max: 260, int: true }),
+    kcalWatch: f.number({ min: 0, max: 20000 }), kcal: f.number({ min: 0, max: 20000 }), steps: f.number({ min: 0, max: 200000, int: true }),
+    durMin: f.number({ min: 0, max: 1440 }), vo2max: f.number({ min: 0, max: 100 }), load: f.number({ min: 0, max: 2000 }), teAer: f.number({ min: 0, max: 5 }), teAna: f.number({ min: 0, max: 5 })
+  })
 };
 
 /* Идущая сейчас тренировка (одна) */
@@ -216,6 +221,7 @@ export const WorkoutSession = model({
   name: 'WorkoutSession',
   collection: 'workoutSessions',
   fields: Object.assign({}, sessionFields, {
+    workStart: f.timestamp(), /* нажато «Начать подход»: с этого момента идёт подход, а не отдых */
     rest: f.shape({ startedAt: f.timestamp(), targetSec: f.number({ min: 0 }), exerciseId: f.string({ def: '' }), kind: f.string({ def: '' }) }, { nullable: true }),
     cursor: f.shape({ ei: f.number({ min: 0, int: true }), si: f.number({ min: 0, int: true }) }, { nullable: true }),
     events: f.array(f.shape({ at: f.timestamp(), kind: f.string({ def: '' }), data: f.any() }), { max: 2000 })

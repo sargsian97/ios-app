@@ -73,5 +73,7 @@ test('legacy: тренировки, кардио и шаги новой моде
   assert.equal(d['2026-10-11'].cardioOn, true);
   assert.deepEqual([d['2026-10-11'].cardio[0].type, d['2026-10-11'].cardio[0].minutes, d['2026-10-11'].cardio[0].km, d['2026-10-11'].cardio[0].speed], ['treadmill', 100, 8.33, 5]);
   assert.equal(d['2026-10-10'].lifted, false, 'прошедший день без тренировки');
-  assert.equal(d['2026-10-13'], undefined, 'сегодня без записи — по расписанию журнала');
+  assert.equal(d['2026-10-13'].lifted, false, 'сегодня без записи — силовой нет (расписание не считается)');
+  assert.equal(daysForLegacy(await createStore(memoryBackend({})), '2026-10-13')['2026-10-13'].lifted, false, 'и без данных вообще');
+  assert.deepEqual([w.maxHr, w.vo2max], ['', ''], 'нет данных с часов — пусто');
 });

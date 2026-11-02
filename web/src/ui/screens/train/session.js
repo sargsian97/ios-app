@@ -13,6 +13,7 @@ import { plateLoadout, warmupSetsForEntry, workingWeightOf, availableInGym, load
 import { ExercisePicker } from '../../train/picker.js';
 import { RestBar, useNow, unlockAudio, useWakeLock } from '../../train/timer.js';
 import { NumIn, RirSheet, SetSheet } from '../../train/inputs.js';
+import { StrengthKcalCard } from '../../train/zepp.js';
 
 const progReason = (r) => t(r === 'lightest_too_heavy' ? 'train.prog.r.heavy' : r === 'expanded_below_range' ? 'train.prog.r.below' : 'train.prog.r.above');
 const GROUPS = 'ABCDEFGH';
@@ -213,17 +214,12 @@ export function TrainSession() {
 
     <div class="card pad">
       <${Field} label=${t('train.session.notes')}><textarea placeholder=${t('train.session.notesPh')} value=${s.notes} onInput=${(ev) => upd((c) => Object.assign({}, c, { notes: ev.currentTarget.value }))}></textarea><//>
-      <details class="wk-stats"><summary>${t('train.stats.title')}</summary>
-        <div class="grid2">
-          ${[['avgHr', 'train.stats.avgHr', 'numeric'], ['maxHr', 'train.stats.maxHr', 'numeric'], ['kcalWatch', 'train.stats.kcalWatch', 'numeric'], ['kcal', 'train.stats.kcal', 'numeric'], ['steps', 'train.stats.steps', 'numeric']].map(([k, l, m]) => html`<label class="fld"><span class="lbl">${t(l)}</span>
-            <${NumIn} mode=${m} value=${s.stats && s.stats[k]} onCommit=${(v) => upd((c) => Object.assign({}, c, { stats: Object.assign({}, c.stats, { [k]: v == null ? null : Math.round(v) }) }))} label=${t(l)}/></label>`)}
-        </div>
-        <div class="hint">${t('train.stats.hint')}</div>
-      </details>
     </div>
+    ${s.exercises.some((e) => !e.cardio) ? html`<${StrengthKcalCard} log=${s} elapsedSec=${elapsed} onStats=${(stats) => upd((c) => Object.assign({}, c, { stats }))}/>` : null}
     <div class="wk-bottom-space"></div>
 
-    <${RestBar} rest=${s.rest} sound=${profile.sound} vibration=${profile.vibration} onChange=${(r) => upd((c) => Object.assign({}, c, { rest: r }))}/>
+    <${RestBar} rest=${s.rest} work=${s.workStart} canStart=${!!s.cursor} sound=${profile.sound} vibration=${profile.vibration} onChange=${(r) => upd((c) => Object.assign({}, c, { rest: r }))}
+      onStart=${() => { unlockAudio(); upd((c) => Object.assign({}, c, { rest: null, workStart: new Date().toISOString() })); }}/>
 
     <${ExercisePicker} open=${!!picker} onClose=${() => setPicker(null)} title=${picker && picker.mode === 'replace' ? t('train.ex.replace') : t('train.ex.add')}
       similarTo=${picker && picker.mode === 'replace' ? cat.byId[s.exercises[picker.ei] && s.exercises[picker.ei].exerciseId] : null} gym=${gym}

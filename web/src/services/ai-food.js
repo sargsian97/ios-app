@@ -57,6 +57,16 @@ export const PHOTO_PROMPT = 'Ты помогаешь вести дневник �
   + 'Числа kcal, p, f, c, fib, pa, pv — на 100 г продукта. grams — вес порции на фото. Если на фото нет еды, верни {"items":[],"note":"что на фото"}.\n'
   + 'Пример: {"items":[{"name":"Куриная грудка запечённая","grams":150,"kcal":165,"p":31,"f":3.6,"c":0,"fib":0,"pa":31,"pv":0,"src":"estimate","note":"кусок размером с ладонь"}],"note":"вес оценён по размеру тарелки"}';
 
+export const ZEPP_PROMPT = 'На скриншоте (или нескольких) — итоги тренировки из приложения часов или браслета (Zepp / Amazfit и похожие). Интерфейс может быть на русском или английском.\n'
+  + 'Найди и верни числа, которые видны на экране. Ничего не придумывай: если показателя нет — 0.\n'
+  + '- durationMin: общая длительность тренировки в минутах («Время тренировки», «Длительность», «Total time», «Duration»; формат ч:мм:сс переведи в минуты с десятыми). Если есть и общее, и активное время — бери общее.\n'
+  + '- avgHr: средний пульс, уд/мин. maxHr: максимальный пульс. minHr: минимальный пульс.\n'
+  + '- kcal: калории, как показаны (общие, если есть выбор).\n'
+  + '- vo2max: VO2 max (мл/кг/мин), только если он прямо показан.\n'
+  + '- load: тренировочная нагрузка (Training load). teAer: аэробный тренировочный эффект (0–5). teAna: анаэробный тренировочный эффект (0–5).\n'
+  + '- isWorkout: true, если это действительно итоги тренировки.\n'
+  + 'Ответ — один JSON-объект без пояснений и без Markdown: {"isWorkout":true,"durationMin":0,"avgHr":0,"maxHr":0,"minHr":0,"kcal":0,"vo2max":0,"load":0,"teAer":0,"teAna":0}';
+
 /* ---------- разбор ответов ---------- */
 
 /* Белок по источникам: доли pa:pv, в сумме — весь белок */
@@ -86,6 +96,24 @@ export function parsePhoto(r) {
     return { name, grams: Math.round(g), per100, src: it.src === 'label' ? 'label' : 'estimate', note: String(it.note || '') };
   }).filter(Boolean);
   return { items, note: String((r && r.note) || '') };
+}
+
+/* Итоги тренировки со скриншота часов → поля stats тренировки; неправдоподобное отбрасывается; null — не итоги тренировки */
+const inRange = (x, lo, hi, int) => {
+  const v = Number(x);
+  if (x == null || x === '' || !isFinite(v) || v < lo || v > hi) return null;
+  return int ? Math.round(v) : Math.round(v * 10) / 10;
+};
+export function parseZepp(r) {
+  if (!r || typeof r !== 'object' || r.isWorkout === false) return null;
+  const s = {
+    durMin: inRange(r.durationMin, 5, 600), avgHr: inRange(r.avgHr, 50, 220, true), maxHr: inRange(r.maxHr, 60, 230, true), minHr: inRange(r.minHr, 30, 200, true),
+    kcalWatch: inRange(r.kcal, 1, 10000, true), vo2max: inRange(r.vo2max, 15, 90), load: inRange(r.load, 1, 2000, true), teAer: inRange(r.teAer, 0.1, 5), teAna: inRange(r.teAna, 0.1, 5)
+  };
+  if (s.maxHr != null && s.avgHr != null && s.maxHr < s.avgHr) s.maxHr = null;
+  const out = {};
+  Object.keys(s).forEach((k) => { if (s[k] != null) out[k] = s[k]; });
+  return out.durMin != null || out.avgHr != null ? out : null;
 }
 
 /* ---------- вызовы с лимитами ---------- */
@@ -120,6 +148,21 @@ export async function aiPhoto(store, file, { signal, today, now, limits, artifac
   return run(store, 'ai_photo', { today, now, limits, artifact, getSample }, async (sample) => {
     const r = await sample.json(PHOTO_PROMPT, { images: file, modelTier: 'default', signal, schema: 'photo' });
     return parsePhoto(r);
+  });
+}
+
+/* Итоги тренировки со скриншотов часов (до 3 файлов, один запрос ИИ на файл, лимит считается один раз): { durMin, avgHr, … } */
+export async function aiZepp(store, files, { signal, today, now, limits, artifact, getSample } = {}) {
+  const list = Array.from(files || []).slice(0, 3);
+  if (!list.length) throw err('no_file');
+  return run(store, 'ai_zepp', { today, now, limits, artifact, getSample }, async (sample) => {
+    const data = {};
+    for (const f of list) {
+      const d = parseZepp(await sample.json(ZEPP_PROMPT, { images: f, modelTier: 'default', signal, schema: 'zepp' }));
+      if (d) Object.keys(d).forEach((k) => { if (data[k] == null) data[k] = d[k]; });
+    }
+    if (!Object.keys(data).length) throw err('empty');
+    return data;
   });
 }
 
