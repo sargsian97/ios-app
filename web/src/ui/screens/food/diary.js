@@ -1,18 +1,18 @@
-/* Дневник питания: таймлайн по часам или по приёмам пищи, итог и цель дня, отметки дня,
-   выделение записей (копировать, перенести, удалить), заметка, расход по журналу. */
-import { html, useApp, useData, useState, useEffect, navigate, todayYmd } from '../../core.js';
-import { Page, Card, Sheet, Confirm, Segmented, Toggle, Field } from '../../kit.js';
+/* Дневник питания: липкая шапка «осталось / съедено» с полосками БЖУ, приёмы пищи (или таймлайн по часам),
+   «как в прошлый раз» для пустого приёма, свайп-удаление с «Отменить», выделение записей (копировать,
+   перенести, удалить), шторка «Разбор дня» (цель, БЖУ, расход, неделя, отметки, заметка). */
+import { html, useApp, useData, useState, useEffect, navigate, todayYmd, keyboardSoon } from '../../core.js';
+import { Page, Sheet, Field } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum, fmtSigned } from '../../../i18n/index.js';
-import { DateNav, Ring, MacroStrip, EntryRow, useEnergy, num, nowTime, addDays, macroLine } from '../../food/parts.js';
+import { DateNav, EntryRow, SwipeRow, useEnergy, num, nowTime, addDays, macroLine, MEALS, MEAL_KEY } from '../../food/parts.js';
 import { dayBudget, journalWeekFor } from '../../food/budget.js';
-import { dayTotals, timelineHours, mealOf, foodNutrients, servingAmount, copyEntries, moveEntries, explodeRecipeEntry } from '../../../domain/nutrition.js';
+import { dayTotals, timelineHours, mealOf, mealDefaultTime, lastMeal, foodNutrients, servingAmount, copyEntries, moveEntries, explodeRecipeEntry } from '../../../domain/nutrition.js';
 import { uid } from '../../../data/ids.js';
 import { formatClock } from '../../../domain/units.js';
 import { CheckinBanner } from '../checkin.js';
 import { scaleNutrients, roundNutrients } from '../../../data/models/nutrients.js';
-
-const MEALS = [['b', 'food.meal.b', '#FFB800'], ['l', 'food.meal.l', '#FF7A1A'], ['d', 'food.meal.d', '#8A87FF'], ['s', 'food.meal.s', '#FF2D55']];
+import { toast } from '../../toast.js';
 
 export function FoodDiary({ route }) {
   const app = useApp();
@@ -21,33 +21,52 @@ export function FoodDiary({ route }) {
   useData(['expenditureSettings', 'scaleEntries', 'workoutLogs', 'stepsEntries']);
   const energy = useEnergy();
   const date = route.query.d || todayYmd();
+  const today = date === todayYmd();
   const setDate = (d) => navigate('/food?d=' + d, { replace: true });
   const [selecting, setSelecting] = useState(false);
   const [sel, setSel] = useState(new Set());
   const [edit, setEdit] = useState(null);
   const [copyMove, setCopyMove] = useState(null);
   const [menu, setMenu] = useState(false);
-  const [confirm, setConfirm] = useState(null);
+  const [review, setReview] = useState(false);
   const [manual, setManual] = useState(false);
   useEffect(() => { setSel(new Set()); setSelecting(false); }, [date]);
 
   const dp = repos.dietProfile.get();
   const entries = repos.foodEntry.byDate(date);
+  const all = repos.foodEntry.list();
   const day = repos.dayEntry.get(date);
   const totals = dayTotals(entries, day);
   const budget = dayBudget(app, date);
   const clock = repos.profile.get().units.clock;
   const fmtTime = (hm) => formatClock(Number(hm.slice(0, 2)), Number(hm.slice(3, 5)), clock);
 
-  const addAt = (time) => navigate('/food/add?d=' + date + (time ? '&t=' + time : ''));
+  /* переход на добавление: приём и время предвыбраны; k=1 — поднять клавиатуру */
+  const addAt = (meal, time) => { keyboardSoon(); navigate('/food/add?d=' + date + '&m=' + meal + (time ? '&t=' + time : '') + '&k=1'); };
+  const addNow = () => { const time = today ? nowTime() : null; addAt(time ? mealOf({ time }) : 'l', time); };
   const saveDay = (patch) => repos.dayEntry.save(Object.assign({}, day || { id: date }, patch, { id: date }));
   const toggle = (id) => setSel((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const tap = (e) => (selecting ? toggle(e.id) : setEdit(e));
+  const longPress = (e) => { if (!selecting) { setSelecting(true); setSel(new Set([e.id])); } };
   const chosen = entries.filter((e) => sel.has(e.id));
 
+  /* удаление без вопросов: тост с «Отменить» возвращает записи как были */
   async function removeEntries(list) {
-    await store.batch(list.map((e) => repos.foodEntry.removeOp(e.id)));
-    setSel(new Set()); setSelecting(false);
+    const docs = list.map((e) => repos.foodEntry.get(e.id)).filter(Boolean);
+    if (!docs.length) return;
+    await store.batch(docs.map((d) => repos.foodEntry.removeOp(d.id)));
+    setSel(new Set()); setSelecting(false); setEdit(null);
+    toast({
+      text: docs.length === 1 ? t('food.deletedOne', { name: docs[0].name || t('food.quick.name') }) : t('food.deletedMany', { count: docs.length }),
+      action: { label: t('common.undo'), run: () => store.batch(docs.map((d) => repos.foodEntry.putOp(d))) }
+    });
+  }
+
+  /* «как в прошлый раз»: копия записей того же приёма из последнего дня */
+  async function repeatMeal(meal, lm) {
+    const copies = copyEntries(lm.entries, [date], { newId: uid }).map((c) => Object.assign({}, c, { meal }));
+    await store.batch(copies.map((c) => repos.foodEntry.putOp(c)));
+    toast({ text: t('food.copyTitle', { count: copies.length }) + ' · ' + t(MEAL_KEY[meal]), action: { label: t('common.undo'), run: () => store.batch(copies.map((c) => repos.foodEntry.removeOp(c.id))) } });
   }
 
   const prev = repos.foodEntry.byDate(addDays(date, -1));
@@ -56,91 +75,97 @@ export function FoodDiary({ route }) {
     await store.batch(copies.map((c) => repos.foodEntry.putOp(c)));
   }
 
-  const view = dp.diaryView;
-  const flags = html`<div class="dflags">
-    <button class=${'chip' + (day && day.fasting ? ' on' : '')} onClick=${() => saveDay({ fasting: !(day && day.fasting) })}>${t('food.flag.fasting')}</button>
-    <button class=${'chip' + (day && day.partial ? ' on' : '')} onClick=${() => saveDay({ partial: !(day && day.partial) })}>${t('food.flag.partial')}</button>
-    ${totals.manual ? html`<button class="chip on" onClick=${() => setManual(true)}>${t('food.flag.manual')}</button>` : null}
-  </div>`;
+  const view = dp.diaryView === 'timeline' ? 'timeline' : 'classic';
+  const rowProps = { energy, selecting, sel, onTap: tap, onLong: longPress, onDelete: (e) => removeEntries([e]) };
 
   return html`<${Page} title=${t('nav.food')} icon="food" color="linear-gradient(135deg,#FF7A6E,#FF2D55)"
       right=${html`<div class="row" style="gap:6px">
         ${entries.length ? html`<button class="small" onClick=${() => { setSelecting(!selecting); setSel(new Set()); }}>${selecting ? t('common.done') : t('food.select')}</button>` : null}
         <button class="small icn" aria-label=${t('food.menu')} onClick=${() => setMenu(true)}><${Icon} name="more" size=${18}/></button>
       </div>`}>
-    <${DateNav} date=${date} onChange=${setDate}/>
-    ${date === todayYmd() ? html`<${CheckinBanner}/>` : null}
-    <${Banner} variant=${dp.banner} totals=${totals} budget=${budget} energy=${energy} flags=${flags} showOver=${!!dp.showOverages} onToggle=${() => repos.dietProfile.update({ banner: dp.banner === 'eaten' ? 'left' : 'eaten' })}/>
-
-    <div class="pills sub" style="margin:0 0 12px">
-      <button class=${'pill' + (view === 'timeline' ? ' on' : '')} onClick=${() => repos.dietProfile.update({ diaryView: 'timeline' })}>${t('food.view.timeline')}</button>
-      <button class=${'pill' + (view === 'classic' ? ' on' : '')} onClick=${() => repos.dietProfile.update({ diaryView: 'classic' })}>${t('food.view.classic')}</button>
+    <div class="fhead">
+      <${DateNav} date=${date} onChange=${setDate}/>
+      <${Head} totals=${totals} budget=${budget} energy=${energy} day=${day} big=${dp.banner === 'eaten' ? 'eaten' : 'left'} showOver=${!!dp.showOverages} onOpen=${() => setReview(true)}/>
     </div>
+    ${today ? html`<${CheckinBanner}/>` : null}
 
-    ${!entries.length ? html`<div class="card empty">
-      ${day && day.fasting ? t('food.empty.fasting') : t('food.empty')}
-      <div class="stack" style="margin-top:12px">
-        ${prev.length ? html`<button onClick=${copyYesterday}>${t('food.copyYesterday', { count: prev.length })}</button>` : null}
-      </div>
-    </div>` : null}
+    ${!entries.length && day && day.fasting ? html`<div class="card empty">${t('food.empty.fasting')}</div>` : null}
+    ${!entries.length && prev.length && !(day && day.fasting) ? html`<div class="card empty">${t('food.empty')}
+      <div class="stack" style="margin-top:12px"><button onClick=${copyYesterday}>${t('food.copyYesterday', { count: prev.length })}</button></div></div>` : null}
 
     ${view === 'timeline'
-      ? html`<${Timeline} entries=${entries} dp=${dp} energy=${energy} fmtTime=${fmtTime} selecting=${selecting} sel=${sel} onTap=${tap} onAdd=${addAt} today=${date === todayYmd()}/>`
-      : html`<${Classic} entries=${entries} energy=${energy} selecting=${selecting} sel=${sel} onTap=${tap} onAdd=${addAt}/>`}
+      ? html`<${Timeline} entries=${entries} dp=${dp} fmtTime=${fmtTime} today=${today} onAdd=${(hh) => addAt(mealOf({ time: hh }), hh)} ...${rowProps}/>`
+      : html`<${Meals} entries=${entries} all=${all} date=${date} today=${today} onAdd=${addAt} onRepeat=${repeatMeal} ...${rowProps}/>`}
 
-    <${DayNote} day=${day} onSave=${(note) => saveDay({ note })}/>
-    ${budget.source === 'journal' ? html`<${JournalBurn} b=${budget.journal} energy=${energy}/>` : null}
-    <${MacroTargets} totals=${totals} budget=${budget}/>
-    <${WeekCard} date=${date} app=${app} energy=${energy}/>
-
-    ${!selecting ? html`<button class="fab primary" onClick=${() => addAt(date === todayYmd() ? nowTime() : null)}>${t('food.addFab')}</button>` : null}
+    ${!selecting ? html`<button class="fab primary" onClick=${addNow}>${t('food.addFab')}</button>` : null}
     ${selecting ? html`<div class="selbar">
       <span class="grow">${t('food.selected', { count: chosen.length })}</span>
       <button class="small" disabled=${!chosen.length} onClick=${() => setCopyMove({ mode: 'copy', list: chosen })}>${t('food.copy')}</button>
       <button class="small" disabled=${!chosen.length} onClick=${() => setCopyMove({ mode: 'move', list: chosen })}>${t('food.move')}</button>
-      <button class="small danger" disabled=${!chosen.length} onClick=${() => setConfirm({ text: t('food.confirmDelete', { count: chosen.length }), yes: t('food.delete'), go: () => removeEntries(chosen) })}>${t('food.delete')}</button>
+      <button class="small danger" disabled=${!chosen.length} onClick=${() => removeEntries(chosen)}>${t('food.delete')}</button>
     </div>` : null}
 
-    <${EntrySheet} entry=${edit} onClose=${() => setEdit(null)} onCopyMove=${(mode, e) => { setEdit(null); setCopyMove({ mode, list: [e] }); }}/>
+    <${DayReview} open=${review} onClose=${() => setReview(false)} date=${date} app=${app} totals=${totals} budget=${budget} energy=${energy} day=${day} entries=${entries}
+      showOver=${!!dp.showOverages} onSaveDay=${saveDay} onManual=${() => setManual(true)}/>
+    <${EntrySheet} entry=${edit} onClose=${() => setEdit(null)} onDelete=${(e) => removeEntries([e])} onCopyMove=${(mode, e) => { setEdit(null); setCopyMove({ mode, list: [e] }); }}/>
     <${CopyMoveSheet} job=${copyMove} date=${date} onClose=${() => setCopyMove(null)} onDone=${() => { setCopyMove(null); setSel(new Set()); setSelecting(false); }}/>
     <${DayMenu} open=${menu} onClose=${() => setMenu(false)} date=${date} entries=${entries}
       onCopyDay=${() => { setMenu(false); setCopyMove({ mode: 'copy', list: entries }); }}
-      onClear=${() => { setMenu(false); setConfirm({ text: t('food.confirmClear', { count: entries.length }), yes: t('food.clear'), go: () => removeEntries(entries) }); }}
+      onClear=${() => { setMenu(false); removeEntries(entries); }}
       onManual=${() => { setMenu(false); setManual(true); }}/>
     <${ManualSheet} open=${manual} onClose=${() => setManual(false)} day=${day} totals=${dayTotals(entries)} onSave=${(m) => { saveDay({ manualTotals: m }); setManual(false); }}/>
-    ${confirm ? html`<${Confirm} text=${confirm.text} yes=${confirm.yes} danger=${true} onNo=${() => setConfirm(null)} onYes=${() => { const c = confirm; setConfirm(null); c.go(); }}/>` : null}
   <//>`;
 }
 
-/* ---------- баннер «съедено / осталось» ---------- */
-function Banner({ variant, totals, budget, energy, flags, showOver, onToggle }) {
+/* ---------- шапка: осталось / съедено, кольцо, полоски БЖУ; тап — «Разбор дня» ---------- */
+function Head({ totals, budget, energy, day, big, showOver, onOpen }) {
   const eaten = totals.kcal || 0, target = budget.kcal || 0;
-  /* без «стыда»: перебор по умолчанию не показывается — остаток просто 0 */
   const rawLeft = target - eaten, over = showOver && rawLeft < 0, left = showOver ? rawLeft : Math.max(0, rawLeft);
-  const targets = { protein: budget.protein, fat: budget.fat, carbs: budget.carbs, fiber: budget.fiber };
-  let top;
-  if (variant === 'eaten' || variant === 'left') {
-    const v = variant === 'eaten' ? eaten : Math.abs(left);
-    top = html`<button class="bigstat linkish" aria-label=${t('food.toggleBanner')} onClick=${onToggle}><span class="rl">${variant === 'eaten' ? t('food.eaten') : over ? t('food.over') : t('food.left')}</span>
-      <b class=${variant === 'left' && over ? 'over' : ''}>${energy.fmt(v)}</b><small>${energy.unit}${target ? ' · ' + t('food.ofGoal', { g: energy.fmt(target) }) : ''}</small></button>`;
-  } else if (variant === 'progress') {
-    const frac = target > 0 ? Math.min(1, eaten / target) : 0;
-    top = html`<div class="bigstat"><span class="rl">${t('food.eaten')}</span><b>${energy.fmt(eaten)}</b><small>${target ? t('food.ofGoal', { g: energy.fmt(target) }) + ' ' + energy.unit : energy.unit}</small></div>
-      <div class=${'bar fbar' + (over ? ' over' : '')}><i style=${'width:' + (frac * 100).toFixed(1) + '%'}></i></div>`;
-  } else {
-    top = html`${target ? html`<${Ring} eaten=${eaten} target=${target} energy=${energy} showOver=${showOver}/>` : null}
-      <div class="rstats">
-        <div><b>${target ? energy.fmt(target) : '—'}</b><span>${t('food.goal')}</span></div>
-        <div><b>${energy.fmt(eaten)}</b><span>${t('food.eaten')}</span></div>
-        <div><b class=${over ? 'rover' : ''}>${target ? energy.fmt(Math.abs(left)) : '—'}</b><span>${over ? t('food.over') : t('food.left')}</span></div>
-      </div>`;
-  }
-  return html`<div class="card pad fbanner">${top}<${MacroStrip} totals=${totals} targets=${targets}/>${flags}
-    ${budget.source === 'none' ? html`<div class="hint">${t('food.noGoal')}</div>` : null}</div>`;
+  const pct = target > 0 ? Math.round(eaten / target * 100) : 0;
+  const showLeft = big === 'left' && target > 0;
+  const flags = [day && day.fasting ? t('food.flag.fasting') : null, day && day.partial ? t('food.flag.partial') : null, totals.manual ? t('food.flag.manual') : null].filter(Boolean);
+  const M = [['protein', 'food.macro.p', 'var(--m-p)'], ['fat', 'food.macro.f', 'var(--m-f)'], ['carbs', 'food.macro.c', 'var(--m-c)']];
+  return html`<button class="card pad fbanner" onClick=${onOpen} aria-label=${t('food.review')}>
+    <span class="fs-main">
+      <span class="fs-txt">
+        <span class="rl">${showLeft ? (over ? t('food.over') : t('food.left')) : t('food.eaten')}</span>
+        <span class=${'fs-big' + (showLeft && over ? ' over' : '')}>${energy.fmt(showLeft ? Math.abs(left) : eaten)}<small>${energy.unit}</small></span>
+        <span class="hint">${target ? (showLeft ? t('food.eatenOf', { e: energy.fmt(eaten), g: energy.fmt(target) }) : t('food.ofGoal', { g: energy.fmt(target) })) : t('food.goalSrc.none')}${flags.length ? ' · ' + flags.join(' · ') : ''} · <span class="lnk">${t('food.review')} ›</span></span>
+      </span>
+      ${target ? html`<span class=${'fring' + (over ? ' over' : '')} style=${'--p:' + Math.min(100, pct)}><i>${pct} %</i></span>` : null}
+    </span>
+    <span class="fmacs">${M.map(([k, label, color]) => {
+      const v = totals[k] || 0, tg = budget[k] || 0;
+      const w = tg > 0 ? Math.min(100, v / tg * 100) : 0;
+      return html`<span class="fmac" style=${'--mc:' + color}><b>${t(label)}</b><em>${fmtNum(v)}${tg ? ' / ' + fmtNum(tg) : ''} ${t('unit.g')}</em>${tg ? html`<i><b style=${'width:' + w.toFixed(1) + '%'}></b></i>` : null}</span>`;
+    })}</span>
+  </button>`;
 }
 
-/* ---------- таймлайн ---------- */
-function Timeline({ entries, dp, energy, fmtTime, selecting, sel, onTap, onAdd, today }) {
+/* ---------- по приёмам пищи ---------- */
+function Meals({ entries, all, date, today, energy, selecting, sel, onTap, onLong, onDelete, onAdd, onRepeat }) {
+  return html`${MEALS.map(([m, label, color]) => {
+    const list = entries.filter((e) => mealOf(e) === m);
+    const sum = dayTotals(list);
+    const lm = !list.length ? lastMeal(all, m, { before: date, addDays }) : null;
+    const lmSum = lm ? dayTotals(lm.entries) : null;
+    const add = () => onAdd(m, mealDefaultTime(m, today ? nowTime() : null));
+    return html`<div class="card meal">
+      <div class="mh row"><b class="grow"><span class="mdot" style=${'background:' + color}></span>${t(label)}</b>
+        ${list.length ? html`<span class="hs">${energy.fmt(sum.kcal)} ${energy.unit}</span>
+          <button class="tladd" aria-label=${t('food.addTo', { m: t(label) })} onClick=${add}><${Icon} name="plus" size=${16}/></button>` : html`<span class="hs muted">${t('food.meal.empty')}</span>`}</div>
+      ${list.length ? html`<div class="fm mline">${macroLine(sum)}</div>` : null}
+      ${list.map((e) => html`<${SwipeRow} key=${e.id} disabled=${selecting} onDelete=${() => onDelete(e)} onLong=${() => onLong(e)}>
+        <${EntryRow} e=${e} energy=${energy} selecting=${selecting} selected=${sel.has(e.id)} onTap=${() => onTap(e)}/>
+      <//>`)}
+      ${!list.length && lm ? html`<button class="madd" onClick=${() => onRepeat(m, lm)}><${Icon} name="repeat" size=${18}/>${t('food.lastTime', { k: energy.fmt(lmSum.kcal), u: energy.unit })}</button>` : null}
+      ${!list.length ? html`<button class="madd" onClick=${add}><${Icon} name="plus" size=${18}/>${t('food.addEntry')}</button>` : null}
+    </div>`;
+  })}`;
+}
+
+/* ---------- таймлайн по часам ---------- */
+function Timeline({ entries, dp, energy, fmtTime, selecting, sel, onTap, onLong, onDelete, onAdd, today }) {
   const hours = timelineHours(entries, dp.timeline);
   const nowH = new Date().getHours();
   return html`<div class="card tl">${hours.map(({ hour, entries: list }) => {
@@ -152,53 +177,47 @@ function Timeline({ entries, dp, energy, fmtTime, selecting, sel, onTap, onAdd, 
         ${list.length ? html`<span class="tls grow">${energy.fmt(sum.kcal)} ${energy.unit} · ${macroLine(sum)}</span>` : html`<span class="grow"></span>`}
         <button class="tladd" aria-label=${t('food.addAt', { t: fmtTime(hh) })} onClick=${() => onAdd(hh)}><${Icon} name="plus" size=${16}/></button>
       </div>
-      ${list.map((e) => html`<${EntryRow} key=${e.id} e=${e} energy=${energy} selecting=${selecting} selected=${sel.has(e.id)} onTap=${() => onTap(e)}/>`)}
+      ${list.map((e) => html`<${SwipeRow} key=${e.id} disabled=${selecting} onDelete=${() => onDelete(e)} onLong=${() => onLong(e)}>
+        <${EntryRow} e=${e} energy=${energy} selecting=${selecting} selected=${sel.has(e.id)} onTap=${() => onTap(e)}/>
+      <//>`)}
     </div>`;
   })}</div>`;
 }
 
-/* ---------- по приёмам пищи ---------- */
-function Classic({ entries, energy, selecting, sel, onTap, onAdd }) {
-  return html`${MEALS.map(([m, label, color]) => {
-    const list = entries.filter((e) => mealOf(e) === m);
-    const sum = dayTotals(list);
-    const time = { b: '08:00', l: '13:00', d: '19:00', s: '16:00' }[m];
-    return html`<div class="card pad">
-      <div class="mt row"><b class="grow"><span class="mdot" style=${'background:' + color}></span>${t(label)}</b>
-        <span class="hs">${energy.fmt(sum.kcal)} ${energy.unit}</span>
-        <button class="tladd" aria-label=${t('food.addTo', { m: t(label) })} onClick=${() => onAdd(time)}><${Icon} name="plus" size=${16}/></button></div>
-      ${list.length ? html`<div class="fm" style="margin:-2px 0 4px">${macroLine(sum)}</div>` : null}
-      ${list.map((e) => html`<${EntryRow} key=${e.id} e=${e} energy=${energy} selecting=${selecting} selected=${sel.has(e.id)} onTap=${() => onTap(e)}/>`)}
-    </div>`;
-  })}`;
-}
+/* ---------- «Разбор дня» ---------- */
+const GOAL_SRC = { program: 'food.goalSrc.program', journal: 'food.goalSrc.journal', none: 'food.goalSrc.none' };
+function DayReview({ open, onClose, date, app, totals, budget, energy, day, entries, showOver, onSaveDay, onManual }) {
+  if (!open) return null;
+  const eaten = totals.kcal || 0, target = budget.kcal || 0;
+  const rawLeft = target - eaten, over = showOver && rawLeft < 0, left = showOver ? rawLeft : Math.max(0, rawLeft);
+  const src = GOAL_SRC[budget.source === 'journal' ? 'journal' : budget.source === 'none' || !target ? 'none' : 'program'];
+  const ws = journalWeekFor(app, date);
+  const b = budget.source === 'journal' ? budget.journal : null;
+  return html`<${Sheet} open=${true} onClose=${onClose} title=${t('food.review')}>
+    <div class="kv"><span>${t('food.goal')}<small>${t(src)}</small></span><span>${target ? energy.fmt(target) + ' ' + energy.unit : '—'}</span></div>
+    <div class="kv"><span>${t('food.eaten')}</span><span>${energy.fmt(eaten)} ${energy.unit}</span></div>
+    ${target ? html`<div class="kv tot"><span>${over ? t('food.over') : t('food.left')}</span><span class=${over ? 'rover' : ''}>${energy.fmt(Math.abs(left))} ${energy.unit}</span></div>` : null}
+    <div class="dflags">
+      <button class=${'chip' + (day && day.fasting ? ' on' : '')} onClick=${() => onSaveDay({ fasting: !(day && day.fasting) })}>${t('food.flag.fasting')}</button>
+      <button class=${'chip' + (day && day.partial ? ' on' : '')} onClick=${() => onSaveDay({ partial: !(day && day.partial) })}>${t('food.flag.partial')}</button>
+      <button class=${'chip' + (totals.manual ? ' on' : '')} onClick=${onManual}>${t('food.flag.manual')}</button>
+    </div>
+    ${budget.source === 'none' ? html`<div class="hint">${t('food.noGoal')}</div>` : null}
 
-/* ---------- заметка к дню ---------- */
-function DayNote({ day, onSave }) {
-  const [v, setV] = useState(null);
-  const cur = v != null ? v : (day && day.note) || '';
-  return html`<${Card} title=${t('food.note')} icon="list" color="var(--k-plan)">
-    <textarea placeholder=${t('food.note.ph')} value=${cur} onInput=${(e) => setV(e.currentTarget.value)} onBlur=${() => { if (v != null && v !== ((day && day.note) || '')) onSave(v); setV(null); }}></textarea>
+    <div class="ltitle">${t('food.macros.title')}</div>
+    <${MacroRows} totals=${totals} budget=${budget}/>
+
+    ${b ? html`<div class="ltitle">${t('food.burn.title')}</div><${BurnRows} b=${b} energy=${energy}/>` : null}
+    ${ws && ws.n >= 2 ? html`<div class="ltitle">${t('food.week.title', { n: ws.n })}</div><${WeekRows} ws=${ws} energy=${energy}/>` : null}
+
+    <div class="ltitle">${t('food.note')}</div>
+    <${DayNote} day=${day} onSave=${(note) => onSaveDay({ note })}/>
+    <button class="linkbtn" style="width:100%" onClick=${() => { onClose(); navigate('/food/nutrients?d=' + date); }}>${t('food.review.nutrients')} ›</button>
+    ${!entries.length ? null : html`<div class="hint" style="text-align:center">${t('food.sheet.swipe')}</div>`}
   <//>`;
 }
 
-/* ---------- расход по настройкам журнала ---------- */
-function JournalBurn({ b, energy }) {
-  const act = b.stepK + b.cardioNet + b.train;
-  return html`<${Card} title=${t('food.burn.title')} icon="flame" color="var(--k-burn)">
-    <div class="kv"><span>${t('food.burn.bmr')}</span><span>${energy.fmt(b.base)}</span></div>
-    <div class="kv"><span>${t('food.burn.activity')}</span><span>${energy.fmt(act)}</span></div>
-    <div class="hint" style="margin:-4px 0 6px">${t('food.burn.parts', { s: energy.fmt(b.stepK), c: energy.fmt(b.cardioNet), w: energy.fmt(b.train) })}</div>
-    ${b.corr ? html`<div class="kv"><span>${t('food.burn.corr', { p: (b.corr > 0 ? '+' : '') + b.corr })}</span><span>${energy.fmt(b.burned - b.raw)}</span></div>` : null}
-    <div class="kv tot"><span>${t('food.burn.total')}</span><span>${energy.fmt(b.burned)} ${energy.unit}</span></div>
-    ${b.offset ? html`<div class="kv"><span>${t('food.burn.goal', { o: (b.offset > 0 ? '+' : '') + b.offset })}</span><span>${energy.fmt(b.goal)} ${energy.unit}</span></div>` : null}
-    ${b.hasSteps ? null : html`<div class="hint warn">${t('food.burn.noSteps')}</div>`}
-    <div class="hint">${t('food.burn.hint')}</div>
-  <//>`;
-}
-
-/* ---------- БЖУ и клетчатка с целями ---------- */
-function MacroTargets({ totals, budget }) {
+function MacroRows({ totals, budget }) {
   const pa = totals.protein_animal || 0, pv = totals.protein_plant || 0, p = totals.protein || 0;
   const row = (label, v, target, mode) => {
     const frac = target > 0 ? Math.min(1, v / target) : 0;
@@ -206,50 +225,61 @@ function MacroTargets({ totals, budget }) {
     return html`<div class="mac"><div class="mh row"><span class="grow">${label}</span><span>${fmtNum(v)}${target ? ' / ' + fmtNum(target) : ''} ${t('unit.g')}</span></div>
       <div class=${'bar mbar' + (bad ? ' over' : '')}><i style=${'width:' + (frac * 100).toFixed(1) + '%'}></i></div></div>`;
   };
-  return html`<${Card} title=${t('food.macros.title')} icon="food" color="var(--k-food)">
-    ${row(t('food.macro.protein'), p, budget.protein, 'min')}
+  return html`${row(t('food.macro.protein'), p, budget.protein, 'min')}
     ${pa + pv > 0 ? html`<div class="psplit"><span class="pa" style=${'flex:' + pa}></span><span class="pv" style=${'flex:' + pv}></span></div>
       <div class="hint" style="margin-top:4px">${t('food.protein.split', { a: fmtNum(pa), v: fmtNum(pv) })}</div>` : null}
     ${row(t('food.macro.fat'), totals.fat || 0, budget.fat, 'max')}
     ${row(t('food.macro.carbs'), totals.carbs || 0, budget.carbs, 'max')}
     ${row(t('food.macro.fiber'), totals.fiber || 0, budget.fiber, 'min')}
-    <div class="hint">${budget.source === 'journal' ? t('food.macros.hintJournal') : t('food.macros.hint')}</div>
-  <//>`;
+    <div class="hint">${budget.source === 'journal' ? t('food.macros.hintJournal') : t('food.macros.hint')}</div>`;
 }
 
-/* ---------- неделя ---------- */
-function WeekCard({ date, app, energy }) {
-  const ws = journalWeekFor(app, date);
-  if (!ws || ws.n < 2) return null;
+/* расход по настройкам журнала */
+function BurnRows({ b, energy }) {
+  const act = b.stepK + b.cardioNet + b.train;
+  return html`<div class="kv"><span>${t('food.burn.bmr')}</span><span>${energy.fmt(b.base)}</span></div>
+    <div class="kv"><span>${t('food.burn.activity')}</span><span>${energy.fmt(act)}</span></div>
+    <div class="hint" style="margin:-4px 0 6px">${t('food.burn.parts', { s: energy.fmt(b.stepK), c: energy.fmt(b.cardioNet), w: energy.fmt(b.train) })}</div>
+    ${b.corr ? html`<div class="kv"><span>${t('food.burn.corr', { p: (b.corr > 0 ? '+' : '') + b.corr })}</span><span>${energy.fmt(b.burned - b.raw)}</span></div>` : null}
+    <div class="kv tot"><span>${t('food.burn.total')}</span><span>${energy.fmt(b.burned)} ${energy.unit}</span></div>
+    ${b.offset ? html`<div class="kv"><span>${t('food.burn.goal', { o: (b.offset > 0 ? '+' : '') + b.offset })}</span><span>${energy.fmt(b.goal)} ${energy.unit}</span></div>` : null}
+    ${b.hasSteps ? null : html`<div class="hint warn">${t('food.burn.noSteps')}</div>`}
+    <div class="hint">${t('food.burn.hint')}</div>`;
+}
+
+function WeekRows({ ws, energy }) {
   const diff = ws.eat - ws.bur;
-  return html`<${Card} title=${t('food.week.title', { n: ws.n })} icon="cal" color="var(--k-cal)">
-    <div class="kv"><span>${t('food.week.eat')}</span><span>${energy.fmt(ws.eat)} ${energy.unit}</span></div>
+  return html`<div class="kv"><span>${t('food.week.eat')}</span><span>${energy.fmt(ws.eat)} ${energy.unit}</span></div>
     <div class="kv"><span>${t('food.week.burn')}</span><span>${energy.fmt(ws.bur)} ${energy.unit}</span></div>
     <div class="kv tot"><span>${t('food.week.balance')}</span><span>${fmtSigned(diff)} ${energy.unit}</span></div>
-    ${ws.w1 != null && ws.w0 != null ? html`<div class="kv"><span>${t('food.week.weight')}</span><span>${fmtNum(ws.w0, 1)} → ${fmtNum(ws.w1, 1)}</span></div>` : null}
-  <//>`;
+    ${ws.w1 != null && ws.w0 != null ? html`<div class="kv"><span>${t('food.week.weight')}</span><span>${fmtNum(ws.w0, 1)} → ${fmtNum(ws.w1, 1)}</span></div>` : null}`;
+}
+
+/* ---------- заметка к дню ---------- */
+function DayNote({ day, onSave }) {
+  const [v, setV] = useState(null);
+  const cur = v != null ? v : (day && day.note) || '';
+  return html`<textarea placeholder=${t('food.note.ph')} value=${cur} onInput=${(e) => setV(e.currentTarget.value)} onBlur=${() => { if (v != null && v !== ((day && day.note) || '')) onSave(v); setV(null); }}></textarea>`;
 }
 
 /* ---------- правка записи ---------- */
-function EntrySheet({ entry, onClose, onCopyMove }) {
-  const { repos } = useApp();
+function EntrySheet({ entry, onClose, onDelete, onCopyMove }) {
+  const { repos, store } = useApp();
   const [d, setD] = useState(null);
-  const [confirmDel, setConfirmDel] = useState(false);
-  const { store } = useApp();
   /* разложить рецепт: запись заменяется продуктами в той же доле, время то же */
   async function explode() {
     const resolve = (k, id) => (k === 'recipe' ? repos.recipe.get(id) : repos.food.get(id));
     let parts = [];
     try { parts = explodeRecipeEntry(entry, resolve); } catch (e) { parts = []; }
     if (!parts.length) return;
-    await store.batch(parts.map((p) => repos.foodEntry.putOp({ date: entry.date, time: entry.time, ref: p.ref, name: p.name, amount: p.amount, unit: p.unit, nutrients: p.nutrients })).concat([repos.foodEntry.removeOp(entry.id)]));
+    await store.batch(parts.map((p) => repos.foodEntry.putOp({ date: entry.date, time: entry.time, meal: entry.meal || null, ref: p.ref, name: p.name, amount: p.amount, unit: p.unit, nutrients: p.nutrients })).concat([repos.foodEntry.removeOp(entry.id)]));
     onClose();
   }
   useEffect(() => {
     if (!entry) { setD(null); return; }
     const food = entry.ref && entry.ref.kind === 'food' ? repos.food.get(entry.ref.id) : null;
     const serving = entry.servingId && food && (food.servings || []).some((s) => s.id === entry.servingId) ? entry.servingId : '';
-    setD({ time: entry.time, servingId: serving, qty: serving ? (entry.quantity ?? 1) : (entry.amount ?? ''), name: entry.name, n: Object.assign({}, entry.nutrients), food, touched: false });
+    setD({ time: entry.time, meal: mealOf(entry), servingId: serving, qty: serving ? (entry.quantity ?? 1) : (entry.amount ?? ''), name: entry.name, n: Object.assign({}, entry.nutrients), food, touched: false });
   }, [entry && entry.id]);
   if (!entry || !d) return null;
   const food = d.food;
@@ -258,19 +288,20 @@ function EntrySheet({ entry, onClose, onCopyMove }) {
   const n = food ? foodNutrients(food, amount)
     : (!d.touched && entry.amount > 0 && amount > 0 && amount !== entry.amount ? roundNutrients(scaleNutrients(entry.nutrients, amount / entry.amount), 2) : d.n);
   async function save() {
-    const patch = { time: d.time || entry.time, name: d.name, nutrients: n, amount: amount || null, servingId: food ? d.servingId : '', quantity: food && d.servingId ? num(d.qty) : null };
+    const patch = { time: d.time || entry.time, meal: d.meal, name: d.name, nutrients: n, amount: amount || null, servingId: food ? d.servingId : '', quantity: food && d.servingId ? num(d.qty) : null };
     await repos.foodEntry.update(entry.id, patch);
     onClose();
   }
   const setN = (k, v) => setD(Object.assign({}, d, { touched: true, n: Object.assign({}, n, { [k]: num(v) == null ? undefined : num(v) }) }));
   return html`<${Sheet} open=${true} onClose=${onClose} title=${entry.name || t('food.quick.name')}>
     <div class="grid2">
+      <${Field} label=${t('food.meal')}><select value=${d.meal} onChange=${(e) => setD(Object.assign({}, d, { meal: e.currentTarget.value }))}>${MEALS.map(([m, label]) => html`<option value=${m}>${t(label)}</option>`)}</select><//>
       <${Field} label=${t('food.time')}><input type="time" value=${d.time} onInput=${(e) => setD(Object.assign({}, d, { time: e.currentTarget.value }))}/><//>
-      ${food ? html`<${Field} label=${d.servingId ? t('food.qty') : t('food.grams')}>
-        <input inputmode="decimal" value=${d.qty} onInput=${(e) => setD(Object.assign({}, d, { qty: e.currentTarget.value }))}/><//>` : html`<${Field} label=${t('food.grams')}>
-        <input inputmode="decimal" value=${d.qty} onInput=${(e) => setD(Object.assign({}, d, { qty: e.currentTarget.value }))}/><//>`}
     </div>
-    ${food && (food.servings || []).length ? html`<div class="chips">
+    <div style="margin-top:12px">
+      <${Field} label=${food && d.servingId ? t('food.qty') : t('food.grams')}><input inputmode="decimal" value=${d.qty} onInput=${(e) => setD(Object.assign({}, d, { qty: e.currentTarget.value }))}/><//>
+    </div>
+    ${food && (food.servings || []).length ? html`<div class="chips" style="margin-top:10px">
       <button class=${'chip' + (!d.servingId ? ' on' : '')} onClick=${() => setD(Object.assign({}, d, { servingId: '', qty: amount || '' }))}>${t('unit.g')}</button>
       ${food.servings.map((s) => html`<button class=${'chip' + (d.servingId === s.id ? ' on' : '')} onClick=${() => setD(Object.assign({}, d, { servingId: s.id, qty: 1 }))}>${s.label}</button>`)}
     </div>` : null}
@@ -284,11 +315,10 @@ function EntrySheet({ entry, onClose, onCopyMove }) {
     <div class="grid3" style="margin-top:8px">
       <button class="small" onClick=${() => onCopyMove('copy', entry)}>${t('food.copy')}</button>
       <button class="small" onClick=${() => onCopyMove('move', entry)}>${t('food.move')}</button>
-      <button class="small danger" onClick=${() => setConfirmDel(true)}>${t('food.delete')}</button>
+      <button class="small danger" onClick=${() => onDelete(entry)}>${t('food.delete')}</button>
     </div>
     ${food ? html`<button class="linkbtn" onClick=${() => { onClose(); navigate('/food/item/' + food.id); }}>${t('food.openFood')}</button>` : null}
     ${entry.ref && entry.ref.kind === 'recipe' ? html`<button class="linkbtn" onClick=${explode}>${t('food.explode')}</button>` : null}
-    ${confirmDel ? html`<${Confirm} text=${t('food.confirmDelete', { count: 1 })} yes=${t('food.delete')} danger=${true} onNo=${() => setConfirmDel(false)} onYes=${async () => { setConfirmDel(false); await repos.foodEntry.remove(entry.id); onClose(); }}/>` : null}
   <//>`;
 }
 
@@ -297,8 +327,7 @@ function CopyMoveSheet({ job, date, onClose, onDone }) {
   const { repos, store } = useApp();
   const [dates, setDates] = useState([]);
   const [time, setTime] = useState('');
-  const [extra, setExtra] = useState('');
-  useEffect(() => { if (job) { setDates([job.mode === 'copy' ? addDays(date, 1) : date]); setTime(''); setExtra(''); } }, [job]);
+  useEffect(() => { if (job) { setDates([job.mode === 'copy' ? addDays(date, 1) : date]); setTime(''); } }, [job]);
   if (!job) return null;
   const copy = job.mode === 'copy';
   async function go() {

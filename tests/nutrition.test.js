@@ -110,3 +110,49 @@ test('этикетка на порцию → на 100 г, калории из Б
   assert.equal(kcalFromMacros({ protein: 10, fat: 10, carbs: 10 }), 170);
   assert.equal(kcalFromMacros({}), 0);
 });
+
+test('приёмы пищи: время по умолчанию, «как в прошлый раз», прошлая порция, порция по умолчанию', async () => {
+  const { mealDefaultTime, lastMeal, lastPortionOf, defaultPortion } = await import('../web/src/domain/nutrition.js');
+  const { addDays } = await import('../web/src/domain/calc/index.js');
+  /* время: «сейчас», если попадает в приём, иначе типичное время приёма; перекус — всегда сейчас */
+  assert.equal(mealDefaultTime('b', '09:20'), '09:20');
+  assert.equal(mealDefaultTime('b', '14:00'), '08:00');
+  assert.equal(mealDefaultTime('l', '13:40'), '13:40');
+  assert.equal(mealDefaultTime('d', null), '19:00');
+  assert.equal(mealDefaultTime('s', '10:00'), '10:00');
+  assert.equal(mealDefaultTime('s'), '16:00');
+  assert.equal(mealDefaultTime('zzz', null), '13:00');
+
+  const es = [
+    { date: '2026-10-10', time: '08:00', meal: 'b', ref: { kind: 'food', id: 'oat' }, name: 'Овсянка', amount: 50, nutrients: { kcal: 180 } },
+    { date: '2026-10-12', time: '08:30', ref: { kind: 'food', id: 'oat' }, name: 'Овсянка', amount: 70, unit: 'g', nutrients: { kcal: 250 } },
+    { date: '2026-10-12', time: '08:40', ref: { kind: 'quick', id: null }, name: 'Кофе', nutrients: { kcal: 40 }, createdAt: 'b' },
+    { date: '2026-10-12', time: '08:40', ref: { kind: 'quick', id: null }, name: 'Яйцо', nutrients: { kcal: 80 }, createdAt: 'a' },
+    { date: '2026-10-12', time: '19:00', ref: { kind: 'food', id: 'rice' }, name: 'Рис', amount: 150, nutrients: { kcal: 190 } },
+    { date: '2026-10-13', time: '13:00', meal: 's', ref: { kind: 'quick', id: null }, name: 'Орехи', nutrients: { kcal: 300 } },
+    { date: '2026-10-14', time: '08:00', ref: { kind: 'food', id: 'oat' }, name: 'Овсянка', amount: 60, nutrients: { kcal: 215 } }
+  ];
+  /* последний завтрак до 14.10 — это 12.10, три записи по времени создания */
+  const lm = lastMeal(es, 'b', { before: '2026-10-14', addDays });
+  assert.equal(lm.date, '2026-10-12');
+  assert.deepEqual(lm.entries.map((e) => e.name), ['Овсянка', 'Яйцо', 'Кофе']);
+  /* явный meal важнее времени: «орехи» в 13:00 — перекус */
+  assert.equal(lastMeal(es, 's', { before: '2026-10-20', addDays }).date, '2026-10-13');
+  assert.equal(lastMeal(es, 'l', { before: '2026-10-20', addDays }), null);
+  /* окно days: ужин 12.10 не старше 30 дней от 14.10, но старше 1 дня */
+  assert.equal(lastMeal(es, 'd', { before: '2026-10-14', addDays }).date, '2026-10-12');
+  assert.equal(lastMeal(es, 'd', { before: '2026-10-14', days: 1, addDays }), null);
+  assert.equal(lastMeal([], 'b', { before: '2026-10-14' }), null);
+  assert.equal(lastMeal(es, 'b', {}).date, '2026-10-14');
+
+  /* прошлая порция: самая поздняя запись продукта; для быстрых — по имени */
+  assert.deepEqual(lastPortionOf(es, { ref: { kind: 'food', id: 'oat' } }), { amount: 60, unit: 'g', servingId: '', quantity: null, nutrients: { kcal: 215 } });
+  assert.equal(lastPortionOf(es, { ref: { kind: 'quick', id: null }, name: 'кофе' }).nutrients.kcal, 40);
+  assert.equal(lastPortionOf(es, { ref: { kind: 'food', id: 'nope' } }), null);
+  assert.equal(lastPortionOf([], { ref: { kind: 'food', id: 'oat' } }), null);
+
+  /* порция по умолчанию: первая порция продукта, иначе база */
+  assert.deepEqual(defaultPortion({ servings: [{ id: 'pc', amount: 55 }], base: { amount: 100 } }), { servingId: 'pc', quantity: 1, amount: 55 });
+  assert.deepEqual(defaultPortion({ base: { amount: 100 } }), { servingId: '', quantity: null, amount: 100 });
+  assert.deepEqual(defaultPortion(null), { servingId: '', quantity: null, amount: 100 });
+});

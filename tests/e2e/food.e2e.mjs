@@ -57,36 +57,82 @@ const meta = await idb('meta/schema');
 check('схема 3 (питание перенесено)', meta && meta.version >= 3, meta);
 check('записи дневника перенесены', (await idbList('foodEntries')).length === 2);
 
-/* дневник за 14.10: таймлайн */
+/* дневник за 14.10: приёмы пищи, шапка «осталось / съедено» */
 await go('#/food?d=2026-10-14');
-await p.waitForSelector('.tl');
-await shot('01-timeline');
-const tl = await p.locator('.tl').innerText();
-check('таймлайн: овсянка в 08:00 и грудка в 13:00', /08:00[\s\S]*Овсянка[\s\S]*13:00[\s\S]*Куриная грудка/.test(tl), tl.slice(0, 200));
+await p.waitForSelector('.meal');
+await shot('01-meals');
+const meals = await p.locator('.wrap').innerText();
+check('приёмы пищи: овсянка в завтраке, грудка в обеде', /Завтрак[\s\S]*Овсянка[\s\S]*Обед[\s\S]*Куриная грудка/.test(meals), meals.replace(/\s+/g, ' ').slice(0, 200));
+check('карточки всех четырёх приёмов', await p.locator('.meal .mh').count() === 4);
 const banner = await p.locator('.fbanner').innerText();
-check('итог дня 379 ккал', /379/.test(banner), banner.replace(/\s+/g, ' ').slice(0, 160));
+check('итог дня 379 ккал в шапке', /379/.test(banner), banner.replace(/\s+/g, ' ').slice(0, 160));
+await p.locator('.fbanner').click(); await wait(500);
+check('«Разбор дня»: БЖУ и заметка', await p.locator('.sheet .mac').count() === 4 && await p.locator('.sheet textarea').count() === 1);
+await shot('02-review', false);
+await p.keyboard.press('Escape'); await wait(300);
 
-await p.locator('.pills.sub .pill', { hasText: 'Приёмы пищи' }).click(); await wait();
-await shot('02-classic');
-check('вид по приёмам пищи', await p.locator('.mt', { hasText: 'Завтрак' }).count() === 1);
-await p.locator('.pills.sub .pill', { hasText: 'По часам' }).click(); await wait();
+/* «как в прошлый раз»: на 15.10 завтрак пуст — повторяем завтрак 14.10 */
+await go('#/food?d=2026-10-15');
+await p.locator('.meal', { hasText: 'Завтрак' }).locator('.madd', { hasText: 'Как в прошлый раз' }).click(); await wait(600);
+check('«как в прошлый раз» скопировал завтрак', (await idbList('foodEntries')).some((e) => e.date === '2026-10-15' && e.name === 'Овсянка' && e.meal === 'b'));
+await p.locator('.toast .small', { hasText: 'Отменить' }).click(); await wait(400);
+check('«Отменить» убрал копию', !(await idbList('foodEntries')).some((e) => e.date === '2026-10-15' && e.name === 'Овсянка'));
 
-/* добавление: поиск своего продукта, карточка, запись */
-await p.locator('.tlh', { hasText: '18:00' }).locator('.tladd').click();
+/* добавление из приёма «Ужин»: поиск своего продукта, карточка «на 100 г → граммы → записать» */
+await go('#/food?d=2026-10-14');
+await p.locator('.meal', { hasText: 'Ужин' }).locator('.madd', { hasText: 'Добавить' }).click();
 await p.waitForSelector('.searchbox input');
-check('время из часа таймлайна', (await p.locator('.timechip input').inputValue()) === '18:00');
+check('приём и время из строки приёма', (await p.locator('.mealchip select').inputValue()) === 'd' && (await p.locator('.timechip input').inputValue()) === '19:00');
+await shot('03-add-empty', false);
 await p.fill('.searchbox input', 'овся');
 await wait(900);
 await shot('03-search');
-await p.locator('.results .lrow', { hasText: 'Овсянка' }).first().click(); await wait(500);
-await p.locator('.qtyrow input').fill('50');
+await p.locator('.results .lrow', { hasText: 'Овсянка' }).first().locator('.rbody').click(); await wait(500);
+check('карточка: КБЖУ на 100 г', /на 100 г/.test(await p.locator('.sheet .per100').innerText()));
+await p.locator('.sheet .stepper2 input').fill('50');
 await wait(200);
 const pc = await p.locator('.pcard').innerText();
 check('карточка: 50 г овсянки = 178 ккал', /178/.test(pc), pc.replace(/\s+/g, ' '));
 await shot('04-product', false);
-await p.getByRole('button', { name: 'Записать', exact: true }).click();
+await p.locator('.sheet button.primary', { hasText: 'Записать в Ужин' }).click();
 await wait(700);
-check('вернулись в дневник с записью в 18:00', /18:00[\s\S]*Овсянка/.test(await p.locator('.tl').innerText()));
+check('вернулись в дневник с записью в ужине', /Ужин[\s\S]*Овсянка/.test(await p.locator('.wrap').innerText()));
+const dinner = (await idbList('foodEntries')).find((e) => e.date === '2026-10-14' && e.time === '19:00');
+check('у записи приём «ужин»', dinner && dinner.meal === 'd' && dinner.amount === 50, dinner);
+
+/* «+» на строке: запись прошлой порции сразу, тост с «Отменить» */
+await go('#/food/add?d=2026-10-14&m=s&t=16:30');
+await p.locator('.lrow', { hasText: 'Овсянка' }).first().locator('.radd').click(); await wait(500);
+check('«+» записал овсянку прошлой порцией (50 г) в перекус', (await idbList('foodEntries')).some((e) => e.date === '2026-10-14' && e.time === '16:30' && e.meal === 's' && e.amount === 50));
+check('тост «Записано в Перекус»', /Записано в Перекус/.test(await p.locator('.toast').innerText()));
+await shot('04b-quick-toast', false);
+await p.locator('.toast .small', { hasText: 'Отменить' }).click(); await wait(400);
+check('«Отменить» убрал запись', !(await idbList('foodEntries')).some((e) => e.date === '2026-10-14' && e.time === '16:30'));
+
+/* свайп влево — удалить с «Отменить» */
+await go('#/food?d=2026-10-14');
+const row = p.locator('.meal', { hasText: 'Ужин' }).locator('.swipe').first();
+await row.evaluate((el) => el.scrollIntoView({ block: 'center' })); await wait(300);
+const box = await row.boundingBox();
+await p.mouse.move(box.x + box.width - 30, box.y + box.height / 2);
+await p.mouse.down();
+for (let i = 1; i <= 8; i++) await p.mouse.move(box.x + box.width - 30 - i * 25, box.y + box.height / 2);
+await p.mouse.up(); await wait(500);
+check('свайп удалил запись ужина', !(await idbList('foodEntries')).some((e) => e.date === '2026-10-14' && e.time === '19:00'));
+check('тост «Удалено»', /Удалено/.test(await p.locator('.toast').innerText()));
+await p.locator('.toast .small', { hasText: 'Отменить' }).click(); await wait(400);
+check('«Отменить» вернул запись', (await idbList('foodEntries')).some((e) => e.date === '2026-10-14' && e.time === '19:00'));
+
+/* вид «по часам» включается в настройках дневника */
+await go('#/food/settings');
+await p.getByRole('radio', { name: 'По часам' }).click(); await wait(300);
+await go('#/food?d=2026-10-14');
+await p.waitForSelector('.tl');
+await shot('02b-timeline');
+const tl = await p.locator('.tl').innerText();
+check('таймлайн: овсянка в 08:00, грудка в 13:00, овсянка в 19:00', /08:00[\s\S]*Овсянка[\s\S]*13:00[\s\S]*Куриная грудка[\s\S]*19:00[\s\S]*Овсянка/.test(tl), tl.slice(0, 200));
+await go('#/food/settings');
+await p.getByRole('radio', { name: 'Приёмы пищи' }).click(); await wait(300);
 
 /* поиск в интернете (подменённый Open Food Facts) и тарелка */
 await go('#/food/add?d=2026-10-14&t=19:30');
@@ -97,7 +143,7 @@ check('выдача Open Food Facts', await p.locator('.results .lrow', { hasTex
 await p.locator('.results .lrow', { hasText: 'Молоко 3,2%' }).click(); await wait(500);
 check('у молока порция 200 мл', await p.locator('.chip', { hasText: '200 мл' }).count() > 0);
 await p.getByRole('button', { name: 'В тарелку' }).click(); await wait(300);
-await p.locator('.scbtn', { hasText: 'Быстро' }).click(); await wait(400);
+await p.locator('.srcs button', { hasText: 'Быстро' }).click(); await wait(400);
 await p.locator('.sheet input').nth(1).fill('250');
 await p.getByRole('button', { name: 'В тарелку' }).click(); await wait(300);
 check('в тарелке 2 продукта', (await p.locator('.platebar .pb-n').innerText()).trim() === '2');
@@ -106,6 +152,7 @@ await shot('06-plate', false);
 await p.getByRole('button', { name: 'Записать всё' }).click(); await wait(800);
 const day14 = (await idbList('foodEntries')).filter((e) => e.date === '2026-10-14');
 check('тарелка записана (5 записей за день)', day14.length === 5, day14.map((e) => e.name + ' ' + e.time));
+check('у записей с тарелки приём по времени (19:30 — ужин)', day14.filter((e) => e.time === '19:30').every((e) => e.meal === 'd'));
 check('молоко сохранилось в свои продукты (OFF)', (await idbList('foodItems')).some((f) => f.source === 'off' && f.name === 'Молоко 3,2%'));
 
 /* правка записи: граммы → калории */
@@ -125,8 +172,11 @@ await p.locator('.sheet button.primary', { hasText: 'Копировать' }).cl
 check('скопировано на 15.10', (await idbList('foodEntries')).some((e) => e.date === '2026-10-15' && e.name === 'Куриная грудка'));
 
 /* отметки дня и ручной итог */
-await p.locator('.dflags .chip', { hasText: 'Неполный день' }).click(); await wait(300);
+await p.locator('.fbanner').click(); await wait(500);
+await p.locator('.sheet .dflags .chip', { hasText: 'Неполный день' }).click(); await wait(300);
 check('отметка «неполный день»', (await idb('dayEntries/2026-10-14') || {}).partial === true);
+check('отметка видна в шапке', /Неполный день/.test(await p.locator('.fbanner').innerText()));
+await p.keyboard.press('Escape'); await wait(300);
 await p.getByRole('button', { name: 'Действия' }).click(); await wait(400);
 await p.locator('.sheet .lrow', { hasText: 'Ручной итог' }).click(); await wait(400);
 await p.locator('.sheet input').first().fill('2100');
@@ -152,13 +202,13 @@ await p.locator('input').first().fill('Каша с молоком');
 await p.getByRole('button', { name: '+ Ингредиент' }).click(); await wait(400);
 await p.fill('.sheet .searchbox input', 'овся'); await wait(500);
 await p.locator('.sheet .lrow', { hasText: 'Овсянка' }).first().click(); await wait(400);
-await p.locator('.sheet .qtyrow input').fill('60');
+await p.locator('.sheet .stepper2 input').fill('60');
 await p.locator('.sheet button.primary', { hasText: 'Добавить' }).click(); await wait(400);
 await p.getByRole('button', { name: '+ Ингредиент' }).click(); await wait(400);
 await p.fill('.sheet .searchbox input', 'молоко'); await wait(500);
 await p.locator('.sheet .lrow', { hasText: 'Молоко' }).first().click(); await wait(400);
 await p.locator('.sheet .chip', { hasText: 'мл' }).first().click();
-await p.locator('.sheet .qtyrow input').fill('200');
+await p.locator('.sheet .stepper2 input').fill('200');
 await p.locator('.sheet button.primary', { hasText: 'Добавить' }).click(); await wait(400);
 await shot('10-recipe');
 const rt = await p.locator('.card', { hasText: 'Пищевая ценность' }).innerText();
@@ -175,7 +225,7 @@ await wait(1200);
 check('штрихкод: найден творог из OFF', /Творог 5%/.test(await p.locator('.sheet').innerText()));
 await shot('11-barcode', false);
 await p.keyboard.press('Escape'); await wait(300);
-await p.locator('.scbtn', { hasText: 'Штрихкод' }).click(); await wait(400);
+await p.locator('.srcs button', { hasText: 'Штрихкод' }).click(); await wait(400);
 await p.locator('.scanner input[inputmode=numeric]').fill('5901234123457');
 await p.locator('.scanner button[type=submit]').click(); await wait(1000);
 check('штрихкод: неизвестный код предлагает создать продукт', await p.getByRole('button', { name: 'Создать продукт с этим кодом' }).count() === 1);
@@ -183,7 +233,7 @@ check('штрихкод: неизвестный код предлагает со
 /* быстрое добавление с алкоголем, перебор не показывается */
 await go('#/food/add?d=2026-10-16');
 await p.reload(); await wait(1500);
-await p.locator('.scbtn').nth(1).click(); await wait(500);
+await p.locator('.srcs button', { hasText: 'Быстро' }).click(); await wait(500);
 const qi = p.locator('.sheet .grid2 input');
 await qi.nth(4).fill('140');
 check('быстро: ккал из алкоголя (7 ккал/г)', (await qi.nth(0).getAttribute('placeholder')).replace(/\s/g, '') === '980');

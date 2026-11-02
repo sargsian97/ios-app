@@ -129,3 +129,17 @@ test('миграция 7: настройки расхода журнала пе�
   await migrate(empty);
   assert.equal(empty.get('expenditureSettings', 'me').baseKcal, null, 'без журнала — документ с умолчаниями');
 });
+
+test('миграция 8: дневник по приёмам пищи — основной вид', async () => {
+  const s = await createStore(memoryBackend({
+    meta: { schema: { version: 7 } },
+    dietProfile: { me: { id: 'me', diaryView: 'timeline', banner: 'eaten_left', createdAt: 't', updatedAt: 't' } }
+  }));
+  await migrate(s);
+  assert.equal(s.get('dietProfile', 'me').diaryView, 'classic');
+  assert.equal(s.get('meta', 'schema').version, SCHEMA_VERSION);
+  /* без профиля — ничего не ломается */
+  const s2 = await createStore(memoryBackend({ meta: { schema: { version: 7 } } }));
+  await migrate(s2);
+  assert.ok(s2.get('dietProfile', 'me') == null);
+});

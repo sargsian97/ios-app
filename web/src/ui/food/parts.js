@@ -1,11 +1,14 @@
-/* Общие детали экранов питания: даты, числа, кольцо калорий, строки записей, бюджет дня. */
-import { html, useApp, todayYmd } from '../core.js';
+/* Общие детали экранов питания: даты, числа, строки записей, свайп-строка, бюджет дня. */
+import { html, useApp, useRef, todayYmd } from '../core.js';
 import { Icon } from '../icons.js';
 import { t, fmtNum, fmtDate } from '../../i18n/index.js';
 import { toDisplay, unitKey } from '../../domain/units.js';
 import { addDays } from '../../data/journal.js';
 
 export { addDays };
+
+export const MEALS = [['b', 'food.meal.b', '#FFB800'], ['l', 'food.meal.l', '#FF7A1A'], ['d', 'food.meal.d', '#8A87FF'], ['s', 'food.meal.s', '#FF2D55']];
+export const MEAL_KEY = { b: 'food.meal.b', l: 'food.meal.l', d: 'food.meal.d', s: 'food.meal.s' };
 
 /* Энергия в единицах пользователя */
 export function useEnergy() {
@@ -48,38 +51,14 @@ export function DateNav({ date, onChange }) {
   </div>`;
 }
 
-/* Кольцо: съедено из цели */
-export function Ring({ eaten, target, energy, showOver = false }) {
-  const raw = target - eaten, over = showOver && raw < 0, left = showOver ? raw : Math.max(0, raw);
-  const frac = target > 0 ? Math.min(1, eaten / target) : 0;
-  const pct = target > 0 ? Math.round(eaten / target * 100) : 0;
-  const RC = 2 * Math.PI * 88;
-  return html`<div class="ring">
-    <svg viewBox="0 0 220 220" width="100%" role="img" aria-label=${t('food.ring.aria', { e: energy.fmt(eaten), g: energy.fmt(target) })}>
-      <defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF3B30"/><stop offset="1" stop-color="#FF7A70"/></linearGradient></defs>
-      <circle class="rtrack" cx="110" cy="110" r="88"/>
-      ${frac > 0 ? html`<circle class=${'rarc' + (over ? ' over' : '')} cx="110" cy="110" r="88" stroke-dasharray=${(RC * frac).toFixed(1) + ' ' + RC.toFixed(1)} transform="rotate(-90 110 110)"/>` : null}
-    </svg>
-    <div class="rc">
-      <div class="rl">${over ? t('food.over') : t('food.left')}</div>
-      <div class=${'rn' + (over ? ' over' : '')}>${energy.fmt(Math.abs(left))}</div>
-      <div class="ru">${energy.unit}</div>
-      <div class="rp">${t('food.pctOfGoal', { p: pct })}</div>
-    </div>
-  </div>`;
-}
-
-/* Плитки БЖУ и клетчатки: значение и цель */
-export function MacroStrip({ totals, targets }) {
-  const M = [['m1', 'protein', 'food.macro.p'], ['m2', 'fat', 'food.macro.f'], ['m3', 'carbs', 'food.macro.c'], ['m4', 'fiber', 'food.macro.fib']];
-  return html`<div class="mstrip">${M.map(([cls, k, label]) => html`<div class=${cls}>
-    <b>${fmtNum(totals[k] || 0)}</b><span>${t(label)}</span>${targets && targets[k] ? html`<em>${t('food.ofTarget', { v: fmtNum(targets[k]) })}</em>` : null}
-  </div>`)}</div>`;
-}
-
 /* Короткая строка БЖУ записи */
 export function macroLine(n) {
   return t('food.macroLine', { p: fmtNum(n.protein || 0, 1), f: fmtNum(n.fat || 0, 1), c: fmtNum(n.carbs || 0, 1) });
+}
+
+export function amountText(e) {
+  if (!e.amount) return '';
+  return fmtNum(e.amount) + ' ' + (e.unit === 'ml' ? t('unit.ml') : t('unit.g'));
 }
 
 export function EntryRow({ e, energy, selecting, selected, onTap }) {
@@ -87,11 +66,60 @@ export function EntryRow({ e, energy, selecting, selected, onTap }) {
   return html`<button class=${'fe row erow' + (selected ? ' sel' : '')} onClick=${onTap}>
     ${selecting ? html`<span class=${'ck' + (selected ? ' on' : '')}>${selected ? html`<${Icon} name="check" size=${14}/>` : null}</span>` : null}
     <span class="grow etext">
-      <span class="fn">${e.name || t('food.quick.name')}${e.amount ? html` <small>· ${fmtNum(e.amount)} ${e.unit === 'ml' ? t('unit.ml') : t('unit.g')}</small>` : null}</span>
-      <span class="fm">${macroLine(n)}</span>
+      <span class="fn">${e.name || t('food.quick.name')}</span>
+      <span class="fm">${e.amount ? amountText(e) + ' · ' : ''}${macroLine(n)}</span>
     </span>
     <span class="fk">${energy.fmt(n.kcal)}</span>
   </button>`;
+}
+
+/* Строка с жестами: свайп влево — onDelete, долгое нажатие — onLong; обычный тап проходит к содержимому.
+   Пока идёт жест, клик по содержимому гасится. */
+export function SwipeRow({ onDelete, onLong, disabled = false, children }) {
+  const el = useRef(null);
+  const st = useRef(null);
+  const swallow = useRef(false);
+  const reset = () => { if (el.current) { el.current.style.transition = ''; el.current.style.transform = ''; } };
+  const down = (e) => {
+    if (disabled || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    const s = { x: e.clientX, y: e.clientY, dx: 0, mode: null, timer: null };
+    if (onLong) s.timer = setTimeout(() => { s.mode = 'long'; swallow.current = true; onLong(); }, 500);
+    st.current = s;
+  };
+  const move = (e) => {
+    const s = st.current;
+    if (!s || s.mode === 'long' || s.mode === 'scroll') return;
+    const dx = e.clientX - s.x, dy = e.clientY - s.y;
+    if (!s.mode) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      clearTimeout(s.timer);
+      s.mode = Math.abs(dx) > Math.abs(dy) ? 'swipe' : 'scroll';
+      if (s.mode === 'swipe' && el.current) el.current.style.transition = 'none';
+    }
+    if (s.mode === 'swipe') {
+      s.dx = Math.min(0, dx);
+      if (el.current) el.current.style.transform = 'translateX(' + s.dx + 'px)';
+    }
+  };
+  const up = () => {
+    const s = st.current;
+    st.current = null;
+    if (!s) return;
+    clearTimeout(s.timer);
+    if (s.mode === 'swipe') {
+      swallow.current = true;
+      if (s.dx < -80 && onDelete) {
+        if (el.current) { el.current.style.transition = 'transform .15s ease-in'; el.current.style.transform = 'translateX(-110%)'; }
+        setTimeout(() => { reset(); onDelete(); }, 150);
+      } else reset();
+    }
+    setTimeout(() => { swallow.current = false; }, 50);
+  };
+  const click = (e) => { if (swallow.current) { e.stopPropagation(); e.preventDefault(); } };
+  return html`<div class="swipe" onPointerDown=${down} onPointerMove=${move} onPointerUp=${up} onPointerCancel=${up} onClickCapture=${click} onContextMenu=${(e) => { if (onLong) e.preventDefault(); }}>
+    ${onDelete ? html`<div class="swipe-del" aria-hidden="true">${t('food.delete')}</div>` : null}
+    <div class="swipe-in" ref=${el}>${children}</div>
+  </div>`;
 }
 
 /* Нутриенты на 100 г / порцию для строки поиска */

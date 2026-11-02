@@ -125,6 +125,52 @@ export function recentItems(entries, { limit = 30 } = {}) {
   return [...seen.values()].slice(0, limit);
 }
 
+/* Время приёма пищи по умолчанию; now — 'ЧЧ:ММ' сейчас: если оно попадает в этот приём (перекус — всегда), берём его */
+const minutes = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
+const entryKey = (e) => (e.ref && e.ref.id ? e.ref.kind + ':' + e.ref.id : 'name:' + (e.name || '').trim().toLowerCase());
+
+export const MEAL_TIMES = { b: '08:00', l: '13:00', d: '19:00', s: '16:00' };
+export function mealDefaultTime(meal, now) {
+  if (now && (meal === 's' || mealOf({ time: now }) === meal)) return now;
+  return MEAL_TIMES[meal] || MEAL_TIMES.l;
+}
+
+const stamp = (e) => e.date + (e.time || '') + (e.createdAt || '');
+
+/* «Как в прошлый раз»: записи этого приёма в последний день до before (не включая), не старше days дней.
+   Возвращает { date, entries } или null. */
+export function lastMeal(entries, meal, { before, days = 30, addDays } = {}) {
+  const from = addDays && before ? addDays(before, -days) : null;
+  let best = null;
+  (entries || []).forEach((e) => {
+    if (before && e.date >= before) return;
+    if (from && e.date < from) return;
+    if (mealOf(e) !== meal) return;
+    if (!best || e.date > best) best = e.date;
+  });
+  if (!best) return null;
+  return { date: best, entries: entries.filter((e) => e.date === best && mealOf(e) === meal).sort((a, b) => stamp(a).localeCompare(stamp(b))) };
+}
+
+/* Прошлая порция продукта или рецепта (по ref; для «быстрых» записей — по названию): последняя запись или null */
+export function lastPortionOf(entries, { ref, name } = {}) {
+  const key = ref && ref.id ? ref.kind + ':' + ref.id : 'name:' + String(name || '').trim().toLowerCase();
+  let best = null;
+  (entries || []).forEach((e) => {
+    if (entryKey(e) !== key) return;
+    if (!best || stamp(e) > stamp(best)) best = e;
+  });
+  return best ? { amount: best.amount ?? null, unit: best.unit || 'g', servingId: best.servingId || '', quantity: best.quantity ?? null, nutrients: best.nutrients || {} } : null;
+}
+
+/* Порция по умолчанию: первая порция продукта, иначе базовое количество (обычно 100 г) */
+export function defaultPortion(food) {
+  const s = (food && food.servings || [])[0];
+  if (s && s.amount > 0) return { servingId: s.id, quantity: 1, amount: s.amount };
+  const amount = (food && food.base && food.base.amount) || 100;
+  return { servingId: '', quantity: null, amount };
+}
+
 /* Перевод нутриентов с этикетки «на порцию» в «на 100 г» */
 export function perServingTo100(nutrients, servingGrams) {
   const g = Number(servingGrams);
@@ -138,8 +184,6 @@ export function kcalFromMacros(n) {
   return Math.round(p * KCAL_PER_G.protein + f * KCAL_PER_G.fat + c * KCAL_PER_G.carbs + a * KCAL_PER_G.alcohol);
 }
 
-const minutes = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
-const entryKey = (e) => (e.ref && e.ref.id ? e.ref.kind + ':' + e.ref.id : 'name:' + (e.name || '').trim().toLowerCase());
 
 /* «Обычно в это время»: что чаще всего записывалось в окне ± windowMin минут от time за последние days дней
    до today; не меньше minCount раз. Возвращает последние записи этих продуктов, по убыванию частоты. */

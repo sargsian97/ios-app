@@ -78,6 +78,16 @@ export const MIGRATIONS = [
       });
       return [{ op: 'put', col: 'expenditureSettings', id: 'me', data: doc }];
     }
+  },
+  {
+    version: 8,
+    name: 'diary-meals',
+    /* Дневник по приёмам пищи — основной вид; «по часам» остаётся в настройках дневника */
+    up(store, { now }) {
+      const dp = store.get('dietProfile', 'me');
+      if (!dp || dp.diaryView === 'classic') return [];
+      return [{ op: 'put', col: 'dietProfile', id: 'me', data: Object.assign({}, dp, { diaryView: 'classic', updatedAt: now }) }];
+    }
   }
 ];
 

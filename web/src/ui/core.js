@@ -82,6 +82,27 @@ export function lockScroll() {
   return () => { if (done) return; done = true; if (--locks <= 0) { locks = 0; document.body.style.overflow = ''; } };
 }
 
+/* iOS поднимает клавиатуру только из обработчика касания: в жесте фокусируем временное поле,
+   а после перехода на новый экран переносим фокус на настоящее (keyboardSoon → takeKeyboard) */
+let ghost = null;
+export function keyboardSoon() {
+  if (typeof document === 'undefined') return;
+  if (!ghost) {
+    ghost = document.createElement('input');
+    ghost.setAttribute('aria-hidden', 'true');
+    ghost.setAttribute('tabindex', '-1');
+    ghost.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px;border:0;padding:0';
+  }
+  document.body.appendChild(ghost);
+  try { ghost.focus({ preventScroll: true }); } catch (e) { /* не поддерживается */ }
+  setTimeout(() => { if (ghost && ghost.parentNode && document.activeElement === ghost) ghost.blur(); if (ghost && ghost.parentNode) ghost.remove(); }, 1500);
+}
+export function takeKeyboard(input) {
+  if (!input) return;
+  try { input.focus({ preventScroll: true }); } catch (e) { /* не поддерживается */ }
+  if (ghost && ghost.parentNode) ghost.remove();
+}
+
 export function goBack(fallback = '/') {
   if (depth > 0) { depth--; history.back(); }
   else navigate(fallback, { replace: true });

@@ -100,7 +100,7 @@ export function Sheet({ open, onClose, title, children }) {
 }
 
 /* Число с кнопками − / +: value — число или null; шаг и пределы; onChange(число|null) */
-export function Stepper({ value, onChange, step = 1, min = 0, max = Infinity, digits = 1, unit = '', label, placeholder = '', mode = 'decimal', big = false }) {
+export function Stepper({ value, onChange, step = 1, min = 0, max = Infinity, digits = 1, unit = '', label, placeholder = '', mode = 'decimal', big = false, onEnter = null, inputRef = null }) {
   const [text, setText] = useState(null);
   const fmt = (v) => (v == null ? '' : String(Math.round(v * 10 ** digits) / 10 ** digits).replace('.', ','));
   const parse = (s) => { const v = String(s || '').trim().replace(/\s/g, '').replace(',', '.'); if (v === '') return null; const n = Number(v); return isFinite(n) ? n : null; };
@@ -108,7 +108,8 @@ export function Stepper({ value, onChange, step = 1, min = 0, max = Infinity, di
   const bump = (d) => onChange(clamp((value == null ? (placeholder ? parse(placeholder) || 0 : 0) : value) + d));
   return html`<div class=${'stepper2' + (big ? ' big' : '')}>
     <button type="button" class="ghost" aria-label=${label ? label + ' −' : '−'} onClick=${() => bump(-step)}>−</button>
-    <label class="st-field"><input inputmode=${mode} value=${text != null ? text : fmt(value)} placeholder=${placeholder} aria-label=${label}
+    <label class="st-field"><input ref=${inputRef} inputmode=${mode} enterkeyhint=${onEnter ? 'done' : 'next'} value=${text != null ? text : fmt(value)} placeholder=${placeholder} aria-label=${label}
+      onKeyDown=${(e) => { if (e.key === 'Enter' && onEnter) { e.preventDefault(); e.currentTarget.blur(); onEnter(); } }}
       onFocus=${(e) => { setText(fmt(value)); setTimeout(() => { try { e.target.select(); } catch (x) { /* iOS */ } }, 0); }}
       onInput=${(e) => { setText(e.currentTarget.value); onChange(parse(e.currentTarget.value)); }}
       onBlur=${() => setText(null)}/>${unit ? html`<span>${unit}</span>` : null}</label>

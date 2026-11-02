@@ -80,7 +80,7 @@ test('ScaleEntry, BodyEntry: границы', () => {
 
 test('профили питания и тренировок: значения по умолчанию', () => {
   const d = DietProfile.defaults({ id: 'me' });
-  assert.equal(d.diaryView, 'timeline');
+  assert.equal(d.diaryView, 'classic');
   assert.equal(d.timeline.startHour, 6);
   assert.deepEqual(d.shortcuts, ['search', 'scan', 'quick', 'photo']);
   const w = WorkoutProfile.defaults({ id: 'me' });

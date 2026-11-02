@@ -45,7 +45,7 @@ export const DietProfile = model({
     strengthExperience: f.enum(['lt1', '1to4', 'gt4'], { nullable: true }),
     athlete: f.enum(['amateur', 'pro']),
     /* дневник */
-    diaryView: f.enum(['timeline', 'classic']),
+    diaryView: f.enum(['classic', 'timeline']), /* classic — по приёмам пищи (по умолчанию), timeline — по часам */
     timeline: f.shape({ startHour: f.number({ def: 6, nullable: false, min: 0, max: 23, int: true }), endHour: f.number({ def: 23, nullable: false, min: 0, max: 23, int: true }), hideEmpty: f.bool() }),
     banner: f.enum(['eaten_left', 'eaten', 'left', 'progress']),
     showOverages: f.bool(), /* показывать перебор калорий и макросов (по умолчанию нет — без «красных цифр») */
