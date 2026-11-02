@@ -101,3 +101,23 @@ export const WorkoutProfile = model({
     defaultGymId: f.ref()
   }
 });
+
+/* Настройки расхода «по журналу» — запасной расчёт цели дня, когда программы питания нет (бывшие settings/main старого журнала).
+   null — значение по умолчанию из JOURNAL_DEFAULTS (web/src/domain/calc/constants.js). */
+export const ExpenditureSettings = model({
+  name: 'ExpenditureSettings',
+  collection: 'expenditureSettings',
+  singleton: true,
+  fields: {
+    baseKcal: f.number({ min: 500, max: 6000 }),          /* базовый обмен + переваривание */
+    trainKcal: f.number({ min: 0, max: 3000 }),           /* силовая, если данных для расчёта нет */
+    gymSteps: f.number({ min: 0, max: 30000, int: true }), /* шаги в зале в день силовой — вычитаются из шагов дня */
+    kcalPer1000Steps: f.number({ min: 0, max: 200 }),     /* иначе 0,37 × вес */
+    corrPct: f.number({ min: -50, max: 50 }),
+    offsetKcal: f.number({ min: -3000, max: 3000 }),      /* цель = расход + сдвиг */
+    proteinG: f.number({ min: 0, max: 500 }),
+    fatG: f.number({ min: 0, max: 500 }),
+    fiberG: f.number({ min: 0, max: 200 }),
+    stepLenM: f.number({ min: 0.2, max: 2 })              /* иначе от роста */
+  }
+});

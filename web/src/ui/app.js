@@ -35,8 +35,7 @@ import { ProgramList, ProgramGenerator } from './screens/train/programs.js';
 
 /* Экраны старого журнала: адрес → [вкладка журнала, вид плана, путь «назад»] */
 const LEGACY = {
-  '/more/history': ['hist', null, '/more'],
-  '/more/journal-settings': ['plan', 'set', '/more']
+  '/more/history': ['hist', null, '/more']
 };
 
 const ROUTES = [

@@ -1,7 +1,7 @@
 /* Версии схемы данных и миграции.
    Версия 1 — данные старого журнала (коллекции workouts, body, templates, days, food, foods, settings, i18n).
    Каждая миграция возвращает список операций для store.batch и не удаляет старые записи. */
-import { Profile } from './models/profile.js';
+import { Profile, ExpenditureSettings } from './models/profile.js';
 import { nutritionOps, bodyOps, workoutOps, stepsOps } from './legacy-migrate.js';
 
 const META = 'meta', SCHEMA = 'schema';
@@ -62,6 +62,21 @@ export const MIGRATIONS = [
       const dp = store.get('dietProfile', 'me');
       if (!dp) return [];
       return [{ op: 'put', col: 'dietProfile', id: 'me', data: Object.assign({}, dp, { tdeeVersion: 'v2', trendVersion: 'v3', bmrVersion: 'v2', updatedAt: now }) }];
+    }
+  },
+  {
+    version: 7,
+    name: 'journal-settings',
+    /* Настройки расхода старого журнала (settings/main) → expenditureSettings; рост уже в профиле (миграция 2), возраст, язык и таймер не переносятся */
+    up(store, { now }) {
+      if (store.get('expenditureSettings', 'me')) return [];
+      const l = store.get('settings', 'main') || {};
+      const n = (v) => { const x = Number(v); return v === '' || v == null || !isFinite(x) ? null : x; };
+      const doc = ExpenditureSettings.normalize({
+        id: 'me', baseKcal: n(l.base), trainKcal: n(l.trainKcal), gymSteps: n(l.gymSteps), kcalPer1000Steps: n(l.kPer1000), corrPct: n(l.corrPct),
+        offsetKcal: n(l.offset), proteinG: n(l.protein), fatG: n(l.fat), fiberG: n(l.fiber), stepLenM: n(l.stepLen), createdAt: now, updatedAt: now
+      });
+      return [{ op: 'put', col: 'expenditureSettings', id: 'me', data: doc }];
     }
   }
 ];

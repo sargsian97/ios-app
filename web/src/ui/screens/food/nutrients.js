@@ -14,8 +14,8 @@ const groupOf = (k) => { const g = (NUTRIENT_UNITS[k] || {}).group; return g ===
 
 export function Nutrients({ route }) {
   const app = useApp();
-  const { repos, legacy } = app;
-  useData(['foodEntries', 'microGoals', 'dayTargets']);
+  const { repos } = app;
+  useData(['foodEntries', 'microGoals', 'dayTargets', 'expenditureSettings', 'scaleEntries', 'workoutLogs', 'stepsEntries']);
   const today = todayYmd();
   const date = route.query.d || today;
   const [period, setPeriod] = useState(route.query.p || 'day');
@@ -25,7 +25,7 @@ export function Nutrients({ route }) {
   const entries = repos.foodEntry.between(from, to);
   const goals = {};
   repos.microGoal.list().forEach((g) => { goals[g.id] = g; });
-  const b = dayBudget({ repos, legacy, date });
+  const b = dayBudget(app, date);
   ['kcal', 'protein', 'fat', 'carbs'].forEach((k) => { if (b && b[k]) goals[k] = { target: b[k] }; });
   const keys = Object.keys(NUTRIENT_UNITS).filter((k) => !['protein_animal', 'protein_plant'].includes(k));
   const rep = nutrientReport(entries, goals, keys);

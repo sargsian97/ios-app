@@ -1,6 +1,6 @@
 /* Добавление еды: поиск (свои + Open Food Facts + USDA), избранное, история, «тарелка» из нескольких
    продуктов, карточка продукта с порцией, быстрое добавление, штрихкод, фото еды через ИИ. */
-import { html, useApp, useData, useLegacy, useState, useEffect, useRef, navigate, goBack, todayYmd } from '../../core.js';
+import { html, useApp, useData, useState, useEffect, useRef, navigate, goBack, todayYmd } from '../../core.js';
 import { Sheet, Field, Toggle } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum, fmtDate } from '../../../i18n/index.js';
@@ -216,8 +216,9 @@ function OnlineResults({ online, energy, onPick }) {
 
 /* ---------- карточка продукта ---------- */
 export function ProductSheet({ item, date, onClose, onLog, onPlate, pickOnly }) {
-  const { repos, store } = useApp();
-  const legacy = useLegacy();
+  const app = useApp();
+  const { repos, store } = app;
+  useData(['expenditureSettings', 'dayTargets']);
   const energy = useEnergy();
   const [servingId, setServingId] = useState('');
   const [qty, setQty] = useState('');
@@ -262,7 +263,7 @@ export function ProductSheet({ item, date, onClose, onLog, onPlate, pickOnly }) 
 
   const fav = repos.favorite.list((f) => f.ref.id === doc.id && f.ref.kind === item.kind)[0];
   const toggleFav = () => (fav ? repos.favorite.remove(fav.id) : repos.favorite.create({ ref: { kind: item.kind, id: doc.id }, servingId, amount, order: repos.favorite.count() }));
-  const budget = date ? dayBudget({ repos, legacy, date }) : { kcal: 0 };
+  const budget = date ? dayBudget(app, date) : { kcal: 0 };
   const eaten = date ? dayTotals(repos.foodEntry.byDate(date)).kcal || 0 : 0;
   const after = budget.kcal ? budget.kcal - eaten - (n.kcal || 0) : null;
   const unit = doc.base && doc.base.unit === 'ml' ? t('unit.ml') : t('unit.g');

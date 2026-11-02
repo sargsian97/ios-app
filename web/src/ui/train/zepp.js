@@ -8,10 +8,12 @@ import { NumIn } from './inputs.js';
 import { exName, currentBodyweight } from './catalog.js';
 import { strengthEstimate, ageOn, JOURNAL_GYM_STEPS_DEFAULT } from '../../domain/calc/index.js';
 import { aiZepp, aiReady, aiErrorKey } from '../../services/ai-food.js';
+import { journalBurnFor } from '../food/budget.js';
 import { periodLabel } from '../food/labels.js';
 
 /* Оценка для тренировки или идущей сессии: только сделанные подходы; длительность — с часов, иначе таймер приложения */
-export function estimateForLog(log, { repos, legacy }, elapsedSec = null) {
+export function estimateForLog(log, app, elapsedSec = null) {
+  const { repos } = app;
   if (!log) return null;
   const byId = {};
   repos.exercise.list().forEach((e) => { byId[e.id] = e; });
@@ -22,8 +24,7 @@ export function estimateForLog(log, { repos, legacy }, elapsedSec = null) {
   const st = log.stats || {};
   const dsec = log.durationSec != null ? log.durationSec : elapsedSec;
   const profile = repos.profile.get();
-  let base = null;
-  try { const b = legacy && legacy.budget ? legacy.budget(log.date) : null; if (b && b.base) base = b.base; } catch (e) { base = null; }
+  const base = repos.expenditureSettings.get().baseKcal;
   const r = strengthEstimate({
     exercises, durationMin: st.durMin != null ? st.durMin : dsec != null ? dsec / 60 : null, avgHr: st.avgHr, vo2max: st.vo2max,
     weightKg: log.bodyweightKg || currentBodyweight(repos), age: profile.birthDate ? ageOn(profile.birthDate, log.date) : null, sex: profile.sex || 'male', base
@@ -78,8 +79,7 @@ export function StrengthKcalCard({ log, onStats, elapsedSec = null }) {
   const put = (patch) => onStats(Object.assign({}, st, patch));
   let r = null;
   try { r = estimateForLog(log, app, elapsedSec); } catch (e) { r = null; }
-  let gymSteps = JOURNAL_GYM_STEPS_DEFAULT;
-  try { const b = app.legacy && app.legacy.budget ? app.legacy.budget(log.date) : null; if (b && b.gymSteps) gymSteps = b.gymSteps; } catch (e) { /* по умолчанию */ }
+  const gymSteps = app.repos.expenditureSettings.get().gymSteps ?? JOURNAL_GYM_STEPS_DEFAULT;
   return html`<${Card} title=${t('train.kcal.title')} icon="flame" color="var(--k-burn)">
     <${ZeppShot} onData=${(d) => put(d)}/>
     <div class="grid2">

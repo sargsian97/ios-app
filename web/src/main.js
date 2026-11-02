@@ -131,6 +131,7 @@ async function boot() {
     }
   };
   if (!location.hash) history.replaceState(null, '', '#/');
+  if (window.JOURNAL_DEBUG) window.__ctx = ctx; /* только для проверок в браузере (tests/e2e) */
   mountApp(root, ctx);
 }
 

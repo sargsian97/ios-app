@@ -69,6 +69,7 @@ const SHELL = [
   'src/domain/calc/dates.js',
   'src/domain/calc/e1rm.js',
   'src/domain/calc/index.js',
+  'src/domain/calc/journal_burn.js',
   'src/domain/calc/macros.js',
   'src/domain/calc/micro_goals.js',
   'src/domain/calc/periodization.js',

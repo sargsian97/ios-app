@@ -276,3 +276,17 @@ export const STRENGTH_KCAL = freeze({
   DEFAULT_WEIGHT_KG: 80, DEFAULT_AGE: 30, DEFAULT_BASE_KCAL: 2000
 });
 export const JOURNAL_GYM_STEPS_DEFAULT = 3000; // шаги в зале уже учтены в калориях силовой: столько вычитается из шагов дня (правка журнала 31.10)
+
+/* ── Расход «по журналу» — запасная цель дня, когда программы питания нет (перенос из старого журнала web/app.js) ──
+   Временное значение, уточнится в части 2 спецификации. База — обмен + переваривание; шаги — 0,37 ккал на 1000 шагов на кг веса;
+   кардио — ACSM (ходьба ≤ 6,4 км/ч, бег быстрее) без покоя; силовая — расчёт STRENGTH_KCAL или trainKcal по умолчанию. */
+export const JOURNAL_DEFAULTS = freeze({
+  base: 2000, trainKcal: 500, gymSteps: 3000, corrPct: 0, offset: 0,
+  protein: 140, fat: 60, fiber: 30,
+  height: 173, age: 29, weightKg: 84,            // когда нет профиля и взвешиваний
+  kcalPer1000StepsPerKg: 0.37,
+  walkMaxKmh: 6.4,                                // медленнее — ходьба, быстрее — бег
+  strideShare: freeze({ walk: 0.42, run: 0.6 }),  // длина шага как доля роста
+  acsm: freeze({ walk: freeze({ speed: 0.1, grade: 1.8 }), run: freeze({ speed: 0.2, grade: 0.9 }) }), // VO2 = a·скорость(м/мин) + b·скорость·уклон, мл/кг/мин
+  kcalPerLitreO2: 5
+});

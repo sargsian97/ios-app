@@ -65,7 +65,7 @@ await p.locator('.tabs .tab', { hasText: 'Тренировка' }).click(); awai
 check('Тренировка: новый экран вкладки', await p.locator('.wk-today, .wk-active').count() === 1);
 
 /* разделы «Ещё» */
-const sub = [['Тело и замеры', '07-body'], ['История', '08-history'], ['Шаблоны тренировок', '09-templates'], ['Расход, нормы и ключ Claude', '10-journal-settings'], ['О приложении', '11-about']];
+const sub = [['Тело и замеры', '07-body'], ['История', '08-history'], ['Шаблоны тренировок', '09-templates'], ['Расход по журналу', '10-journal-settings'], ['О приложении', '11-about']];
 for (const [name, file] of sub) {
   await p.locator('.tabs .tab', { hasText: 'Ещё' }).click(); await wait(200);
   await p.locator('.lrow', { hasText: name }).first().click(); await wait();

@@ -61,7 +61,8 @@ test('legacy: тренировки, кардио и шаги новой моде
   }));
   const w = workoutsForLegacy(s)['2026-10-12'];
   assert.equal(w.day, 'B');
-  assert.deepEqual(w.exercises[0], { name: 'Присед', sets: [{ w: 70, r: 12, done: true, dur: 40, rest: 90 }] });
+  assert.deepEqual(w.exercises[0], { name: 'Присед', sets: [{ w: 70, r: 12, t: '', done: true, dur: 40, rest: 90 }] });
+  assert.equal(w.exercises[1].sets[0].t, 60, 'время подхода — отдельным полем');
   assert.equal(w.exercises[1].sets[0].r, 60, 'время планки — как в журнале');
   assert.deepEqual([w.durationMin, w.avgHr, w.kcalWatch, w.gymSteps, w.note], [91, 119, 743, 3000, 'ок']);
   assert.equal(workoutsForLegacy(s)['2026-10-11'], undefined, 'кардио — не силовая');

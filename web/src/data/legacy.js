@@ -68,7 +68,7 @@ export function workoutsForLegacy(store) {
     const o = out[w.date] || (out[w.date] = { date: w.date, day: '', exercises: [], durationMin: '', avgHr: '', maxHr: '', vo2max: '', kcalWatch: '', gymSteps: '', note: '' });
     if (!o.day && w.planId && /^legacy-[A-C]$/.test(w.planId)) o.day = w.planId.slice(7);
     (w.exercises || []).filter((e) => !e.cardio).forEach((e) => {
-      o.exercises.push({ name: e.name, sets: (e.sets || []).map((s) => ({ w: v(s.weight), r: s.reps != null ? s.reps : v(s.timeSec), done: s.done !== false, dur: v(s.durSec), rest: v(s.restSec) })) });
+      o.exercises.push({ name: e.name, sets: (e.sets || []).map((s) => ({ w: v(s.weight), r: s.reps != null ? s.reps : v(s.timeSec), t: v(s.timeSec), done: s.done !== false, dur: v(s.durSec), rest: v(s.restSec) })) });
     });
     const add = (k, x) => { if (x != null) o[k] = (Number(o[k]) || 0) + x; };
     add('durationMin', st.durMin != null ? st.durMin : w.durationSec != null ? Math.round(w.durationSec / 60) : null); /* длительность с часов точнее таймера приложения */

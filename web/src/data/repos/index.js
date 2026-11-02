@@ -2,13 +2,13 @@
    К базовым операциям (repo.js) добавлены частые запросы: записи за день, взвешивания за период и т.п.
    Индексы строятся в памяти и пересчитываются, когда коллекция меняется. */
 import { createRepo, createSingletonRepo } from '../repo.js';
-import { Profile, DietProfile, WorkoutProfile } from '../models/profile.js';
+import { Profile, DietProfile, WorkoutProfile, ExpenditureSettings } from '../models/profile.js';
 import { Food, Recipe, FoodEntry, DayEntry, Favorite, Goal, MacroProgram, DayTarget, MicroGoal, CheckIn, ModuleStatus } from '../models/nutrition.js';
 import { ScaleEntry, BodyEntry, StepsEntry, ProgressPhoto, PeriodEntry, TrendWeightEntry, TdeeEntry } from '../models/body.js';
 import { Exercise, Equipment, EquipmentGroup, Gym, WorkoutProgram, WorkoutPlan, WorkoutSession, Workout, AutoTarget, UserExerciseConfig } from '../models/workout.js';
 import { UsageCounter, Integration } from '../models/service.js';
 
-export const MODELS = [Profile, DietProfile, WorkoutProfile, Food, Recipe, FoodEntry, DayEntry, Favorite, Goal, MacroProgram, DayTarget, MicroGoal, CheckIn, ModuleStatus,
+export const MODELS = [Profile, DietProfile, WorkoutProfile, ExpenditureSettings, Food, Recipe, FoodEntry, DayEntry, Favorite, Goal, MacroProgram, DayTarget, MicroGoal, CheckIn, ModuleStatus,
   ScaleEntry, BodyEntry, StepsEntry, ProgressPhoto, PeriodEntry, TrendWeightEntry, TdeeEntry,
   Exercise, Equipment, EquipmentGroup, Gym, WorkoutProgram, WorkoutPlan, WorkoutSession, Workout, AutoTarget, UserExerciseConfig,
   UsageCounter, Integration];

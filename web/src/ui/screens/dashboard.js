@@ -94,10 +94,11 @@ const HIT_SHARE = 0.95; /* столбик «закрашен», когда съ�
 /* Неделя: калории и БЖУ по дням против цели; столбик становится плотным, когда цель дня достигнута */
 function NutritionWeek({ today }) {
   const app = useApp();
-  const { repos, legacy } = app;
+  const { repos } = app;
+  useData(['expenditureSettings', 'dayTargets', 'scaleEntries', 'workoutLogs', 'stepsEntries']);
   const ws = weekStart(today);
   const days = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
-  const rows = days.map((d) => ({ d, tot: d <= today ? dayTotals(repos.foodEntry.byDate(d), repos.dayEntry.get(d)) : null, b: dayBudget({ repos, legacy, date: d }) }));
+  const rows = days.map((d) => ({ d, tot: d <= today ? dayTotals(repos.foodEntry.byDate(d), repos.dayEntry.get(d)) : null, b: dayBudget(app, d) }));
   if (!rows.some((r) => r.tot && r.tot.kcal)) return null;
   return html`<${Card} title=${t('dash.nw.title')} icon="cal" color="var(--k-food)">
     ${NW.map(([k, label, color]) => {
@@ -115,7 +116,8 @@ function NutritionWeek({ today }) {
 /* Энергобаланс за 30 дней: съеденное столбиками против цели (пунктир) или расхода (линия) */
 function EnergyBalance({ today }) {
   const app = useApp();
-  const { repos, legacy } = app;
+  const { repos } = app;
+  useData(['expenditureSettings', 'dayTargets', 'workoutLogs', 'stepsEntries']);
   const ex = useExpenditure();
   const [mode, setMode] = useState('targets');
   const from = addDays(today, -29);
@@ -123,7 +125,7 @@ function EnergyBalance({ today }) {
   const intake = dates.map((d) => ({ x: d, y: dayTotals(repos.foodEntry.byDate(d), repos.dayEntry.get(d)).kcal || 0 })).filter((p) => p.y > 0);
   if (!intake.length) return null;
   const second = mode === 'targets'
-    ? { key: 'target', label: t('dash.eb.target'), kind: 'dash', color: 'var(--k-plan)', points: dates.map((d) => ({ x: d, y: (dayBudget({ repos, legacy, date: d }) || {}).kcal })).filter((p) => p.y > 0) }
+    ? { key: 'target', label: t('dash.eb.target'), kind: 'dash', color: 'var(--k-plan)', points: dates.map((d) => ({ x: d, y: (dayBudget(app, d) || {}).kcal })).filter((p) => p.y > 0) }
     : { key: 'tdee', label: t('dash.eb.tdee'), kind: 'line', color: 'var(--k-burn)', points: ex ? ex.series.filter((r) => r.date >= from).map((r) => ({ x: r.date, y: Math.round(r.tdee) })) : [] };
   const avg = Math.round(intake.reduce((a, p) => a + p.y, 0) / intake.length);
   const avg2 = second.points.length ? Math.round(second.points.reduce((a, p) => a + p.y, 0) / second.points.length) : null;

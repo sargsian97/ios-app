@@ -1,11 +1,11 @@
 /* Дневник питания: таймлайн по часам или по приёмам пищи, итог и цель дня, отметки дня,
    выделение записей (копировать, перенести, удалить), заметка, расход по журналу. */
-import { html, useApp, useData, useLegacy, useState, useEffect, navigate, todayYmd } from '../../core.js';
+import { html, useApp, useData, useState, useEffect, navigate, todayYmd } from '../../core.js';
 import { Page, Card, Sheet, Confirm, Segmented, Toggle, Field } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum, fmtSigned } from '../../../i18n/index.js';
 import { DateNav, Ring, MacroStrip, EntryRow, useEnergy, num, nowTime, addDays, macroLine } from '../../food/parts.js';
-import { dayBudget } from '../../food/budget.js';
+import { dayBudget, journalWeekFor } from '../../food/budget.js';
 import { dayTotals, timelineHours, mealOf, foodNutrients, servingAmount, copyEntries, moveEntries, explodeRecipeEntry } from '../../../domain/nutrition.js';
 import { uid } from '../../../data/ids.js';
 import { formatClock } from '../../../domain/units.js';
@@ -18,7 +18,7 @@ export function FoodDiary({ route }) {
   const app = useApp();
   const { repos, store } = app;
   useData(['foodEntries', 'dayEntries', 'dietProfile', 'dayTargets', 'microGoals', 'profile', 'foodItems']);
-  const legacy = useLegacy();
+  useData(['expenditureSettings', 'scaleEntries', 'workoutLogs', 'stepsEntries']);
   const energy = useEnergy();
   const date = route.query.d || todayYmd();
   const setDate = (d) => navigate('/food?d=' + d, { replace: true });
@@ -35,7 +35,7 @@ export function FoodDiary({ route }) {
   const entries = repos.foodEntry.byDate(date);
   const day = repos.dayEntry.get(date);
   const totals = dayTotals(entries, day);
-  const budget = dayBudget({ repos, legacy, date });
+  const budget = dayBudget(app, date);
   const clock = repos.profile.get().units.clock;
   const fmtTime = (hm) => formatClock(Number(hm.slice(0, 2)), Number(hm.slice(3, 5)), clock);
 
@@ -91,7 +91,7 @@ export function FoodDiary({ route }) {
     <${DayNote} day=${day} onSave=${(note) => saveDay({ note })}/>
     ${budget.source === 'journal' ? html`<${JournalBurn} b=${budget.journal} energy=${energy}/>` : null}
     <${MacroTargets} totals=${totals} budget=${budget}/>
-    <${WeekCard} date=${date} legacy=${legacy} energy=${energy}/>
+    <${WeekCard} date=${date} app=${app} energy=${energy}/>
 
     ${!selecting ? html`<button class="fab primary" onClick=${() => addAt(date === todayYmd() ? nowTime() : null)}>${t('food.addFab')}</button>` : null}
     ${selecting ? html`<div class="selbar">
@@ -218,8 +218,8 @@ function MacroTargets({ totals, budget }) {
 }
 
 /* ---------- неделя ---------- */
-function WeekCard({ date, legacy, energy }) {
-  const ws = legacy.weekStats(date);
+function WeekCard({ date, app, energy }) {
+  const ws = journalWeekFor(app, date);
   if (!ws || ws.n < 2) return null;
   const diff = ws.eat - ws.bur;
   return html`<${Card} title=${t('food.week.title', { n: ws.n })} icon="cal" color="var(--k-cal)">

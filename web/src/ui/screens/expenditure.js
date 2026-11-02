@@ -5,14 +5,17 @@ import { t, fmtNum, fmtSigned, fmtDate } from '../../i18n/index.js';
 import { DateChart } from '../chart.js';
 import { useExpenditure } from '../food/expenditure.js';
 import { periodAverages } from '../../domain/expenditure.js';
-import { addDays, TDEE_FIRST_UPDATE_DAY, TDEE_HOLD_NO_WEIGHIN_DAYS } from '../../domain/calc/index.js';
+import { addDays, TDEE_FIRST_UPDATE_DAY, TDEE_HOLD_NO_WEIGHIN_DAYS, JOURNAL_DEFAULTS, journalWeightOn } from '../../domain/calc/index.js';
+import { dayBudget } from '../food/budget.js';
+import { NumIn } from '../train/inputs.js';
 
 const STATUS = { initial: 'tdee.st.initial', ok: 'tdee.st.ok', hold: 'tdee.st.hold', fixed: 'tdee.st.fixed' };
 const REASON = { no_weighin: 'tdee.r.no_weighin', few_intake_days: 'tdee.r.few_intake_days', short_window: 'tdee.r.short_window' };
 
-export function Expenditure() {
-  const { repos } = useApp();
-  useData(['dietProfile']);
+export function Expenditure({ route }) {
+  const app = useApp();
+  const { repos } = app;
+  useData(['dietProfile', 'expenditureSettings', 'scaleEntries', 'dayTargets']);
   const ex = useExpenditure();
   const dp = repos.dietProfile.get();
   const today = todayYmd();
@@ -63,5 +66,27 @@ export function Expenditure() {
       <div style="margin-top:12px"><${Segmented} label=${t('tdee.trendVersion')} value=${dp.trendVersion || 'v3'} onChange=${(v) => repos.dietProfile.update({ trendVersion: v })} options=${[['v1', t('tdee.tver.v1')], ['v2', t('tdee.tver.v2')], ['v3', t('tdee.tver.v3')]]}/></div>
       <div class="hint">${t('tdee.versionHint')}</div>
     <//>
+    <${JournalSettings} app=${app} today=${today} open=${route && route.query.s === 'journal'}/>
   <//>`;
+}
+
+/* Поля расчёта «по журналу» (expenditureSettings); пустое поле — значение по умолчанию */
+const JK = 'tdee.journal.';
+const JOURNAL_FIELDS = [['baseKcal', 'numeric', 0], ['trainKcal', 'numeric', 0], ['gymSteps', 'numeric', 0], ['kcalPer1000Steps', 'decimal', 1], ['corrPct', 'decimal', 1], ['offsetKcal', 'numeric', 0], ['proteinG', 'numeric', 0], ['fatG', 'numeric', 0], ['fiberG', 'numeric', 0], ['stepLenM', 'decimal', 2]];
+
+export function JournalSettings({ app, today, open = false }) {
+  const { repos } = app;
+  const es = repos.expenditureSettings.get();
+  const p = repos.profile.get();
+  const weight = journalWeightOn(repos.scaleEntry.list(), today);
+  const auto = { kcalPer1000Steps: fmtNum(JOURNAL_DEFAULTS.kcalPer1000StepsPerKg * weight, 1), stepLenM: fmtNum(JOURNAL_DEFAULTS.strideShare.walk * (p.heightCm || JOURNAL_DEFAULTS.height) / 100, 2) };
+  const def = (k) => (auto[k] ? t('tdee.journal.auto', { v: auto[k] }) : String(JOURNAL_DEFAULTS[{ baseKcal: 'base', offsetKcal: 'offset', proteinG: 'protein', fatG: 'fat', fiberG: 'fiber' }[k] || k]));
+  const active = dayBudget(app, today).source === 'journal';
+  return html`<details class="card pad" open=${open}><summary class="h2i" style="--cc:var(--k-burn)"><span>${t('tdee.journal.title')}</span></summary>
+    <p class="hint" style="margin:8px 0 10px">${t('tdee.journal.hint')} ${active ? t('tdee.journal.active') : t('tdee.journal.inactive')}</p>
+    <div class="grid2">
+      ${JOURNAL_FIELDS.map(([k, mode, digits]) => html`<label class="fld"><span class="lbl">${t(JK + k)}</span>
+        <${NumIn} mode=${mode} digits=${digits} value=${es[k]} placeholder=${def(k)} label=${t(JK + k)} onCommit=${(v) => repos.expenditureSettings.update({ [k]: v })}/></label>`)}
+    </div>
+  </details>`;
 }

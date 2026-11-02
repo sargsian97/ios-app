@@ -82,6 +82,7 @@ test('i18n: подписи тренировок — для всех значен
   ['commercial', 'garage', 'home', 'full', 'custom'].forEach((k) => { keys.push('gym.tpl.' + k); keys.push('gym.tplSub.' + k); });
   Object.values(G.GYM_TEMPLATES).forEach((tp) => { tp.bars.forEach((b) => keys.push('gym.bar.' + b.name)); tp.stacks.forEach((x) => keys.push('gym.stack.' + x.name)); });
   ['min', 'max', 'step'].forEach((k) => keys.push('gym.' + k));
+  ['baseKcal', 'trainKcal', 'gymSteps', 'kcalPer1000Steps', 'corrPct', 'offsetKcal', 'proteinG', 'fatG', 'fiberG', 'stepLenM'].forEach((k) => keys.push('tdee.journal.' + k));
   ['plates', 'gyms'].forEach((k) => keys.push('train.act.' + k));
   ['levels', 'programs'].forEach((k) => keys.push('train.act.' + k));
   const P = await import('../web/src/domain/training-program.js');

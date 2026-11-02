@@ -118,3 +118,14 @@ test('миграция 5: тренировки, шаблоны, кардио и 
   assert.equal(s.get('stepsEntries', '2026-10-05').steps, 27192, 'шаги старого формата — из тренировки');
   assert.ok(s.get('workouts', '2026-10-05'), 'старые записи на месте');
 });
+
+test('миграция 7: настройки расхода журнала переезжают в expenditureSettings, пустые — null', async () => {
+  const s = await createStore(memoryBackend({ settings: { main: { base: 1900, trainKcal: '', gymSteps: 2500, kPer1000: '30', corrPct: -10, offset: -300, protein: 150, fat: 65, fiber: '', stepLen: 0.7, height: 181, age: 30, lang: 'ru' } } }));
+  await migrate(s);
+  const e = s.get('expenditureSettings', 'me');
+  assert.deepEqual([e.baseKcal, e.trainKcal, e.gymSteps, e.kcalPer1000Steps, e.corrPct, e.offsetKcal, e.proteinG, e.fatG, e.fiberG, e.stepLenM], [1900, null, 2500, 30, -10, -300, 150, 65, null, 0.7]);
+  assert.equal(e.age, undefined, 'возраст не переносится');
+  const empty = await createStore(memoryBackend());
+  await migrate(empty);
+  assert.equal(empty.get('expenditureSettings', 'me').baseKcal, null, 'без журнала — документ с умолчаниями');
+});
