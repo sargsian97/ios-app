@@ -2,3 +2,4 @@ node_modules/
 .DS_Store
 .e2e-shots/
 .claude/worktrees/
+design/liquid-glass/shots/*.png
