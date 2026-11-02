@@ -1,11 +1,23 @@
 /* Резервная копия: сохранить в файл и восстановить из файла. */
 import { html, useApp, useData, useState, todayYmd } from '../core.js';
 import { Card, Confirm } from '../kit.js';
-import { t } from '../../i18n/index.js';
+import { t, fmtDate } from '../../i18n/index.js';
 import { parseBackup } from '../../data/store.js';
 import { isArtifact, claudeUse, lsGet, lsSet, safeReload } from '../../services/env.js';
 
 const WELCOME_KEY = 'journal.welcomeDone';
+const LAST_KEY = 'journal.lastBackupAt';
+export const BACKUP_DUE_DAYS = 7;
+
+/* Когда сохранялась последняя копия (ISO) или null */
+export function lastBackupAt() { return lsGet(LAST_KEY) || null; }
+/* Пора напомнить о копии: её не было или она старше days дней */
+export function backupDue(lastIso, now = Date.now(), days = BACKUP_DUE_DAYS) {
+  if (!lastIso) return true;
+  const at = Date.parse(lastIso);
+  if (!isFinite(at)) return true;
+  return now - at >= days * 86400000;
+}
 function friendly(msg) { return Object.assign(new Error(msg), { friendly: true }); }
 
 /* Сохранение через возможность downloads артефакта claude.ai.
@@ -131,14 +143,14 @@ export function BackupCard() {
   const c = store.counts(null, ['workoutLogs', 'foodEntries', 'scaleEntries', 'foodItems']);
   async function save() {
     setMsg('');
-    try { const name = await exportBackup(store); if (name) setMsg(isArtifact() ? t('backup.downloadSaved', { name }) : t('backup.saved', { name })); }
+    try { const name = await exportBackup(store); if (name) { lsSet(LAST_KEY, new Date().toISOString()); setMsg(isArtifact() ? t('backup.downloadSaved', { name }) : t('backup.saved', { name })); } }
     catch (e) { setMsg(e && e.friendly ? e.message : t('backup.failed', { e: (e && e.message) || String(e) })); }
   }
   return html`<${Card} title=${t('backup.title')} icon="save" color="var(--k-cal)">
     <div class="hint" style="margin:0 0 12px">${t('backup.text')}</div>
     <div class="stack"><button onClick=${save}>${t('backup.save')}</button><button onClick=${r.start}>${t('backup.load')}</button></div>
     ${msg || r.msg ? html`<div class="hint io">${msg || r.msg}</div>` : null}
-    <div class="hint">${t('backup.counts', { w: c.workoutLogs, f: c.foodEntries, b: c.scaleEntries, p: c.foodItems })}</div>
+    <div class="hint">${t('backup.counts', { w: c.workoutLogs, f: c.foodEntries, b: c.scaleEntries, p: c.foodItems })}${lastBackupAt() ? ' · ' + t('backup.last', { d: fmtDate(lastBackupAt().slice(0, 10), 'full') }) : ''}</div>
     ${r.dialog}
   <//>`;
 }

@@ -48,6 +48,7 @@ await wait(1500);
 await p.waitForSelector('.dgrid');
 await shot('03-dashboard');
 check('после импорта карточки переноса нет', await p.locator('.welcome:has-text("Перенести")').count() === 0);
+check('сегодня: напоминание о резервной копии и карточка недели', await p.locator('.banner.bk').count() === 1 && await p.locator('.dtile').count() === 4);
 const meta = await p.evaluate(() => new Promise((r) => {
   const q = indexedDB.open('journal');
   q.onsuccess = () => { const g = q.result.transaction('docs').objectStore('docs').get('meta/schema'); g.onsuccess = () => r(g.result && g.result.data); };
@@ -65,7 +66,7 @@ await p.locator('.tabs .tab', { hasText: 'Тренировка' }).click(); awai
 check('Тренировка: новый экран вкладки', await p.locator('.wk-today, .wk-active').count() === 1);
 
 /* разделы «Ещё» */
-const sub = [['История', '08-history'], ['Шаблоны тренировок', '09-templates'], ['Расход по журналу', '10-journal-settings'], ['О приложении', '11-about']];
+const sub = [['История', '08-history'], ['Шаблоны тренировок', '09-templates'], ['Расход по журналу', '10-journal-settings'], ['Резервная копия', '10b-backup'], ['О приложении', '11-about']];
 for (const [name, file] of sub) {
   await p.locator('.tabs .tab', { hasText: 'Ещё' }).click(); await wait(200);
   await p.locator('.lrow', { hasText: name }).first().click(); await wait();

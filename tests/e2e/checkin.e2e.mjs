@@ -70,8 +70,10 @@ await p.waitForLoadState('load');
 await wait(1800);
 
 check('баннер чек-ина на обзоре', await p.locator('.cibanner').count() === 1);
-check('обзор: недельные бары БЖУ', await p.locator('.nw-row').count() === 4);
-check('обзор: энергобаланс за 30 дней — столбики и цель', await p.locator('.chart rect.ch-b').count() > 10 && await p.locator('.chart polyline.dash').count() === 1);
+check('сегодня: карточка недели с барами по дням', await p.locator('.nw-bars i').count() === 7 && await p.locator('.wk-weekn').count() >= 1);
+await p.goto('http://localhost:' + PORT + '/#/more/expenditure'); await wait(800);
+check('расход: энергобаланс за 30 дней — столбики и цель', await p.locator('.chart rect.ch-b').count() > 10 && await p.locator('.chart polyline.dash').count() === 1);
+await p.goto('http://localhost:' + PORT + '/#/'); await wait(600);
 check('обзор: кнопка «пропустить неделю» у чек-ина', await p.locator('.cibanner button', { hasText: 'Пропустить неделю' }).count() === 1);
 await shot('01-dashboard');
 
@@ -81,7 +83,7 @@ const hero = await p.locator('.whero').innerText();
 check('расход по данным', /Оценка по данным/.test(hero), hero.replace(/\s+/g, ' ').slice(0, 120));
 const tdee = Number((hero.match(/(\d[\d\s]*)\s*ккал/) || [])[1].replace(/\s/g, ''));
 check('расход выше 2300 при снижении веса', tdee > 2300, tdee);
-check('график: точки еды и линия расхода', await p.locator('.chart polyline.ch-l').count() === 1 && await p.locator('.chart circle.ch-d').count() > 5);
+check('график: точки еды и линия расхода', await p.locator('.chart').first().locator('polyline.ch-l').count() === 1 && await p.locator('.chart').first().locator('circle.ch-d').count() > 5);
 await shot('02-expenditure');
 
 /* снимок расхода за сегодня */

@@ -1,10 +1,10 @@
 /* Вкладка «Тренировка»: идущая тренировка, что делать сегодня (по расписанию шаблонов), быстрые действия,
    неделя, последние тренировки, запись кардио. С ?d=ГГГГ-ММ-ДД — тренировки за этот день. */
 import { html, useApp, useData, useState, navigate, todayYmd } from '../../core.js';
-import { Page, Card, Sheet, Field, Toggle } from '../../kit.js';
+import { Page, Card, Sheet, Field, Toggle, List, Row } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum, fmtDate } from '../../../i18n/index.js';
-import { buildSession, suggestPlan, planItems, sortLogs, workoutSummary, cardioExerciseId } from '../../../domain/workout.js';
+import { buildSession, suggestPlan, planItems, sortLogs, workoutSummary, cardioExerciseId, previousSets } from '../../../domain/workout.js';
 import { addDays, weekStart, workoutsBetween } from '../../../data/journal.js';
 import { toDisplay, fromDisplay, unitKey } from '../../../domain/units.js';
 import { uid } from '../../../data/ids.js';
@@ -40,7 +40,7 @@ export function sortPlans(plans) {
 export function TrainHome({ route }) {
   const app = useApp();
   const { repos, store } = app;
-  useData(['workoutSessions', 'workoutLogs', 'workoutPlans', 'workoutPrograms', 'scaleEntries', 'workoutProfile', 'profile']);
+  useData(['workoutSessions', 'workoutLogs', 'workoutPlans', 'workoutPrograms', 'scaleEntries', 'workoutProfile', 'profile', 'gyms']);
   const cat = useCatalog();
   const today = todayYmd();
   const date = route.query.d || today;
@@ -62,7 +62,7 @@ export function TrainHome({ route }) {
   const wsum = week.reduce((a, w) => { const x = workoutSummary(w); a.sets += x.sets; a.vol += x.volumeKg; return a; }, { sets: 0, vol: 0 });
   const perDay = Array.from({ length: 7 }, (_, i) => week.filter((w) => w.date === addDays(ws, i)).reduce((n, w) => n + workoutSummary(w).sets, 0));
   const dayLogs = sortLogs(logs.filter((w) => w.date === date));
-  const recent = sortLogs(logs).filter((w) => w.date !== date).slice(0, 5);
+  const recent = sortLogs(logs).filter((w) => w.date !== date).slice(0, 3);
   /* тренировка за сегодня уже записана: она сверху, предложение плана — скромно, как «ещё одна» */
   const doneToday = isToday && dayLogs.length > 0;
 
@@ -76,7 +76,7 @@ export function TrainHome({ route }) {
         <div class="rl">${doneToday ? t('train.another') : isToday ? t('train.today') : t('train.forDay')}</div>
         ${prog && sug.plan.programId === prog.id && pwk && !pwk.finished ? html`<button class="wk-progline" onClick=${() => navigate('/train/programs')}>${prog.name} · ${t('prog.weekOf', { n: pwk.week + 1, total: pwk.weeks })}${pwk.deload ? ' · ' + t('prog.deload') : pwk.mods && pwk.mods.heavy != null ? ' · ' + t(pwk.mods.heavy ? 'prog.heavy' : 'prog.light') : ''}</button>` : null}
         <div class="wk-today-h"><b>${sug.plan.name}</b><span class="hint">${isToday && !doneToday ? whyLabel(sug.why) + (sug.why === 'missed' || sug.why === 'next' ? ' · ' + fmtDate(sug.date, 'long') : '') : ''}</span></div>
-        ${doneToday ? null : html`<div class="wk-preview">${planItems(sug.plan).slice(0, 8).map((it) => html`<span>${cat.byId[it.exerciseId] && !(it.alternatives && it.alternatives.length > 1) ? cat.byId[it.exerciseId].name : it.name}</span>`)}${planItems(sug.plan).length > 8 ? html`<span>+${planItems(sug.plan).length - 8}</span>` : null}</div>
+        ${doneToday ? null : html`<${PlanPreview} plan=${sug.plan} byId=${cat.byId} logs=${logs} units=${units}/>
         <${GymLine}/>`}
         <div class="row">
           <button class=${doneToday ? 'grow' : 'primary grow'} disabled=${!cat.ready} onClick=${() => start(sug.plan)}>${t('train.start')}</button>
@@ -88,9 +88,13 @@ export function TrainHome({ route }) {
     </div>` : null}
 
 
-    <div class="scgrid wk-actions">
-      ${[['heart', 'train.act.cardio', () => setCardio(true)], ['search', 'train.act.library', () => navigate('/train/library')], ['list', 'train.act.plans', () => navigate('/train/plans')], ['bolt', 'train.act.programs', () => navigate('/train/programs')], ['cal', 'train.act.history', () => navigate('/train/history')], ['target', 'train.act.levels', () => navigate('/train/levels')], ['plate', 'train.act.plates', () => navigate('/train/plates')], ['gym', 'train.act.gyms', () => navigate('/train/gyms')]].map(([ic, l, fn]) => html`<button class="scbtn" onClick=${fn}><${Icon} name=${ic}/><span>${t(l)}</span></button>`)}
-    </div>
+    <button class="wk-cardio" onClick=${() => setCardio(true)}><${Icon} name="heart"/>${t('train.act.cardioLog')}</button>
+    <${List}>
+      <${Row} icon="search" color="var(--k-str)" label=${t('train.act.library')} sub=${cat.ready ? t('train.menu.librarySub', { n: fmtNum(cat.list.length) }) : null} href="/train/library"/>
+      <${Row} icon="bolt" color="var(--k-plan)" label=${t('train.menu.plans')} sub=${prog ? prog.name + ' · ' + t('train.menu.plansN', { count: plans.length }) : t('train.menu.plansN', { count: plans.length })} href="/train/programs"/>
+      <${Row} icon="plate" color="#D7263D" label=${t('train.menu.gyms')} sub=${t('train.menu.gymsSub', { count: repos.gym.count() })} href="/train/gyms"/>
+      <${Row} icon="target" color="var(--k-body)" label=${t('train.act.levels')} sub=${t('train.menu.levelsSub')} href="/train/levels"/>
+    <//>
 
     ${isToday ? html`<${Card} title=${t('train.week')} icon="train" color="var(--k-str)">
       <div class="wk-weekn">
@@ -118,6 +122,20 @@ export function TrainHome({ route }) {
   <//>`;
 }
 
+/* Первые упражнения плана с цифрами прошлого раза: «3×12 · было 60 кг» */
+function PlanPreview({ plan, byId, logs, units }) {
+  const items = planItems(plan);
+  const line = (it) => {
+    const name = byId[it.exerciseId] && !(it.alternatives && it.alternatives.length > 1) ? byId[it.exerciseId].name : it.name;
+    const prev = it.exerciseId ? previousSets(logs, it.exerciseId) : null;
+    const best = prev ? prev.sets.reduce((b, s) => (s.weight != null && (b == null || s.weight > b.weight) ? s : b), null) : null;
+    const scheme = it.sets ? it.sets + '×' + (it.repMin && it.repMax && it.repMin !== it.repMax ? it.repMin + '–' + it.repMax : (it.repMax || it.repMin || '')) : '';
+    const was = best ? t('train.prev.was', { w: fmtNum(toDisplay('weight', best.weight, units), 1), u: weightUnit(units) }) : prev && prev.sets[0] && prev.sets[0].reps != null ? t('train.prev.wasReps', { r: prev.sets[0].reps }) : t('train.prev.first');
+    return html`<div class="wk-prev-row"><span>${name}</span><small>${[scheme, was].filter(Boolean).join(' · ')}</small></div>`;
+  };
+  return html`<div class="wk-prev">${items.slice(0, 3).map(line)}${items.length > 3 ? html`<div class="hint">${t('train.prev.more', { count: items.length - 3 })}</div>` : null}</div>`;
+}
+
 /* Зал для новой тренировки (по умолчанию) — со ссылкой на залы */
 function GymLine() {
   const { repos } = useApp();
@@ -127,7 +145,7 @@ function GymLine() {
     <${Icon} name=${g ? g.icon || 'gym' : 'gym'}/><span>${g ? t('train.gymLine', { name: g.name }) : t('train.gymNone')}</span><${Icon} name="right" cls="chev"/></button>`;
 }
 
-function ActiveCard({ s }) {
+export function ActiveCard({ s }) {
   const now = useNow(true, 1000);
   const total = s.exercises.reduce((n, e) => n + (e.skipped ? 0 : e.sets.length), 0);
   const done = s.exercises.reduce((n, e) => n + e.sets.filter((x) => x.done).length, 0);

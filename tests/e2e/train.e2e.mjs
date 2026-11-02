@@ -52,7 +52,7 @@ check('шаги перенесены', (await idbList('stepsEntries')).some((s) 
 /* вкладка */
 await go('#/train');
 check('вкладка: карточка «сегодня»', await p.locator('.wk-today').count() === 1);
-check('вкладка: неделя и действия', await p.locator('.wk-actions .scbtn').count() === 8);
+check('вкладка: четыре раздела списком и «Записать кардио»', await p.locator('.list .lrow').count() >= 4 && await p.locator('.wk-cardio').count() === 1);
 await shot('01-home');
 
 /* тренировка по шаблону */

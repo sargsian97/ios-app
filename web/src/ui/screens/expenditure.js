@@ -8,6 +8,7 @@ import { periodAverages } from '../../domain/expenditure.js';
 import { addDays, TDEE_FIRST_UPDATE_DAY, TDEE_HOLD_NO_WEIGHIN_DAYS, JOURNAL_DEFAULTS, journalWeightOn } from '../../domain/calc/index.js';
 import { dayBudget } from '../food/budget.js';
 import { NumIn } from '../train/inputs.js';
+import { EnergyBalance } from '../food/energy-balance.js';
 
 const STATUS = { initial: 'tdee.st.initial', ok: 'tdee.st.ok', hold: 'tdee.st.hold', fixed: 'tdee.st.fixed' };
 const REASON = { no_weighin: 'tdee.r.no_weighin', few_intake_days: 'tdee.r.few_intake_days', short_window: 'tdee.r.short_window' };
@@ -51,6 +52,7 @@ export function Expenditure({ route }) {
           <div class="kv tot"><span>${t('tdee.avgBalance')}</span><span>${fmtSigned(a.balance)} ${t('unit.kcal')}</span></div>
           <div class="hint" style="margin:-2px 0 6px">${t('tdee.daysCounted', { count: a.days })}</div>` : html`<div class="hint">${t('tdee.noDays')}</div>`}`)}
     <//>`}
+    <${EnergyBalance} today=${today}/>
     <${Card} title=${t('tdee.how')} icon="info" color="var(--k-plan)">
       <p class="about-p">${t('tdee.howText')}</p>
       <div class="hint">${t('tdee.howRules')}</div>

@@ -42,8 +42,8 @@ await p.waitForLoadState('load');
 await wait(1500);
 
 /* мастер */
-check('карточка настройки на обзоре', await p.getByRole('button', { name: 'Начать' }).count() === 1);
-await p.getByRole('button', { name: 'Начать' }).click(); await wait(500);
+check('карточка настройки на «Сегодня»', await p.locator('.welcome').getByRole('button', { name: 'Начать' }).count() === 1);
+await p.locator('.welcome').getByRole('button', { name: 'Начать' }).click(); await wait(500);
 check('на онбординге нет нижней панели', await p.locator('.tabs').count() === 0);
 await shot('01-intro', false);
 await next();

@@ -3,7 +3,7 @@ import { html, useApp, useData } from '../core.js';
 import { Page, Card, Segmented, List, Row } from '../kit.js';
 import { t } from '../../i18n/index.js';
 import { DEFAULT_UNITS, IMPERIAL } from '../../domain/units.js';
-import { BackupCard } from './backup.js';
+import { BackupCard, ImportCard } from './backup.js';
 import { ClaudeKeyCard, UsdaKeyCard } from './keys.js';
 
 export function Settings() {
@@ -49,5 +49,14 @@ export function Settings() {
     <${UsdaKeyCard}/>
 
     <${BackupCard}/>
+  <//>`;
+}
+
+/* Отдельный экран резервной копии (из «Ещё» и напоминания на «Сегодня») */
+export function BackupPage() {
+  return html`<${Page} title=${t('backup.title')} icon="save" color="linear-gradient(135deg,#5BE7DA,#14B8A6)" back="/more" backLabel=${t('nav.more')}>
+    <${ImportCard}/>
+    <${BackupCard}/>
+    <div class="hint">${t('backup.pageHint')}</div>
   <//>`;
 }

@@ -90,6 +90,7 @@ const SHELL = [
   'src/services/foodsearch/rank.js',
   'src/services/foodsearch/usda.js',
   'src/ui/food/budget.js',
+  'src/ui/food/energy-balance.js',
   'src/ui/food/expenditure.js',
   'src/ui/food/labels.js',
   'src/ui/food/parts.js',
@@ -143,7 +144,8 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
+  /* новая версия ждёт, пока пользователь нажмёт «Обновить» (SKIP_WAITING); при первой установке ждать некого */
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' })))));
 });
 
 self.addEventListener('activate', (e) => {

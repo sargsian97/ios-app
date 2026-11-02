@@ -8,7 +8,7 @@ import { t } from '../i18n/index.js';
 import { Dashboard } from './screens/dashboard.js';
 import { More, About } from './screens/more.js';
 import { Profile } from './screens/profile.js';
-import { Settings } from './screens/settings.js';
+import { Settings, BackupPage } from './screens/settings.js';
 import { FoodDiary } from './screens/food/diary.js';
 import { FoodAdd } from './screens/food/add.js';
 import { FoodEditor } from './screens/food/editor.js';
@@ -79,6 +79,7 @@ const ROUTES = [
   ['/body/history', BodyHistory],
   ['/body/cycle', Cycle],
   ['/more/settings', Settings],
+  ['/more/backup', BackupPage],
   ['/more/about', About]
 ];
 

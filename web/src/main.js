@@ -29,10 +29,17 @@ function setupUpdates(store) {
   };
   function set(w) { u.waiting = w; subs.forEach((cb) => cb(w)); }
   if ('serviceWorker' in navigator && !PREVIEW && !ARTIFACT) {
-    navigator.serviceWorker.register('./sw.js').then((reg) => {
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
       const watch = (w) => w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) set(w); });
       if (reg.waiting && navigator.serviceWorker.controller) set(reg.waiting);
       reg.addEventListener('updatefound', () => { if (reg.installing) watch(reg.installing); });
+      /* проверяем обновление при каждом возвращении в приложение, не чаще раза в час */
+      let checked = Date.now();
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible' || Date.now() - checked < 3600000) return;
+        checked = Date.now();
+        reg.update().catch(() => {});
+      });
     }).catch(() => {});
     /* перезагружаемся только при смене уже работавшего воркера: при первой установке страница и так свежая из сети */
     let reloading = false;

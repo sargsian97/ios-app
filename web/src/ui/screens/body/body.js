@@ -1,5 +1,5 @@
 /* Тело: тренд веса с графиком и прогнозом цели, замеры, процент жира и отношения, шаги, фото, цикл. */
-import { html, useApp, useData, useState, useEffect, navigate, todayYmd } from '../../core.js';
+import { html, useApp, useData, useState, useEffect, navigate, todayYmd, useMemo } from '../../core.js';
 import { Page, Card } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum, fmtFix, fmtDate } from '../../../i18n/index.js';
@@ -16,12 +16,16 @@ const PERIODS = [[7, 'body.p.7'], [14, 'body.p.14'], [30, 'body.p.30'], [90, 'bo
 const TILES = ['waist', 'hips', 'bodyFatPct', 'chest', 'thighL', 'bicepsL', 'neck', 'shoulders'];
 
 /* Тренд и взвешивания — для экрана и обзора */
+/* Взвешивания и тренд; считается заново только когда меняются взвешивания или версия алгоритма */
 export function useWeight() {
-  const { repos } = useApp();
-  const dp = repos.dietProfile.get();
-  const scale = repos.scaleEntry.list();
-  const trend = trendWeight(scale.map((s) => ({ date: s.date, weight: s.weightKg })), { version: dp.trendVersion || 'v3' });
-  return { scale, daily: dailyScale(scale), trend, last: trend[trend.length - 1] || null };
+  const { repos, store } = useApp();
+  const ver = store.version('scaleEntries');
+  const version = repos.dietProfile.get().trendVersion || 'v3';
+  return useMemo(() => {
+    const scale = repos.scaleEntry.list();
+    const trend = trendWeight(scale.map((s) => ({ date: s.date, weight: s.weightKg })), { version });
+    return { scale, daily: dailyScale(scale), trend, last: trend[trend.length - 1] || null };
+  }, [ver, version]);
 }
 
 export function Body({ route }) {
