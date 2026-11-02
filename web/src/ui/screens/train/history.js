@@ -23,9 +23,13 @@ export function LogRow({ w, byId, units }) {
     if (sum.volumeKg) parts.push(fmtNum(Math.round(toDisplay('weight', sum.volumeKg, units))) + ' ' + weightUnit(units));
   }
   const name = w.name || (w.exercises[0] ? exName(w.exercises[0], byId) : t('train.session.untitled'));
-  return html`<button class="lrow" type="button" onClick=${() => navigate('/train/log/' + w.id)}>
-    <span class="lico" style=${'--cc:' + (cardio ? 'var(--k-steps)' : 'var(--k-str)')}><${Icon} name=${cardio ? 'heart' : 'train'}/></span>
-    <span class="ltext"><span class="ll">${name}</span><span class="ls">${fmtDate(w.date, 'long')} · ${parts.join(' · ')}</span></span>
+  /* значок — буква шаблона («День A» → A), иначе первая буква названия; кардио — сердце */
+  const last = name.trim().split(/\s+/).pop() || '';
+  const letter = last.length <= 2 ? last.toUpperCase() : name.trim().charAt(0).toUpperCase();
+  const dur = parts[0] && w.durationSec ? parts.shift() : null;
+  return html`<button class="lrow wlog" type="button" onClick=${() => navigate('/train/log/' + w.id)}>
+    <span class="wl-b" style=${'--cc:' + (cardio ? 'var(--k-steps)' : 'var(--k-str)')}>${cardio ? html`<${Icon} name="heart"/>` : letter}</span>
+    <span class="ltext"><span class="ll">${name}</span><span class="ls">${fmtDate(w.date, 'wday')}${dur ? ' · ' + dur : ''}</span>${parts.length ? html`<span class="ls">${parts.join(' · ')}</span>` : null}</span>
     ${(w.records || []).length ? html`<span class="lbadge wk-pr">${t('train.pr.badge', { n: w.records.length })}</span>` : null}
   </button>`;
 }
