@@ -69,9 +69,9 @@ check('Тренировка: новый экран вкладки', await p.loca
 const sub = [['История', '08-history'], ['Шаблоны тренировок', '09-templates'], ['Расход по журналу', '10-journal-settings'], ['Резервная копия', '10b-backup'], ['О приложении', '11-about']];
 for (const [name, file] of sub) {
   await p.locator('.tabs .tab', { hasText: 'Ещё' }).click(); await wait(200);
-  await p.locator('.lrow', { hasText: name }).first().click(); await wait();
+  await p.locator('.lrow', { has: p.locator('.ll', { hasText: new RegExp('^' + name + '$') }) }).first().click(); await wait();
   await shot(file);
-  check('«Назад» есть: ' + name, await p.locator('.back').count() > 0);
+  check('«Назад» есть: ' + name, await p.locator('.back').count() > 0 && (await p.locator('.wrap h1').first().innerText()).includes(name === 'Расход по журналу' ? 'Расход' : name));
   await p.locator('.back').first().click(); await wait(200);
   check('«Назад» вернул в «Ещё»: ' + name, (await p.evaluate(() => location.hash)) === '#/more');
 }
