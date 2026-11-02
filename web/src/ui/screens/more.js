@@ -56,6 +56,9 @@ export function About() {
     <div class="card pad">
       <div class="src"><b>Preact, htm</b><span>MIT, Apache 2.0</span></div>
       <div class="src"><b>Anthropic TypeScript SDK</b><span>MIT</span></div>
+      <div class="src"><b>USDA FoodData Central (SR Legacy)</b><span>CC0</span></div>
+      <div class="src"><b>Open Food Facts</b><span>ODbL</span></div>
+      <div class="src"><b>free-exercise-db</b><span>Unlicense</span></div>
       <div class="hint">${t('about.sources.more')}</div>
     </div>
   <//>`;

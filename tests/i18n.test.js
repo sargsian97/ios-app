@@ -44,7 +44,8 @@ test('i18n: ключи, собранные из частей, есть в кат
   ['day', 'week', 'month'].forEach((k) => keys.push('ai.period.' + k));
   ['no_key', 'limit', 'cancelled', 'bad_key', 'no_credit', 'network', 'rate_limited', 'invalid_json', 'image_rejected', 'refused', 'not_granted', 'unsure', 'no_name', 'other'].forEach((k) => keys.push('ai.err.' + k));
   ['carbs', 'fats', 'protein', 'vitamins', 'minerals', 'other'].forEach((k) => keys.push('food.group.' + k));
-  ['off', 'usda', 'ai', 'user', 'legacy'].forEach((k) => keys.push('food.src.' + k));
+  ['off', 'usda', 'ai', 'user', 'legacy', 'basic'].forEach((k) => keys.push('food.src.' + k));
+  ['am', 'ru'].forEach((k) => keys.push('food.country.' + k));
   [0, 1, 2, 3, 4, 5, 6].forEach((k) => keys.push('wd.' + k));
   ['floored', 'limit_min', 'limit_max', 'protein_min', 'protein_exceeds_kcal'].forEach((k) => keys.push('ob.warn.' + k));
   ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'f1', 'f2', 'f3', 'f4', 'f5', 'f6'].forEach((k) => keys.push('ob.fat.' + k));

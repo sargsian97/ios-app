@@ -5,7 +5,7 @@
 Внутри то же, что было в журнале в Claude:
 
 - **Тренировки**: дни A/B/C по шаблонам, подходы, таймер подхода и отдыха (пока он идёт, экран не гаснет), подсказки «прошлый раз», кардио, шаги и расчёт расхода калорий.
-- **Питание**: дневник по часам или по приёмам пищи, кольцо калорий, БЖУ и клетчатка с разбивкой белка на животный и растительный. Поиск в своих продуктах, Open Food Facts и USDA, штрихкод, «тарелка» из нескольких продуктов, быстрое добавление, свои продукты и рецепты. Распознавание еды по фото и автозаполнение работают через Claude.
+- **Питание**: дневник по часам или по приёмам пищи, кольцо калорий, БЖУ и клетчатка с разбивкой белка на животный и растительный. Поиск в своих продуктах и встроенной таблице базовых продуктов (гречка, мацун, лаваш, творог — по-русски, по-армянски и латиницей, офлайн), по кнопке — Open Food Facts (Армения и Россия) и USDA, штрихкод, «тарелка» из нескольких продуктов, быстрое добавление, свои продукты и рецепты. Распознавание еды по фото и автозаполнение работают через Claude.
 - **Замеры**: вес, обхваты, графики, календарь, расчёт процента жира.
 - **История**: календарь дефицита и профицита, итоги за неделю и месяц.
 - **План**: шаблоны тренировок и настройки, включая ключ Claude и резервные копии.
@@ -55,6 +55,7 @@ npm run serve   # http://localhost:8000
 | Anthropic TypeScript SDK | [github.com/anthropics/anthropic-sdk-typescript](https://github.com/anthropics/anthropic-sdk-typescript) | MIT (`web/vendor/LICENSE-anthropic-sdk.txt`) |
 | Preact, htm (интерфейс) | [preactjs.com](https://preactjs.com), [github.com/developit/htm](https://github.com/developit/htm) | MIT, Apache 2.0 (`web/vendor/LICENSE-preact.txt`, `LICENSE-htm.txt`) |
 | zxing (штрихкоды EAN/UPC) | [github.com/zxing-js/library](https://github.com/zxing-js/library) | Apache 2.0 (`web/vendor/LICENSE-zxing.txt`) |
-| Продукты: Open Food Facts | [openfoodfacts.org](https://world.openfoodfacts.org) — запросы из приложения | база — ODbL, описания продуктов — DbCL |
+| Продукты: Open Food Facts | [openfoodfacts.org](https://world.openfoodfacts.org) — запросы из приложения по кнопке «Найти в интернете» (Search-a-licious по Армении и России с русскими и армянскими названиями, запасной путь — `search.pl` с `cc=am`/`cc=ru`), не чаще 8 в минуту, ответы кэшируются на телефоне 7 дней и в репозиторий не попадают | база — ODbL, описания продуктов — DbCL |
 | Продукты: USDA FoodData Central | [fdc.nal.usda.gov](https://fdc.nal.usda.gov) — со своим ключом api.data.gov | общественное достояние (CC0) |
+| Базовые продукты (встроенная таблица, офлайн) | USDA National Nutrient Database for Standard Reference — SR28 / SR Legacy ([fdc.nal.usda.gov](https://fdc.nal.usda.gov)); 181 продукт собран скриптом `node scripts/build-foods.mjs <папка с ABBREV.txt и FOOD_DES.txt>` в `web/data/foods-basic.json` (файлы SR28 есть, например, в npm-пакете `fda-nutrient-database@1.0.2`, папка `data/`) | общественное достояние (CC0); русские и армянские названия, синонимы, порции и пометки о приближениях (`scripts/foods/ru-hy.json`) — наши |
 | Упражнения: free-exercise-db | [github.com/yuhonas/free-exercise-db](https://github.com/yuhonas/free-exercise-db) — 876 упражнений, встроены в `web/data/` скриптом `scripts/build-exercises.mjs` | общественное достояние (Unlicense); русские названия, синонимы, паттерны (`scripts/exercises/ru.json`) и карта мышц — наши |

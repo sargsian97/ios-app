@@ -19,6 +19,12 @@ const PORT = 8775 + (SC === 'dark' ? 1 : 0);
 const srv = await serve(PORT);
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'], colorScheme: SC, locale: 'ru-RU', timezoneId: 'Asia/Yerevan' });
+/* Search-a-licious: на «мацун» — выдача по Армении и России, на остальное — пусто (тогда идёт запасной путь search.pl с cc=am/ru) */
+await ctx.route('**/search.openfoodfacts.org/**', (route) => {
+  const q = decodeURIComponent(route.request().url());
+  if (/мацун/.test(q)) return route.fulfill({ contentType: 'application/json', body: fx('off-sal.json') });
+  return route.fulfill({ contentType: 'application/json', body: '{"hits":[]}' });
+});
 await ctx.route('**/world.openfoodfacts.org/**', (route) => {
   const u = route.request().url();
   if (u.includes('/api/v2/product/4607001771562')) return route.fulfill({ contentType: 'application/json', body: fx('off-product.json') });
@@ -134,13 +140,44 @@ check('таймлайн: овсянка в 08:00, грудка в 13:00, овс�
 await go('#/food/settings');
 await p.getByRole('radio', { name: 'Приёмы пищи' }).click(); await wait(300);
 
-/* поиск в интернете (подменённый Open Food Facts) и тарелка */
+/* базовые продукты офлайн: по-русски, по-армянски, латиницей; карточка с пометкой о приближении */
+await go('#/food/add?d=2026-10-15&m=b&t=08:30');
+await p.fill('.searchbox input', 'гречк'); await wait(400);
+const basicRows = await p.locator('.results .lrow', { hasText: 'Гречка' }).allInnerTexts();
+check('базовые продукты: гречка варёная и сухая без интернета', basicRows.some((x) => /Гречка варёная/.test(x)) && basicRows.some((x) => /Гречка сухая/.test(x)) && /USDA/.test(basicRows[0]), basicRows);
+await p.fill('.searchbox input', 'matsun'); await wait(400);
+check('латиницей находится мацун', await p.locator('.results .lrow', { hasText: 'Мацун' }).count() === 1);
+await p.fill('.searchbox input', 'մածուն'); await wait(400);
+check('армянским письмом находится мацун', await p.locator('.results .lrow', { hasText: 'Мацун' }).count() === 1);
+await p.fill('.searchbox input', 'мацун'); await wait(400);
+await shot('04c-basic');
+await p.locator('.results .lrow', { hasText: 'Мацун' }).locator('.rbody').click(); await wait(500);
+const sheetText = await p.locator('.sheet').innerText();
+check('карточка мацуна: на 100 г из USDA и пометка о приближении', /на 100 г/.test(sheetText) && /йогурт/.test(sheetText) && /61/.test(sheetText), sheetText.replace(/\s+/g, ' ').slice(0, 200));
+await p.locator('.sheet .stepper2 input').fill('250');
+await p.locator('.sheet button.primary').click(); await wait(600);
+const mats = (await idbList('foodEntries')).find((e) => e.date === '2026-10-15' && e.name === 'Мацун');
+check('мацун записан 250 г в завтрак, продукт сохранён как базовый', mats && mats.amount === 250 && mats.meal === 'b' && (await idbList('foodItems')).some((f) => f.source === 'basic' && f.sourceId === 'matsun'), mats);
+await go('#/food/add?d=2026-10-15&m=b');
+await p.fill('.searchbox input', 'мацун'); await wait(400);
+check('сохранённый базовый продукт не дублируется в выдаче', await p.locator('.results .lrow', { hasText: 'Мацун' }).count() === 1 && await p.locator('.ltitle', { hasText: 'Базовые продукты' }).count() === 0);
+
+/* Open Food Facts по Enter: местная выдача с синонимами, подпись о лицензии */
+await p.press('.searchbox input', 'Enter'); await wait(1200);
+const offRows = await p.locator('.results .lrow').allInnerTexts();
+check('OFF по Enter: армянский мацун первым, страна в строке', /Мацун 3,2%/.test(offRows.find((x) => /Մարիաննա|Мариан/.test(x)) || '') && /Армения/.test(offRows.join(' ')), offRows.slice(0, 4));
+check('OFF: несходящиеся калории помечены «проверь»', await p.locator('.results .lrow', { hasText: 'Кубанская' }).locator('.lbadge', { hasText: 'проверь' }).count() === 1);
+check('подпись Open Food Facts, ODbL', /Open Food Facts/.test(await p.locator('.lfoot').first().innerText()) && /ODbL/.test(await p.locator('.wrap').innerText()));
+await shot('04d-off-local');
+
+/* поиск в интернете (подменённый Open Food Facts, запасной путь search.pl) и тарелка */
 await go('#/food/add?d=2026-10-14&t=19:30');
 await p.fill('.searchbox input', 'молоко');
+await p.press('.searchbox input', 'Enter');
 await wait(1500);
 await shot('05-online');
-check('выдача Open Food Facts', await p.locator('.results .lrow', { hasText: 'Молоко 3,2%' }).count() > 0);
-await p.locator('.results .lrow', { hasText: 'Молоко 3,2%' }).click(); await wait(500);
+check('выдача Open Food Facts (запасной путь search.pl)', await p.locator('.results .lrow', { hasText: 'Домик в деревне' }).count() > 0);
+await p.locator('.results .lrow', { hasText: 'Домик в деревне' }).click(); await wait(500);
 check('у молока порция 200 мл', await p.locator('.chip', { hasText: '200 мл' }).count() > 0);
 await p.getByRole('button', { name: 'В тарелку' }).click(); await wait(300);
 await p.locator('.srcs button', { hasText: 'Быстро' }).click(); await wait(400);

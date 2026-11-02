@@ -1,7 +1,10 @@
 /* Поиск продуктов: свои (продукты, рецепты) + Open Food Facts + USDA, объединённая выдача.
    Найденное в интернете сохраняется в свои продукты при выборе (кэш). */
-import { offSearch, offProduct } from './off.js';
+import { offSearchLocal, offProduct, stripMeta } from './off.js';
 import { usdaSearch } from './usda.js';
+import { cachedJson, offBudget } from './cache.js';
+import { rankOff } from './rank.js';
+import { synonymsFor } from './basic.js';
 import { recipeTotals, recipePer100 } from '../../domain/nutrition.js';
 import { barcodeVariants } from '../barcode.js';
 
@@ -31,16 +34,36 @@ export function recipeSummary(repos, recipe) {
   catch (e) { return { totals: { nutrients: {}, weight: 0, missing: [] }, per100: {}, error: e.message }; }
 }
 
-/* Поиск в интернете: { off: [...], usda: [...], errors: { off?, usda? } }; уже сохранённые — отбрасываются */
-export async function searchOnline(repos, q, { usdaKey = getUsdaKey(), signal, fetch: f } = {}) {
+async function getJson(url, { fetch: f = fetch, signal } = {}) {
+  const r = await f(url, { signal, headers: { Accept: 'application/json' } });
+  if (!r.ok) throw Object.assign(new Error('OFF ' + r.status), { code: r.status === 429 ? 'rate_limited' : 'http' });
+  return r.json();
+}
+
+/* Поиск в интернете по кнопке: Open Food Facts (Армения и Россия, названия по-русски и по-армянски, синонимы из
+   встроенной таблицы, ответы кэшируются на 7 дней, не больше 8 запросов в минуту) и USDA (со своим ключом).
+   { off: [...], usda: [...], errors: { off?, usda? }, cached, strategy }; уже сохранённые продукты — отбрасываются. */
+export async function searchOnline(repos, q, { usdaKey = getUsdaKey(), signal, fetch: f, budget = offBudget, cache = cachedJson, terms } = {}) {
   const have = new Set(repos.food.list().filter((x) => x.sourceId).map((x) => x.source + ':' + x.sourceId));
   const opts = { signal, fetch: f };
-  const [off, usda] = await Promise.allSettled([offSearch(q, opts), usdaKey ? usdaSearch(q, Object.assign({ key: usdaKey }, opts)) : Promise.resolve([])]);
+  let cached = true;
+  const load = async (url) => {
+    const r = await cache(url, (u) => {
+      if (!budget.allow('off')) throw Object.assign(new Error('OFF: слишком много запросов'), { code: 'rate_limited' });
+      return getJson(u, opts);
+    });
+    if (!r.cached) cached = false;
+    return r.data;
+  };
+  const synonyms = terms || synonymsFor(q);
+  const [off, usda] = await Promise.allSettled([offSearchLocal(q, Object.assign({ terms: synonyms, load }, opts)), usdaKey ? usdaSearch(q, Object.assign({ key: usdaKey }, opts)) : Promise.resolve([])]);
   const fresh = (list) => list.filter((x) => !have.has(x.source + ':' + x.sourceId));
   return {
-    off: off.status === 'fulfilled' ? fresh(off.value) : [],
+    off: off.status === 'fulfilled' ? rankOff(fresh(off.value.items), q) : [],
     usda: usda.status === 'fulfilled' ? fresh(usda.value) : [],
-    errors: { off: off.status === 'rejected' ? off.reason : null, usda: usda.status === 'rejected' ? usda.reason : null }
+    errors: { off: off.status === 'rejected' ? off.reason : null, usda: usda.status === 'rejected' ? usda.reason : null },
+    cached: off.status === 'fulfilled' && cached,
+    strategy: off.status === 'fulfilled' ? off.value.strategy : null
   };
 }
 
@@ -48,8 +71,9 @@ export async function searchOnline(repos, q, { usdaKey = getUsdaKey(), signal, f
 export async function saveOnlineFood(repos, food) {
   const same = repos.food.list((x) => x.source === food.source && x.sourceId && x.sourceId === food.sourceId)[0];
   if (same) return same;
-  return repos.food.create(Object.assign({}, food, { lastUsedAt: new Date().toISOString() }));
+  return repos.food.create(Object.assign(stripMeta(food), { lastUsedAt: new Date().toISOString() }));
 }
+export { loadBasic, basicCache, searchBasic, saveBasicFood, savedBasicIds, basicToFood } from './basic.js';
 
 /* Продукт по штрихкоду: свой → Open Food Facts (с сохранением) → null */
 export async function findBarcode(repos, code, opts = {}) {

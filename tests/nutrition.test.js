@@ -151,8 +151,8 @@ test('приёмы пищи: время по умолчанию, «как в п�
   assert.equal(lastPortionOf(es, { ref: { kind: 'food', id: 'nope' } }), null);
   assert.equal(lastPortionOf([], { ref: { kind: 'food', id: 'oat' } }), null);
 
-  /* порция по умолчанию: первая порция продукта, иначе база */
-  assert.deepEqual(defaultPortion({ servings: [{ id: 'pc', amount: 55 }], base: { amount: 100 } }), { servingId: 'pc', quantity: 1, amount: 55 });
+  /* порция по умолчанию: граммы первой порции продукта, иначе база */
+  assert.deepEqual(defaultPortion({ servings: [{ id: 'pc', amount: 55 }], base: { amount: 100 } }), { servingId: '', quantity: null, amount: 55 });
   assert.deepEqual(defaultPortion({ base: { amount: 100 } }), { servingId: '', quantity: null, amount: 100 });
   assert.deepEqual(defaultPortion(null), { servingId: '', quantity: null, amount: 100 });
 });

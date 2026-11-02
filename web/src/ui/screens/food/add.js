@@ -9,7 +9,7 @@ import { t, fmtNum } from '../../../i18n/index.js';
 import { useEnergy, num, nowTime, per100Text, macroLine, amountText, Spinner, MEALS, MEAL_KEY } from '../../food/parts.js';
 import { usePlate, plate } from '../../food/plate.js';
 import { dayBudget } from '../../food/budget.js';
-import { searchLocal, searchOnline, saveOnlineFood, recipeSummary, findBarcode, getUsdaKey } from '../../../services/foodsearch/index.js';
+import { searchLocal, searchOnline, saveOnlineFood, recipeSummary, findBarcode, getUsdaKey, loadBasic, basicCache, searchBasic, saveBasicFood, savedBasicIds } from '../../../services/foodsearch/index.js';
 import { foodNutrients, servingAmount, recipePortion, dayTotals, recentItems, kcalFromMacros, hourlyGoTos, historyMatches, mealOf, mealDefaultTime, lastPortionOf, defaultPortion } from '../../../domain/nutrition.js';
 import { addDays } from '../../../domain/calc/index.js';
 import { scaleNutrients, roundNutrients } from '../../../data/models/nutrients.js';
@@ -75,7 +75,7 @@ export function FoodAdd({ route }) {
   const [time, setTime] = useState(route.query.t || mealDefaultTime(meal0, now));
   const [filter, setFilter] = useState(route.query.tab === 'history' ? 'history' : 'all');
   const [q, setQ] = useState('');
-  const [online, setOnline] = useState({ busy: false, off: [], usda: [], errors: {} });
+  const [online, setOnline] = useState({ busy: false, off: [], usda: [], errors: {}, q: '' });
   const [item, setItem] = useState(null);
   const [quick, setQuick] = useState(false);
   const [photo, setPhoto] = useState(false);
@@ -94,22 +94,33 @@ export function FoodAdd({ route }) {
     if (o || route.query.tab) navigate('/food/add?d=' + date + '&m=' + meal + (route.query.t ? '&t=' + route.query.t : ''), { replace: true });
   }, [route.query.open, route.query.tab]);
 
-  /* поиск в интернете с задержкой */
-  useEffect(() => {
-    const s = q.trim();
-    if (s.length < 3 || filter !== 'all') { setOnline({ busy: false, off: [], usda: [], errors: {} }); return; }
+  /* встроенная таблица базовых продуктов грузится один раз (в офлайн-кэше) */
+  const [basicReady, setBasicReady] = useState(!!basicCache());
+  useEffect(() => { if (!basicReady) loadBasic().then(() => setBasicReady(true)).catch(() => {}); }, []);
+  /* поиск в интернете — только по Enter или кнопке (Open Food Facts: не чаще 8 раз в минуту); новый ввод сбрасывает выдачу */
+  const netCtl = useRef(null);
+  useEffect(() => { if (online.q && online.q !== q.trim()) setOnline({ busy: false, off: [], usda: [], errors: {} }); }, [q]);
+  async function searchNet(text) {
+    const s = String(text == null ? q : text).trim();
+    if (s.length < 2) return;
+    if (netCtl.current) netCtl.current.abort();
     const ctl = new AbortController();
-    setOnline((o) => Object.assign({}, o, { busy: true }));
-    const tm = setTimeout(async () => {
-      const r = await searchOnline(repos, s, { signal: ctl.signal });
-      if (!ctl.signal.aborted) setOnline(Object.assign({ busy: false }, r));
-    }, 500);
-    return () => { clearTimeout(tm); ctl.abort(); };
-  }, [q, filter]);
+    netCtl.current = ctl;
+    setFilter('all');
+    setOnline({ busy: true, off: [], usda: [], errors: {}, q: s });
+    const r = await searchOnline(repos, s, { signal: ctl.signal });
+    if (!ctl.signal.aborted) setOnline(Object.assign({ busy: false, q: s }, r));
+  }
+  useEffect(() => () => { if (netCtl.current) netCtl.current.abort(); }, []);
 
   async function pickOnline(food) {
     const saved = await saveOnlineFood(repos, food);
     setItem({ kind: 'food', doc: saved });
+  }
+  /* базовый продукт сохраняется в свои при первом выборе — дальше он ищется как свой */
+  async function pickBasic(it, quick) {
+    const saved = await saveBasicFood(repos, it);
+    if (quick) quickLog({ kind: 'food', doc: saved }); else setItem({ kind: 'food', doc: saved });
   }
 
   async function onCode(code) {
@@ -187,10 +198,12 @@ export function FoodAdd({ route }) {
   } else {
     const hist = filter === 'all' ? historyMatches(all, s, { limit: 3 }) : [];
     const rows = searchLocal(repos, s, { limit: 60 }).filter((x) => filter === 'all' || (filter === 'recipes' ? x.kind === 'recipe' : x.kind === 'food'));
+    const basic = filter === 'all' && basicReady ? searchBasic(s, { limit: 8, exclude: savedBasicIds(repos) }).map((it) => ({ kind: 'basic', item: it })) : [];
     blocks = [
       hist.length ? { title: t('food.histBlock'), rows: hist.map((e) => ({ kind: 'history', entry: e })) } : null,
-      { title: hist.length ? t('food.fromLibrary') : null, rows, empty: t('food.search.noneLocal'), results: true }
-    ].filter(Boolean);
+      { title: hist.length || basic.length ? t('food.fromLibrary') : null, rows, empty: basic.length ? null : t('food.search.noneLocal'), results: true },
+      basic.length ? { title: t('food.basic.title'), rows: basic, results: true } : null
+    ].filter(Boolean).filter((b) => b.rows.length || b.empty);
   }
 
   return html`<div class="wrap page addpage">
@@ -203,25 +216,26 @@ export function FoodAdd({ route }) {
       </div>
     </div>
     <h1>${t('food.add.title')}</h1>
-    <${SearchBox} value=${q} onInput=${(v) => { setQ(v); if (filter === 'history') setFilter('all'); }} placeholder=${t('food.search.ph')} inputRef=${inputRef}
+    <${SearchBox} value=${q} onInput=${(v) => { setQ(v); if (filter === 'history') setFilter('all'); }} placeholder=${t('food.search.ph')} inputRef=${inputRef} onEnter=${searchNet}
       right=${html`<button class="sbar" type="button" aria-label=${t('food.sc.scan')} onClick=${() => setScan(true)}><${Icon} name="barcode"/></button>`}/>
     ${s ? html`<div class="pills sub">${FILTERS.map(([k, l]) => html`<button class=${'pill' + (filter === k ? ' on' : '')} onClick=${() => setFilter(k)}>${t(l)}</button>`)}</div>` : null}
     ${msg ? html`<div class="banner">${msg}</div>` : null}
 
     ${blocks.map((b) => html`${b.title ? html`<div class="ltitle">${b.title}</div>` : null}
       <div class=${'list' + (b.results ? ' results' : '')}>
-        ${b.rows.length ? b.rows.map((r) => html`<${ResultRow} r=${r} energy=${energy} onTap=${() => openRow(r)} onQuick=${() => quickLog(r)}/>`) : html`<div class="empty">${b.empty || ''}</div>`}
+        ${b.rows.length ? b.rows.map((r) => html`<${ResultRow} r=${r} energy=${energy} onTap=${() => (r.kind === 'basic' ? pickBasic(r.item, false) : openRow(r))} onQuick=${() => (r.kind === 'basic' ? pickBasic(r.item, true) : quickLog(r))}/>`) : html`<div class="empty">${b.empty || ''}</div>`}
       </div>`)}
 
-    ${filter === 'all' && s.length >= 3 ? html`<${OnlineResults} online=${online} energy=${energy} onPick=${pickOnline}/>` : null}
+    ${online.q && online.q === s ? html`<${OnlineResults} online=${online} energy=${energy} onPick=${pickOnline}/>` : null}
 
     <div class="srcs">
+      ${s.length >= 2 && !(online.q === s && online.busy) ? html`<button class="netbtn" onClick=${() => searchNet()}><${Icon} name="globe" size=${18}/>${t('food.net.find')}</button>` : null}
       <button onClick=${() => setScan(true)}>${t('food.sc.scan')}</button>
       <button onClick=${() => setQuick(true)}>${t('food.sc.quick')}</button>
       <button onClick=${() => setPhoto(true)}>${t('food.sc.photo')}</button>
       <button onClick=${() => navigate('/food/new-food')}>${t('food.sc.new')}</button>
     </div>
-    <div class="hint" style="text-align:center">${t('food.addHint')}</div>
+    <div class="hint" style="text-align:center">${s ? t('food.net.hint') : t('food.addHint')}</div>
 
     ${p.items().length ? html`<button class="platebar" onClick=${() => setPlateOpen(true)}>
       <span class="pb-n">${p.items().length}</span>
@@ -248,7 +262,12 @@ export function FoodAdd({ route }) {
 function ResultRow({ r, energy, onTap, onQuick }) {
   const { repos } = useApp();
   let name, sub, badge = null;
-  if (r.kind === 'history') {
+  if (r.kind === 'basic') {
+    const it = r.item;
+    name = it.n;
+    sub = per100Text(it.nu, energy) + ' ' + (it.u === 'ml' ? t('food.per100ml') : t('food.per100'));
+    badge = (it.a ? '≈ ' : '') + t('food.basic.label') + ' · ' + t('food.src.basic');
+  } else if (r.kind === 'history') {
     const e = r.entry;
     name = e.name || t('food.quick.name');
     sub = (e.amount ? amountText(e) + ' · ' : '') + energy.fmt(e.nutrients.kcal) + ' ' + energy.unit + ' · ' + macroLine(e.nutrients);
@@ -271,12 +290,19 @@ function ResultRow({ r, energy, onTap, onQuick }) {
   </div>`;
 }
 
+const COUNTRY = { 'en:armenia': 'food.country.am', 'en:russia': 'food.country.ru' };
 function OnlineResults({ online, energy, onPick }) {
-  const block = (list, label, err) => html`<div class="ltitle row">${label}${online.busy ? html`<${Spinner}/>` : null}</div>
-    ${err ? html`<div class="lfoot">${err.code === 'bad_key' ? t('food.online.badKey') : isArtifact() ? t('food.online.errorArtifact') : t('food.online.error')}</div>` : null}
-    ${list.length ? html`<div class="list results">${list.map((f) => html`<div class="lrow rrow"><button class="rbody" onClick=${() => onPick(f)}>
-      <span class="ll">${f.name}</span><span class="ls">${(f.brand ? f.brand + ' · ' : '') + per100Text(f.nutrients, energy)}</span></button></div>`)}</div>` : (!online.busy && !err ? html`<div class="lfoot">${t('food.online.none')}</div>` : null)}`;
-  return html`${block(online.off, t('food.online.off'), online.errors && online.errors.off)}
+  const errText = (err) => (err.code === 'bad_key' ? t('food.online.badKey') : err.code === 'rate_limited' ? t('food.net.limit') : isArtifact() ? t('food.online.errorArtifact') : t('food.online.error'));
+  const block = (list, label, err, foot) => html`<div class="ltitle row">${label}${online.busy ? html`<${Spinner}/>` : null}${!online.busy && online.cached && list.length ? html`<span class="lbadge">${t('food.net.cached')}</span>` : null}</div>
+    ${err ? html`<div class="lfoot">${errText(err)}</div>` : null}
+    ${list.length ? html`<div class="list results">${list.map((f) => {
+      const country = (f.meta && f.meta.countries || []).map((c) => COUNTRY[c]).filter(Boolean).map((k) => t(k)).join(', ');
+      return html`<div class="lrow rrow"><button class="rbody" onClick=${() => onPick(f)}>
+        <span class="ll">${f.name}${f.check ? html` <span class="lbadge warn">${t('food.net.check')}</span>` : null}</span>
+        <span class="ls">${[f.brand, country].filter(Boolean).join(' · ')}${f.brand || country ? ' · ' : ''}${per100Text(f.nutrients, energy)}</span></button></div>`;
+    })}</div>` : (!online.busy && !err ? html`<div class="lfoot">${t('food.online.none')}</div>` : null)}
+    ${foot ? html`<div class="lfoot">${foot}</div>` : null}`;
+  return html`${block(online.off, t('food.online.off'), online.errors && online.errors.off, t('food.net.attrib'))}
     ${getUsdaKey() ? block(online.usda, t('food.online.usda'), online.errors && online.errors.usda) : html`<div class="lfoot">${t('food.online.usdaNoKey')}</div>`}`;
 }
 
@@ -350,7 +376,7 @@ export function ProductSheet({ item, date, meal, onClose, onLog, onPlate, pickOn
   const src = doc.source && doc.source !== 'user' && doc.source !== 'legacy' ? sourceLabel(doc.source) : null;
 
   return html`<${Sheet} open=${true} onClose=${onClose} title=${doc.name}>
-    ${doc.brand || src ? html`<div class="hint" style="margin:-8px 0 10px">${[doc.brand, src].filter(Boolean).join(' · ')}</div>` : null}
+    ${doc.brand || src || doc.note ? html`<div class="hint" style="margin:-8px 0 10px">${[doc.brand, src === t('food.src.basic') ? t('food.basic.label') + ' · ' + src : src, doc.note].filter(Boolean).join(' · ')}</div>` : null}
     <div class="per100"><span>${per100Label}</span><span><b>${energy.fmt(per100.kcal)}</b> ${energy.unit}</span>
       <span>${t('food.macro.p').slice(0, 1)} <b>${fmtNum(per100.protein || 0, 1)}</b></span><span>${t('food.macro.f').slice(0, 1)} <b>${fmtNum(per100.fat || 0, 1)}</b></span><span>${t('food.macro.c').slice(0, 1)} <b>${fmtNum(per100.carbs || 0, 1)}</b></span></div>
     ${item.kind === 'recipe' ? html`<div class="pills" style="margin:0 0 12px">

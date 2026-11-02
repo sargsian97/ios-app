@@ -163,11 +163,11 @@ export function lastPortionOf(entries, { ref, name } = {}) {
   return best ? { amount: best.amount ?? null, unit: best.unit || 'g', servingId: best.servingId || '', quantity: best.quantity ?? null, nutrients: best.nutrients || {} } : null;
 }
 
-/* Порция по умолчанию: первая порция продукта, иначе базовое количество (обычно 100 г) */
+/* Порция по умолчанию — в граммах: вес первой порции продукта, иначе базовое количество (обычно 100 г).
+   Граммы, а не «1 порция», чтобы поле в карточке сразу было в граммах; порции остаются кнопками. */
 export function defaultPortion(food) {
   const s = (food && food.servings || [])[0];
-  if (s && s.amount > 0) return { servingId: s.id, quantity: 1, amount: s.amount };
-  const amount = (food && food.base && food.base.amount) || 100;
+  const amount = s && s.amount > 0 ? s.amount : (food && food.base && food.base.amount) || 100;
   return { servingId: '', quantity: null, amount };
 }
 

@@ -37,8 +37,9 @@ export const Food = model({
     name: f.string({ nullable: false, def: '', max: 200 }),
     brand: f.string({ def: '', max: 120 }),
     barcode: f.string({ def: '', max: 32 }),
-    source: f.enum(['user', 'off', 'usda', 'legacy', 'ai']),
+    source: f.enum(['user', 'off', 'usda', 'legacy', 'ai', 'basic']), /* basic — встроенная таблица базовых продуктов */
     sourceId: f.string({ def: '', max: 120 }),
+    note: f.string({ def: '', max: 500 }), /* пометка: источник значений, приближение */
     /* нутриенты указаны на base.amount base.unit, обычно 100 г */
     base: f.shape({ amount: f.number({ nullable: false, def: 100, min: 0.0001 }), unit: f.enum(['g', 'ml']) }),
     nutrients: nutrientsField(),

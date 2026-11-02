@@ -1,0 +1,185 @@
+{
+ "count": 9,
+ "page": 1,
+ "page_size": 30,
+ "hits": [
+  {
+   "code": "4850000000011",
+   "product_name": {
+    "ru": "Мацун 3,2%",
+    "hy": "Մածուն",
+    "main": "Մածուն"
+   },
+   "brands": "Մարիաննա",
+   "countries_tags": [
+    "en:armenia"
+   ],
+   "completeness": 0.9,
+   "unique_scans_n": 40,
+   "nutriments": {
+    "energy-kcal_100g": 62,
+    "proteins_100g": 3.3,
+    "fat_100g": 3.2,
+    "carbohydrates_100g": 4.5
+   },
+   "quantity": "500 g"
+  },
+  {
+   "code": "4850000000028",
+   "product_name": {
+    "hy": "Մածուն 2,5%",
+    "main": "Մածուն 2,5%"
+   },
+   "brands": "Դուստր Մարիաննա",
+   "countries_tags": [
+    "en:armenia"
+   ],
+   "completeness": 0.7,
+   "unique_scans_n": 25,
+   "nutriments": {
+    "energy-kcal_100g": 54,
+    "proteins_100g": 3.4,
+    "fat_100g": 2.5,
+    "carbohydrates_100g": 4.4
+   },
+   "quantity": "500 g"
+  },
+  {
+   "code": "4607000000019",
+   "product_name": {
+    "ru": "Мацони 3,2%",
+    "main": "Мацони 3,2%"
+   },
+   "brands": "Чабан",
+   "countries_tags": [
+    "en:russia"
+   ],
+   "completeness": 0.85,
+   "unique_scans_n": 120,
+   "nutriments": {
+    "energy-kcal_100g": 60,
+    "proteins_100g": 3.0,
+    "fat_100g": 3.2,
+    "carbohydrates_100g": 4.0
+   },
+   "quantity": "500 g"
+  },
+  {
+   "code": "4607000000026",
+   "product_name": {
+    "ru": "Йогурт натуральный",
+    "main": "Йогурт натуральный"
+   },
+   "brands": "Простоквашино",
+   "countries_tags": [
+    "en:russia"
+   ],
+   "completeness": 0.95,
+   "unique_scans_n": 300,
+   "nutriments": {
+    "energy-kcal_100g": 66,
+    "proteins_100g": 3.2,
+    "fat_100g": 3.5,
+    "carbohydrates_100g": 5.5
+   },
+   "quantity": "500 g"
+  },
+  {
+   "code": "3000000000013",
+   "product_name": {
+    "main": "Yaourt nature"
+   },
+   "brands": "Danone",
+   "countries_tags": [
+    "en:france"
+   ],
+   "completeness": 0.9,
+   "unique_scans_n": 5000,
+   "nutriments": {
+    "energy-kcal_100g": 60,
+    "proteins_100g": 3.5,
+    "fat_100g": 3.0,
+    "carbohydrates_100g": 4.5
+   },
+   "quantity": "500 g"
+  },
+  {
+   "code": "4850000000035",
+   "product_name": {
+    "ru": "Тан",
+    "hy": "Թան",
+    "main": "Թան"
+   },
+   "brands": "Արարատ",
+   "countries_tags": [
+    "en:armenia"
+   ],
+   "completeness": 0.6,
+   "unique_scans_n": 15,
+   "nutriments": {
+    "energy-kcal_100g": 29,
+    "proteins_100g": 1.6,
+    "fat_100g": 1.5,
+    "carbohydrates_100g": 2.2
+   },
+   "quantity": "500 g"
+  },
+  {
+   "code": "4607000000033",
+   "product_name": {
+    "ru": "Мацони",
+    "main": "Мацони"
+   },
+   "brands": "Кубанская бурёнка",
+   "countries_tags": [
+    "en:russia"
+   ],
+   "completeness": 0.5,
+   "unique_scans_n": 30,
+   "nutriments": {
+    "energy-kcal_100g": 400,
+    "proteins_100g": 3.0,
+    "fat_100g": 3.0,
+    "carbohydrates_100g": 4.0
+   },
+   "quantity": "500 g"
+  },
+  {
+   "code": "4850000000042",
+   "product_name": {},
+   "brands": "",
+   "countries_tags": [
+    "en:armenia"
+   ],
+   "completeness": 0.3,
+   "unique_scans_n": 1,
+   "nutriments": {
+    "energy-kcal_100g": 58,
+    "proteins_100g": 3.0,
+    "fat_100g": 3.0,
+    "carbohydrates_100g": 4.0
+   },
+   "quantity": "500 g"
+  },
+  {
+   "code": "4607000000040",
+   "product_name": {
+    "ru": "Мацони 1%",
+    "main": "Мацони 1%"
+   },
+   "brands": "Чабан",
+   "countries_tags": [
+    "en:russia"
+   ],
+   "completeness": 0.8,
+   "unique_scans_n": 50,
+   "nutriments": {
+    "energy-kcal_100g": 45,
+    "proteins_100g": 3.1,
+    "fat_100g": 1.0,
+    "carbohydrates_100g": 4.2
+   },
+   "quantity": "500 g"
+  }
+ ]
+}

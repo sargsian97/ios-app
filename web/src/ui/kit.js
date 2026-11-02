@@ -118,10 +118,11 @@ export function Stepper({ value, onChange, step = 1, min = 0, max = Infinity, di
 }
 
 /* Поле поиска: иконка, очистка, слот справа (например, штрихкод) */
-export function SearchBox({ value, onInput, placeholder, autoFocus = false, right = null, onClear = null, inputRef = null, cls = '' }) {
+export function SearchBox({ value, onInput, placeholder, autoFocus = false, right = null, onClear = null, inputRef = null, cls = '', onEnter = null }) {
   return html`<div class=${'searchbox ' + cls}>
     <${Icon} name="search"/>
-    <input ref=${inputRef} type="search" placeholder=${placeholder || ''} value=${value} onInput=${(e) => onInput(e.currentTarget.value)} enterkeyhint="search" autocomplete="off" autofocus=${autoFocus || null}/>
+    <input ref=${inputRef} type="search" placeholder=${placeholder || ''} value=${value} onInput=${(e) => onInput(e.currentTarget.value)} enterkeyhint="search" autocomplete="off" autofocus=${autoFocus || null}
+      onKeyDown=${(e) => { if (e.key === 'Enter' && onEnter) { e.preventDefault(); e.currentTarget.blur(); onEnter(e.currentTarget.value); } }}/>
     ${value ? html`<button class="clr" type="button" aria-label=${t('common.clear')} onClick=${() => (onClear ? onClear() : onInput(''))}><${Icon} name="close" size=${14}/></button>` : right}
   </div>`;
 }

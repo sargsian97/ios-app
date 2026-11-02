@@ -2,7 +2,8 @@
    Значения *_100g в OFF приведены к граммам (энергия — ккал/кДж), переводим в единицы нашей модели. */
 
 const BASE = 'https://world.openfoodfacts.org';
-export const OFF_FIELDS = 'code,product_name,product_name_ru,product_name_en,generic_name_ru,brands,quantity,serving_size,serving_quantity,nutriments,nutrition_data_per';
+export const OFF_FIELDS = 'code,product_name,product_name_ru,product_name_hy,product_name_en,generic_name_ru,brands,quantity,serving_size,serving_quantity,nutriments,nutrition_data_per,countries_tags,completeness,unique_scans_n';
+const SAL = 'https://search.openfoodfacts.org';
 
 /* ключ OFF → [наш ключ, множитель из граммов] */
 const MAP = {
@@ -41,19 +42,32 @@ export function offNutrients(nm) {
 function isLiquid(p) { return /\d([.,]\d+)?\s*(ml|мл|cl|l|л)(?!\p{L})/iu.test(String(p.quantity || '') + ' ' + String(p.serving_size || '')); }
 
 /* Продукт OFF → документ Food (без id); null, если нет ни названия, ни калорий */
+/* Название по языкам: в Search-a-licious product_name — объект { ru, hy, en, main }, в старом поиске — поля product_name_ru и т. п. */
+function names(p) {
+  const pn = p.product_name && typeof p.product_name === 'object' ? p.product_name : null;
+  const pick = (lang) => String((pn && pn[lang]) || p['product_name_' + lang] || '').trim();
+  const main = String(pn ? (pn.main || '') : (p.product_name || '')).trim();
+  return { ru: pick('ru'), hy: pick('hy'), en: pick('en'), main, generic: String(p.generic_name_ru || (p.generic_name && typeof p.generic_name === 'object' ? p.generic_name.ru : '') || '').trim() };
+}
+
 export function offToFood(p) {
   if (!p) return null;
-  const name = String(p.product_name_ru || p.product_name || p.generic_name_ru || p.product_name_en || '').trim();
+  const nm = names(p);
+  const name = nm.ru || nm.main || nm.generic || nm.en || nm.hy;
   const nutrients = offNutrients(p.nutriments);
   if (!name || nutrients.kcal == null) return null;
   const unit = isLiquid(p) ? 'ml' : 'g';
   const sq = num(p.serving_quantity);
   const servings = sq > 0 ? [{ id: 'serving', label: String(p.serving_size || '').trim() || ('1 порция'), amount: sq, unit }] : [];
+  const countries = Array.isArray(p.countries_tags) ? p.countries_tags : [];
   return {
     name, brand: String(p.brands || '').split(',')[0].trim(), barcode: String(p.code || ''),
-    source: 'off', sourceId: String(p.code || ''), base: { amount: 100, unit }, nutrients, servings, labelFormat: 'per100'
+    source: 'off', sourceId: String(p.code || ''), base: { amount: 100, unit }, nutrients, servings, labelFormat: 'per100',
+    /* служебное для ранжирования, в документ Food не сохраняется */
+    meta: { nameRu: !!nm.ru, nameHy: !!nm.hy, nameEn: !!(nm.en || nm.main), countries, completeness: num(p.completeness) || 0, scans: num(p.unique_scans_n) || 0 }
   };
 }
+export function stripMeta(f) { const o = Object.assign({}, f); delete o.meta; delete o.score; delete o.check; return o; }
 
 async function getJson(url, { fetch: f = fetch, signal } = {}) {
   const r = await f(url, { signal, headers: { Accept: 'application/json' } });
@@ -75,10 +89,56 @@ export async function offProduct(code, opts = {}) {
   }
 }
 
+/* Старый поиск search.pl; cc — страна продажи (жёсткий фильтр), без неё — мировая выдача по популярности */
+export function offSearchUrl(q, { pageSize = 20, cc = '' } = {}) {
+  return BASE + '/cgi/search.pl?search_terms=' + encodeURIComponent(q) + '&search_simple=1&action=process&json=1&page_size=' + pageSize + '&lc=ru' + (cc ? '&cc=' + cc : '') + '&fields=' + OFF_FIELDS;
+}
 export async function offSearch(q, opts = {}) {
   const s = String(q || '').trim();
   if (s.length < 2) return [];
-  const url = BASE + '/cgi/search.pl?search_terms=' + encodeURIComponent(s) + '&search_simple=1&action=process&json=1&page_size=' + (opts.pageSize || 20) + '&lc=ru&fields=' + OFF_FIELDS;
-  const j = await getJson(url, opts);
+  const j = await (opts.load || getJson)(offSearchUrl(s, opts), opts);
   return ((j && j.products) || []).map(offToFood).filter(Boolean);
+}
+
+/* Search-a-licious: названия по языкам (ru, hy, en), фильтр по странам продажи прямо в запросе.
+   terms — слово запроса и его синонимы: (мацун OR мацони OR մածուն) AND countries:("en:armenia" OR "en:russia") */
+const quote = (t) => '"' + String(t).replace(/["\\]/g, ' ').trim() + '"';
+export function salQuery(terms, countries = []) {
+  const ts = [].concat(terms).map((t) => String(t).trim()).filter(Boolean);
+  const words = ts.length > 1 ? '(' + ts.map(quote).join(' OR ') + ')' : quote(ts[0] || '');
+  return countries.length ? words + ' AND countries:(' + countries.map(quote).join(' OR ') + ')' : words;
+}
+export function salUrl(terms, { countries = [], langs = ['ru', 'hy', 'en'], pageSize = 30 } = {}) {
+  return SAL + '/search?q=' + encodeURIComponent(salQuery(terms, countries)) + '&langs=' + langs.join(',') + '&page_size=' + pageSize + '&boost_phrase=true&fields=' + OFF_FIELDS;
+}
+export async function salSearch(terms, opts = {}) {
+  const j = await (opts.load || getJson)(salUrl(terms, opts), opts);
+  return ((j && (j.hits || j.products)) || []).map(offToFood).filter(Boolean);
+}
+
+/* Поиск местных продуктов: Search-a-licious по Армении и России, при короткой выдаче — без стран;
+   если Search-a-licious недоступен — старый поиск с cc=am и cc=ru параллельно (мировой не используется).
+   opts.terms — синонимы запроса; opts.load(url) — загрузчик (кэш); opts.countries — страны.
+   Возвращает { items, strategy } без повторов по штрихкоду. */
+export async function offSearchLocal(q, { terms = [], countries = ['en:armenia', 'en:russia'], minLocal = 8, load, fetch: f, signal } = {}) {
+  const s = String(q || '').trim();
+  if (s.length < 2) return { items: [], strategy: 'none' };
+  const all = [].concat(s, terms.filter((t) => t.toLowerCase() !== s.toLowerCase()));
+  const opts = { load, fetch: f, signal };
+  const dedupe = (lists) => { const seen = new Set(); return lists.flat().filter((x) => { if (!x || seen.has(x.sourceId)) return false; seen.add(x.sourceId); return true; }); };
+  let salError = null;
+  try {
+    const local = await salSearch(all, Object.assign({ countries }, opts));
+    if (local.length >= minLocal) return { items: local, strategy: 'sal-local' };
+    const world = await salSearch(all, Object.assign({ countries: [] }, opts));
+    const both = dedupe([local, world]);
+    if (both.length) return { items: both, strategy: 'sal-world' };
+  } catch (e) {
+    if (e && e.name === 'AbortError') throw e;
+    salError = e;
+  }
+  /* Search-a-licious недоступен или совсем пуст — старый поиск по двум странам */
+  const [am, ru] = await Promise.allSettled([offSearch(s, Object.assign({ cc: 'am' }, opts)), offSearch(s, Object.assign({ cc: 'ru' }, opts))]);
+  if (am.status === 'rejected' && ru.status === 'rejected') throw salError || am.reason;
+  return { items: dedupe([am.status === 'fulfilled' ? am.value : [], ru.status === 'fulfilled' ? ru.value : []]), strategy: 'cgi-cc' };
 }

@@ -1,10 +1,10 @@
 /* Рецепты: список и редактор (ингредиенты, вложенные рецепты, шаги, время, вес готового, порции). */
 import { html, useApp, useData, useState, useEffect, navigate, goBack } from '../../core.js';
-import { Page, Card, Field, Sheet, Confirm } from '../../kit.js';
+import { Page, Card, Field, Sheet, Confirm, SearchBox } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum } from '../../../i18n/index.js';
 import { useEnergy, num, macroLine, per100Text, Spinner } from '../../food/parts.js';
-import { searchLocal, searchOnline, saveOnlineFood, recipeSummary } from '../../../services/foodsearch/index.js';
+import { searchLocal, searchOnline, saveOnlineFood, recipeSummary, loadBasic, basicCache, searchBasic, saveBasicFood, savedBasicIds } from '../../../services/foodsearch/index.js';
 import { recipeTotals, recipePortion, recipePer100 } from '../../../domain/nutrition.js';
 import { ProductSheet } from './add.js';
 
@@ -119,24 +119,32 @@ function IngredientPicker({ open, exclude, onClose, onPick }) {
   const energy = useEnergy();
   const [q, setQ] = useState('');
   const [item, setItem] = useState(null);
-  const [online, setOnline] = useState({ busy: false, off: [] });
-  useEffect(() => { if (!open) { setQ(''); setItem(null); } }, [open]);
-  useEffect(() => {
-    if (!open || q.trim().length < 3) { setOnline({ busy: false, off: [] }); return; }
-    const ctl = new AbortController();
-    setOnline((o) => Object.assign({}, o, { busy: true }));
-    const tm = setTimeout(async () => { const r = await searchOnline(repos, q, { signal: ctl.signal, usdaKey: '' }); if (!ctl.signal.aborted) setOnline({ busy: false, off: r.off }); }, 500);
-    return () => { clearTimeout(tm); ctl.abort(); };
-  }, [q, open]);
+  const [online, setOnline] = useState({ busy: false, off: [], q: '', err: null });
+  const [basicReady, setBasicReady] = useState(!!basicCache());
+  useEffect(() => { if (!open) { setQ(''); setItem(null); setOnline({ busy: false, off: [], q: '', err: null }); } }, [open]);
+  useEffect(() => { if (open && !basicReady) loadBasic().then(() => setBasicReady(true)).catch(() => {}); }, [open]);
+  /* в интернете — по Enter или кнопке, как на экране добавления (лимит Open Food Facts) */
+  async function searchNet() {
+    const s = q.trim();
+    if (s.length < 2) return;
+    setOnline({ busy: true, off: [], q: s, err: null });
+    const r = await searchOnline(repos, s, { usdaKey: '' });
+    setOnline({ busy: false, off: r.off, q: s, err: r.errors.off });
+  }
   if (!open) return null;
   if (item) return html`<${ProductSheet} item=${item} date=${null} pickOnly=${true} onClose=${() => setItem(null)} onLog=${onPick} onPlate=${onPick}/>`;
+  const s = q.trim();
   const local = searchLocal(repos, q, { limit: 30 }).filter((x) => !(x.kind === 'recipe' && x.doc.id === exclude));
+  const basic = s && basicReady ? searchBasic(s, { limit: 8, exclude: savedBasicIds(repos) }) : [];
+  const row = (name, sub, onTap) => html`<button class="lrow rrow" onClick=${onTap}><span class="ltext"><span class="ll">${name}</span><span class="ls">${sub}</span></span><${Icon} name="plus" cls="radd"/></button>`;
   return html`<${Sheet} open=${true} onClose=${onClose} title=${t('food.recipe.addIngredient')}>
-    <div class="searchbox"><${Icon} name="search"/><input type="search" placeholder=${t('food.search.ph')} value=${q} onInput=${(e) => setQ(e.currentTarget.value)}/></div>
-    <div class="list results">${local.map((x) => html`<button class="lrow rrow" onClick=${() => setItem(x)}>
-      <span class="ltext"><span class="ll">${x.doc.name}</span><span class="ls">${x.kind === 'recipe' ? t('food.recipe.badge') : per100Text(x.doc.nutrients, energy)}</span></span><${Icon} name="plus" cls="radd"/></button>`)}</div>
-    ${q.trim().length >= 3 ? html`<div class="ltitle row">${t('food.online.off')}${online.busy ? html`<${Spinner}/>` : null}</div>
-      <div class="list results">${online.off.map((f) => html`<button class="lrow rrow" onClick=${async () => setItem({ kind: 'food', doc: await saveOnlineFood(repos, f) })}>
-        <span class="ltext"><span class="ll">${f.name}</span><span class="ls">${per100Text(f.nutrients, energy)}</span></span><${Icon} name="plus" cls="radd"/></button>`)}</div>` : null}
+    <${SearchBox} value=${q} onInput=${setQ} placeholder=${t('food.search.ph')} onEnter=${searchNet}/>
+    <div class="list results">${local.map((x) => row(x.doc.name, x.kind === 'recipe' ? t('food.recipe.badge') : per100Text(x.doc.nutrients, energy), () => setItem(x)))}</div>
+    ${basic.length ? html`<div class="ltitle">${t('food.basic.title')}</div><div class="list results">${basic.map((it) => row(it.n, per100Text(it.nu, energy) + ' · ' + (it.a ? '≈ ' : '') + t('food.src.basic'), async () => setItem({ kind: 'food', doc: await saveBasicFood(repos, it) })))}</div>` : null}
+    ${s.length >= 2 && online.q !== s ? html`<button class="linkbtn" style="width:100%" onClick=${searchNet}>${t('food.net.find')}</button>` : null}
+    ${online.q === s ? html`<div class="ltitle row">${t('food.online.off')}${online.busy ? html`<${Spinner}/>` : null}</div>
+      ${online.err ? html`<div class="lfoot">${online.err.code === 'rate_limited' ? t('food.net.limit') : t('food.online.error')}</div>` : null}
+      <div class="list results">${online.off.map((f) => row(f.name, (f.brand ? f.brand + ' · ' : '') + per100Text(f.nutrients, energy), async () => setItem({ kind: 'food', doc: await saveOnlineFood(repos, f) })))}</div>
+      ${!online.busy ? html`<div class="lfoot">${t('food.net.attrib')}</div>` : null}` : null}
   <//>`;
 }

@@ -395,6 +395,9 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .radd .i{width:28px;height:28px;padding:5px;border-radius:50%;background:color-mix(in srgb,var(--k-food) 13%,transparent);stroke-width:2.6}
 .srcs{display:flex;flex-wrap:wrap;justify-content:center;gap:0 2px;margin:4px 0 0}
 .srcs button{background:none;box-shadow:none;height:44px;padding:0 9px;color:var(--accent);font-weight:600;font-size:15px}
+.srcs .netbtn{display:inline-flex;align-items:center;gap:6px;color:var(--k-food)}
+.srcs .netbtn .i{width:18px;height:18px}
+.lbadge.warn{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}
 .per100{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:10px 12px;margin:0 0 12px;border-radius:var(--r-md);background:var(--input);box-shadow:var(--field-edge);font-size:14px;color:var(--ink2)}
 .per100 span:first-child{color:var(--muted);font-weight:600;margin-right:auto}
 .per100 b{font-family:var(--num);font-variant-numeric:tabular-nums;color:var(--ink);font-weight:700}
