@@ -59,6 +59,7 @@ export function fmtDate(ymd, style = 'short') {
   if (!ymd) return '—';
   const d = toDate(ymd);
   const o = style === 'long' ? { weekday: 'long', day: 'numeric', month: 'long' }
+    : style === 'wday' ? { weekday: 'short', day: 'numeric', month: 'long' }
     : style === 'full' ? { day: 'numeric', month: 'long', year: 'numeric' }
     : style === 'month' ? { month: 'long', year: 'numeric' }
     : { day: 'numeric', month: 'short' };

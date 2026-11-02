@@ -70,7 +70,7 @@ export function FoodDays() {
       const es = repos.foodEntry.byDate(date), d = repos.dayEntry.get(date);
       const tot = dayTotals(es, d);
       return html`<div class="lrow dayrow">
-        <button class="ltext linkish" onClick=${() => navigate('/food?d=' + date)}><span class="ll">${fmtDate(date, 'long')}</span>
+        <button class="ltext linkish" onClick=${() => navigate('/food?d=' + date)}><span class="ll">${fmtDate(date, 'wday')}</span>
           <span class="ls">${es.length ? energy.fmt(tot.kcal) + ' ' + energy.unit + ' · ' + t('food.days.entries', { count: es.length }) : t('food.days.none')}</span></button>
         <button class=${'chip' + (d && d.fasting ? ' on' : '')} onClick=${() => save(date, { fasting: !(d && d.fasting) })}>${t('food.flag.fastingShort')}</button>
         <button class=${'chip' + (d && d.partial ? ' on' : '')} onClick=${() => save(date, { partial: !(d && d.partial) })}>${t('food.flag.partialShort')}</button>

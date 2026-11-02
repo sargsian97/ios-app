@@ -1,2 +1,2 @@
 /* Версия выпуска. Должна совпадать с VERSION в web/sw.js (проверяет тест). */
-export const APP_VERSION = '2026-11-02.1';
+export const APP_VERSION = '2026-11-02.2';

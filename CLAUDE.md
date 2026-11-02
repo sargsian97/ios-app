@@ -40,7 +40,7 @@ npm run serve     # http://localhost:8000 — приложение из web/
 
 ```sh
 node tests/e2e/shell.e2e.mjs light   # или dark; снимки — в .e2e-shots/
-# остальные наборы: food, body, goal, checkin, train
+# остальные наборы: food, body, goal, checkin, train; fit — надписи помещаются на 375 и 390 px
 ```
 
 Для проверок используй выдуманную копию `tests/fixtures/backup-sample.json`; личные данные пользователя в git не кладём.

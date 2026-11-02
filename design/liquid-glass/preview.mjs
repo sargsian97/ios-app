@@ -1,8 +1,8 @@
-/* Предпросмотр темы Liquid Glass на настоящем приложении (тема подмешивается в браузере, файлы web/ не меняются).
+/* Снимки экранов приложения для обзора дизайна (тема Liquid Glass уже в web/styles.css).
    Запуск: node design/liquid-glass/preview.mjs [light|dark] [glass|plain] [video]
    Снимки — в design/liquid-glass/shots/, видео — shots/demo-<тема>.webm. Данные — выдуманная копия tests/fixtures. */
 import { serve } from '../../tests/e2e/serve.mjs';
-import { mkdirSync, readFileSync, readdirSync, renameSync } from 'node:fs';
+import { mkdirSync, readdirSync, renameSync } from 'node:fs';
 
 async function loadPlaywright() {
   try { return await import('playwright'); }
@@ -23,13 +23,7 @@ const browser = await chromium.launch();
 const dev = devices['iPhone 13'];
 const ctx = await browser.newContext({ ...dev, colorScheme: SC, locale: 'ru-RU', serviceWorkers: 'block',
   ...(VIDEO ? { deviceScaleFactor: 2, recordVideo: { dir: OUT + 'tmp-video/', size: { width: 780, height: 1688 } } } : {}) });
-if (MODE === 'glass') {
-  const css = readFileSync(HERE + 'glass.css', 'utf8');
-  await ctx.addInitScript((css) => {
-    const add = () => { const s = document.createElement('style'); s.id = 'liquid-glass'; s.textContent = css; document.head.appendChild(s); };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add); else add();
-  }, css);
-}
+/* тема уже в web/styles.css; режим plain оставлен для совместимости имён снимков */
 const p = await ctx.newPage();
 const errs = [];
 p.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });

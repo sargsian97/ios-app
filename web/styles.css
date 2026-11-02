@@ -2,55 +2,55 @@
    Журнал — стили. Один слой: токены → база → каркас → элементы → экраны.
    Классы — те, что используют экраны в web/src/ui (проверяет tests/css.test.js).
    Цвета — семантика iOS (HIG), светлая и тёмная темы; тёмная повторена для :root[data-theme="dark"].
+   Внешний вид — Liquid Glass: база (разделы 1–14) и слой стекла и движения поверх неё (раздел 15).
    ===================================================================== */
 
 /* ---------- 1. Токены ---------- */
 :root{
   color-scheme:light dark;
-  --bg:#F2F2F7; --card:#FFFFFF; --card2:#F2F2F7; --input:#EEEEF2;
-  --ink:#000000; --ink2:rgba(60,60,67,.72); --muted:#6C6C70; --line:rgba(60,60,67,.18);
+  --bg:#EEF0F6; --card:rgba(255,255,255,.5); --card2:rgba(255,255,255,.34); --input:rgba(118,118,128,.12);
+  --ink:#000000; --ink2:rgba(60,60,67,.72); --muted:#6C6C70; --line:rgba(60,60,67,.13);
   --accent:#007AFF; --ok:#34C759; --warn:#FF3B30;
   --k-food:#FF3B30; --k-str:#5856D6; --k-body:#AF52DE; --k-plan:#007AFF; --k-steps:#FF9500; --k-burn:#FF9500; --k-cal:#14B8A6; --c-scale:#8E8E93;
   --m-p:#AF52DE; --m-f:#FF9500; --m-c:#32ADE6; --m-fi:#34C759; --pa:#FF3B30; --pv:#34C759;
-  --glass:rgba(250,250,252,.8); --glass-edge:rgba(0,0,0,.08);
-  --edge:inset 0 0 0 .5px rgba(0,0,0,.04);
-  --lift:0 1px 2px rgba(16,24,40,.05),0 8px 24px rgba(16,24,40,.06);
-  --field-edge:inset 0 0 0 .5px rgba(0,0,0,.05);
-  --r-xl:18px; --r-lg:16px; --r-md:12px; --r-sm:10px; --gap:12px; --hit:44px;
+  --glass:rgba(255,255,255,.62); --glass-edge:rgba(255,255,255,.7);
+  --edge:inset 0 1px 0 rgba(255,255,255,.85),inset 0 0 0 .5px rgba(255,255,255,.55),0 0 0 .5px rgba(20,30,70,.06);
+  --lift:0 1px 2px rgba(20,30,70,.04),0 14px 34px -12px rgba(20,30,70,.16);
+  --field-edge:inset 0 0 0 .5px rgba(0,0,0,.035);
+  --r-xl:26px; --r-lg:22px; --r-md:14px; --r-sm:12px; --gap:12px; --hit:44px;
   --tabrgb:0,122,255; --glow:.18; --press:.62;
   --num:ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;
   --ease:cubic-bezier(.32,.72,0,1);
   --tabh:64px;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px); --card-solid:#FFFFFF; --glass-strong:rgba(250,250,253,.8); --lens:rgba(120,120,128,.15); --thumb:rgba(255,255,255,.96); --sw-off:rgba(120,120,128,.2); --rim-a:rgba(255,255,255,.95); --rim-b:rgba(255,255,255,.18); --rim-c:rgba(255,255,255,.55); --hi:rgba(255,255,255,.85); --float:0 1px 1px rgba(20,30,70,.05),0 18px 44px -10px rgba(20,30,70,.28); --au-a:.5; --au-b:.34; --au-c:.3; --au-teal:40,205,205; --au-ind:94,92,230; --dim:rgba(20,24,40,.22); --spring:cubic-bezier(.34,1.26,.5,1); --blur:blur(22px) saturate(190%); --blur-strong:blur(40px) saturate(200%);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#000000; --card:#1C1C1E; --card2:#2C2C2E; --input:#2C2C2E;
-    --ink:#FFFFFF; --ink2:rgba(235,235,245,.68); --muted:#98989D; --line:rgba(84,84,88,.55);
+    --bg:#030307; --card:rgba(255,255,255,.085); --card2:rgba(255,255,255,.05); --input:rgba(118,118,128,.24);
+    --ink:#FFFFFF; --ink2:rgba(235,235,245,.68); --muted:#98989D; --line:rgba(255,255,255,.1);
     --accent:#0A84FF; --ok:#30D158; --warn:#FF453A;
     --k-food:#FF453A; --k-str:#5E5CE6; --k-body:#BF5AF2; --k-plan:#0A84FF; --k-steps:#FF9F0A; --k-burn:#FF9F0A; --k-cal:#30D5C8; --c-scale:#8C8C96;
     --m-p:#BF5AF2; --m-f:#FF9F0A; --m-c:#64D2FF; --m-fi:#30D158; --pa:#FF453A; --pv:#30D158;
-    --glass:rgba(28,28,30,.8); --glass-edge:rgba(255,255,255,.12);
-    --edge:inset 0 0 0 .5px rgba(255,255,255,.07);
-    --lift:0 1px 0 rgba(255,255,255,.03) inset,0 10px 30px rgba(0,0,0,.4);
-    --field-edge:inset 0 0 0 .5px rgba(255,255,255,.06);
-    --glow:.3;
-  }
+    --glass:rgba(34,34,40,.55); --glass-edge:rgba(255,255,255,.14);
+    --edge:inset 0 1px 0 rgba(255,255,255,.1),inset 0 0 0 .5px rgba(255,255,255,.08);
+    --lift:0 18px 40px -14px rgba(0,0,0,.6);
+    --field-edge:inset 0 0 0 .5px rgba(255,255,255,.05);
+    --glow:.3; --card-solid:#1C1C1E; --glass-strong:rgba(30,30,36,.82); --lens:rgba(255,255,255,.13); --thumb:rgba(255,255,255,.2); --sw-off:rgba(120,120,128,.36); --rim-a:rgba(255,255,255,.34); --rim-b:rgba(255,255,255,.04); --rim-c:rgba(255,255,255,.14); --hi:rgba(255,255,255,.14); --float:0 20px 50px -10px rgba(0,0,0,.7); --au-a:.42; --au-b:.2; --au-c:.3; --dim:rgba(0,0,0,.45);
+}
 }
 :root[data-theme="dark"]{
-  --bg:#000000; --card:#1C1C1E; --card2:#2C2C2E; --input:#2C2C2E;
-  --ink:#FFFFFF; --ink2:rgba(235,235,245,.68); --muted:#98989D; --line:rgba(84,84,88,.55);
+  --bg:#030307; --card:rgba(255,255,255,.085); --card2:rgba(255,255,255,.05); --input:rgba(118,118,128,.24);
+  --ink:#FFFFFF; --ink2:rgba(235,235,245,.68); --muted:#98989D; --line:rgba(255,255,255,.1);
   --accent:#0A84FF; --ok:#30D158; --warn:#FF453A;
   --k-food:#FF453A; --k-str:#5E5CE6; --k-body:#BF5AF2; --k-plan:#0A84FF; --k-steps:#FF9F0A; --k-burn:#FF9F0A; --k-cal:#30D5C8; --c-scale:#8C8C96;
   --m-p:#BF5AF2; --m-f:#FF9F0A; --m-c:#64D2FF; --m-fi:#30D158; --pa:#FF453A; --pv:#30D158;
-  --glass:rgba(28,28,30,.8); --glass-edge:rgba(255,255,255,.12);
-  --edge:inset 0 0 0 .5px rgba(255,255,255,.07);
-  --lift:0 1px 0 rgba(255,255,255,.03) inset,0 10px 30px rgba(0,0,0,.4);
-  --field-edge:inset 0 0 0 .5px rgba(255,255,255,.06);
-  --glow:.3;
-}
+  --glass:rgba(34,34,40,.55); --glass-edge:rgba(255,255,255,.14);
+  --edge:inset 0 1px 0 rgba(255,255,255,.1),inset 0 0 0 .5px rgba(255,255,255,.08);
+  --lift:0 18px 40px -14px rgba(0,0,0,.6);
+  --field-edge:inset 0 0 0 .5px rgba(255,255,255,.05);
+  --glow:.3; --card-solid:#1C1C1E; --glass-strong:rgba(30,30,36,.82); --lens:rgba(255,255,255,.13); --thumb:rgba(255,255,255,.2); --sw-off:rgba(120,120,128,.36); --rim-a:rgba(255,255,255,.34); --rim-b:rgba(255,255,255,.04); --rim-c:rgba(255,255,255,.14); --hi:rgba(255,255,255,.14); --float:0 20px 50px -10px rgba(0,0,0,.7); --au-a:.42; --au-b:.2; --au-c:.3; --dim:rgba(0,0,0,.45);}
 
 /* ---------- 2. База ---------- */
 *,*::before,*::after{box-sizing:border-box}
@@ -91,9 +91,7 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .i{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 .spin{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid color-mix(in srgb,var(--ink) 20%,transparent);border-top-color:var(--accent);animation:spin .8s linear infinite;vertical-align:-2px;margin-left:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
-@keyframes sheetIn{from{transform:translate(-50%,100%)}to{transform:translate(-50%,0)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes popIn{from{transform:scale(1.08);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes scanLine{0%,100%{transform:translateY(-36px)}50%{transform:translateY(36px)}}
 @keyframes progpulse{50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--k-str) 25%,transparent)}}
 
@@ -821,3 +819,222 @@ input:focus-visible,textarea:focus-visible{outline:none}
   button,.tab,.wk-set,.wk-rest-bar i{transition:none !important}
 }
 @media (max-width:360px){.wk-pnums{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* ---------- 15. Liquid Glass: стекло, живой фон, движение ----------
+   Контент — полупрозрачное стекло над живым фоном без размытия (дёшево);
+   настоящее размытие — только у плавающего: вкладки, шторки, окна, тосты, липкие шапки. */
+/* процент кольца калорий — анимируемое число */
+@property --p{syntax:'<number>';inherits:true;initial-value:0}
+
+/* 15.1 Живой фон: мягкое «северное сияние» в цвет раздела */
+html{background:var(--bg)}
+body{background:transparent}
+body::before{content:'';position:fixed;z-index:-1;inset:-30vmax;pointer-events:none;
+  background:
+    radial-gradient(42vmax 36vmax at 30% 30%,rgba(var(--tabrgb),var(--au-a)),transparent 70%),
+    radial-gradient(38vmax 34vmax at 74% 34%,rgba(var(--au-teal),var(--au-b)),transparent 70%),
+    radial-gradient(44vmax 38vmax at 62% 72%,rgba(var(--au-ind),var(--au-c)),transparent 70%),
+    radial-gradient(34vmax 30vmax at 28% 76%,rgba(var(--tabrgb),calc(var(--au-a) * .6)),transparent 70%);
+  animation:aurora 36s ease-in-out infinite alternate;transition:background .6s}
+@keyframes aurora{
+  0%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}
+  50%{transform:translate3d(5vmax,-4vmax,0) rotate(14deg) scale(1.08)}
+  100%{transform:translate3d(-4vmax,5vmax,0) rotate(-10deg) scale(1.04)}}
+/* стекло под строкой состояния (в PWA контент уходит под неё) */
+body::after{content:'';position:fixed;z-index:20;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);pointer-events:none;
+  -webkit-backdrop-filter:blur(14px) saturate(180%);backdrop-filter:blur(14px) saturate(180%);
+  -webkit-mask:linear-gradient(#000 55%,transparent);mask:linear-gradient(#000 55%,transparent)}
+
+/* 15.2 Кромка света у стеклянных поверхностей */
+:where(.card,.list,.dtile,.mtile,.opt,.searchbox,.dnav,.modal .box){position:relative}
+.searchbox{border-radius:999px}
+.card::after,.list::after,.dtile::after,.mtile::after,.opt::after,.searchbox::after,.dnav::after,.modal .box::after,
+.tabs::after,.fab::after,.wk-rest::after,.selbar::after,.toast::after,.upd::after,.wk-live::after,.platebar::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;z-index:2;
+  background:linear-gradient(155deg,var(--rim-a),var(--rim-b) 32%,transparent 52%,var(--rim-b) 70%,var(--rim-c));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+
+/* 15.3 База: заголовки, поля, кнопки */
+h1{font-weight:800;letter-spacing:-.6px}
+.ltitle{margin-left:10px}
+input,textarea,select{border-radius:var(--r-md)}
+input:focus,textarea:focus,select:focus{background:var(--card-solid)}
+button{border-radius:999px;transition:transform .45s var(--spring),filter .2s,background-color .25s,box-shadow .25s,color .2s,opacity .2s}
+button:active:not(:disabled){transition-duration:.08s,.08s,.25s,.25s,.2s,.2s}
+button.primary{background-image:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,0) 58%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(0,0,0,.08),0 10px 24px -6px color-mix(in srgb,var(--accent) 55%,transparent)}
+button.small:not(.primary):not(.danger){box-shadow:inset 0 1px 0 var(--hi)}
+button.ghost{background:var(--card);box-shadow:var(--edge),0 4px 12px -4px rgba(0,0,0,.15)}
+/* «наполненные» цветом элементы — глянцевый блик сверху */
+.chip.on,.mealchip,.chk.on,.ck.on,.gy-ic.on,.gy-bump.on,.keybar .go,.wk-filter .chip.on,.wk-chips.pick .chip.on,.opt.on .optck,.wk-ok,.cgrid .cc.on,.sw.on{
+  background-image:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 60%)}
+.lico,.tbadge,.obicon{background-image:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0) 62%);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 0 0 .5px rgba(255,255,255,.2),0 4px 10px -3px rgba(0,0,0,.2)}
+.lico{border-radius:9px}
+
+/* 15.4 Карточки и списки */
+.card,.list,.dtile,.mtile,.opt,.wk-tiles div{-webkit-backdrop-filter:none;backdrop-filter:none}
+.list .lrow:active:not(:disabled){background:color-mix(in srgb,var(--ink) 7%,transparent)}
+.banner{border-radius:var(--r-lg);box-shadow:inset 0 1px 0 var(--hi)}
+.welcome{background-image:radial-gradient(120% 100% at 0 0,color-mix(in srgb,var(--accent) 20%,transparent),transparent 62%)}
+.dtile{background-image:radial-gradient(150% 120% at 0% 0%,color-mix(in srgb,var(--cc) 22%,transparent),transparent 60%)}
+.dtile:active:not(:disabled){opacity:1;transform:scale(.97)}
+.mtile:active:not(:disabled),.opt:active:not(:disabled),.fbanner:active:not(:disabled){transform:scale(.98);filter:none}
+.hist-day .list{background:var(--card2)}
+/* строка со свайпом: красная подложка видна только во время свайпа (строка теперь полупрозрачная) */
+.swipe-in{background:transparent}
+.swipe-del{opacity:0;transition:opacity .15s}
+.swipe:has(.swipe-in[style*="translate"]) .swipe-del{opacity:1}
+.swipe:has(.swipe-in[style*="translate"]) .swipe-in{background:var(--card-solid)}
+
+/* 15.5 Переключатели */
+.pills{background:var(--input);border-radius:999px;box-shadow:var(--field-edge)}
+.pill{border-radius:999px;transition:color .25s,background-color .25s,box-shadow .3s}
+:root:root .pill.on{background:var(--thumb);color:var(--ink);box-shadow:inset 0 1px 0 var(--hi),0 1px 2px rgba(0,0,0,.08),0 4px 14px -2px rgba(0,0,0,.16);animation:lensIn .45s var(--spring)}
+@keyframes lensIn{from{transform:scale(.9);opacity:.6}to{transform:scale(1);opacity:1}}
+:root:root .sw:not(.on){background-color:var(--sw-off)}
+.sw{transition:background-color .3s}
+.sw i{transition:left .4s var(--spring),width .3s var(--spring);box-shadow:0 3px 8px rgba(0,0,0,.18),0 0 0 .5px rgba(0,0,0,.04)}
+.sw:active i{width:34px}
+.sw.on:active i{left:15px}
+.chk.on,.ck.on,.opt.on .optck,.wk-warm.done .ok{animation:pop .45s var(--spring)}
+@keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+/* 15.6 Полоски и кольцо: рост при появлении */
+.bar i,.mbar i,.fmac i b,.obprog i,.nut-bar i,.wk-rest-bar i{transform-origin:left center;animation:growX .9s var(--ease) both}
+.bar i,.mbar i,.fmac i b,.obprog i{box-shadow:inset 0 1px 0 rgba(255,255,255,.35);transition:width .6s var(--ease)}
+@keyframes growX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.nw-bars i,.minibars i{transform-origin:bottom;animation:growY .8s var(--ease) both}
+.nw-bars i:nth-child(2),.minibars .mb:nth-child(2) i{animation-delay:.04s}
+.nw-bars i:nth-child(3),.minibars .mb:nth-child(3) i{animation-delay:.08s}
+.nw-bars i:nth-child(4),.minibars .mb:nth-child(4) i{animation-delay:.12s}
+.nw-bars i:nth-child(5),.minibars .mb:nth-child(5) i{animation-delay:.16s}
+.nw-bars i:nth-child(6),.minibars .mb:nth-child(6) i{animation-delay:.2s}
+.nw-bars i:nth-child(7),.minibars .mb:nth-child(7) i{animation-delay:.24s}
+@keyframes growY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.fring{position:relative;background:none}
+.fring::before{content:'';position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from -90deg at 50% 50%,var(--rc,var(--k-food)) calc(var(--p) * 1%),var(--input) 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 8px),#000 calc(100% - 7.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 8px),#000 calc(100% - 7.5px));
+  animation:ringIn 1.1s var(--ease) both}
+.fring.over{background:none;--rc:var(--warn)}
+.fring i{position:relative;background:none}
+@keyframes ringIn{from{--p:0}}
+.ch-d{stroke:var(--card-solid)}
+.ch-tip{background:var(--glass-strong);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-radius:16px;box-shadow:var(--edge),var(--float)}
+
+/* 15.7 Навигация: плавающая стеклянная панель с «линзой» */
+.tabs{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-radius:999px;padding:5px;
+  box-shadow:inset 0 1px 0 var(--hi),0 1px 1px rgba(0,0,0,.04),0 16px 40px -8px rgba(0,0,0,.28)}
+.tabs::before{content:'';position:absolute;z-index:0;top:5px;bottom:5px;left:5px;width:calc((100% - 10px) / 5);border-radius:999px;
+  background:var(--lens);box-shadow:inset 0 1px 0 var(--hi),inset 0 0 0 .5px var(--glass-edge);
+  transform:translateX(calc(var(--ti,0) * 100%));transition:transform .55s var(--spring),opacity .2s}
+.tabs:has(.tab:nth-child(2).on){--ti:1}
+.tabs:has(.tab:nth-child(3).on){--ti:2}
+.tabs:has(.tab:nth-child(4).on){--ti:3}
+.tabs:has(.tab:nth-child(5).on){--ti:4}
+.tabs:not(:has(.tab.on))::before{opacity:0}
+.tab{position:relative;z-index:1;border-radius:999px;height:56px}
+.tab.on{background:transparent}
+.tab .i{transition:transform .45s var(--spring)}
+.tab.on .i{transform:scale(1.08)}
+.tab:active:not(:disabled) .i{transform:scale(.86)}
+@supports not (selector(:has(*))){.tabs::before{display:none}.tab.on{background:var(--lens)}}
+
+/* липкие шапки — «край прокрутки»: размытие, тающее книзу */
+.fhead{background:none}
+.wk-head{background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.fhead::before,.wk-head::before{content:'';position:absolute;z-index:-1;left:0;right:0;top:0;bottom:-22px;pointer-events:none;
+  -webkit-backdrop-filter:blur(16px) saturate(180%);backdrop-filter:blur(16px) saturate(180%);
+  -webkit-mask:linear-gradient(#000 calc(100% - 40px),transparent);mask:linear-gradient(#000 calc(100% - 40px),transparent)}
+.dnav{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);box-shadow:inset 0 1px 0 var(--hi),0 10px 28px -10px rgba(0,0,0,.25)}
+.dnav .ghost{background:var(--input);box-shadow:none}
+.back{transition:opacity .2s}
+.back:active:not(:disabled){transform:none;filter:none;opacity:.5}
+
+/* 15.8 Плавающие элементы */
+.fab{background:color-mix(in srgb,var(--k-food) 86%,transparent);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  background-image:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0) 60%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 14px 30px -6px color-mix(in srgb,var(--k-food) 60%,transparent);
+  animation:fabIn .6s var(--spring) backwards}
+@keyframes fabIn{from{opacity:0;transform:translateX(-50%) translateY(20px) scale(.9)}to{opacity:1;transform:translateX(-50%)}}
+.fab:active:not(:disabled){transform:translateX(-50%) scale(.95)}
+.selbar,.wk-rest,.upd{background:var(--glass-strong);-webkit-backdrop-filter:var(--blur-strong);backdrop-filter:var(--blur-strong);box-shadow:inset 0 1px 0 var(--hi),var(--float)}
+.selbar{border-radius:999px}
+.wk-rest{border-radius:28px;animation:floatIn .5s var(--spring) backwards}
+.wk-rest-bar{background:transparent;margin:0 22px}
+.wk-rest-bar i{border-radius:4px}
+.upd{border-radius:999px;animation:floatDown .5s var(--spring) backwards}
+.wk-live,.platebar{-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-radius:999px;
+  background-image:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,0) 60%);animation:floatIn .5s var(--spring) backwards}
+.wk-live{background-color:color-mix(in srgb,var(--k-str) 84%,transparent);height:46px;padding-left:16px}
+.platebar{background-color:color-mix(in srgb,var(--k-food) 86%,transparent)}
+.pb-go{border-radius:999px}
+.toast{background:var(--glass-strong);color:var(--ink);-webkit-backdrop-filter:var(--blur-strong);backdrop-filter:var(--blur-strong);border-radius:999px;
+  box-shadow:inset 0 1px 0 var(--hi),var(--float);animation:floatIn .45s var(--spring) backwards}
+.toast .small{background:var(--input);color:var(--accent)}
+.keybar{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-top:0;box-shadow:inset 0 .5px 0 var(--glass-edge),0 -8px 24px -8px rgba(0,0,0,.12)}
+.keybar button{border-radius:12px;background:var(--input)}
+.keybar .done{background:transparent}
+@keyframes floatIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes floatDown{from{opacity:0;transform:translateY(-16px) scale(.96)}to{opacity:1;transform:none}}
+
+/* 15.9 Шторки и окна */
+.sheet-bg{background:var(--dim);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.sheet{bottom:6px;width:calc(100% - 12px);max-height:calc(92vh - 6px);border-radius:34px;
+  background:var(--glass-strong);-webkit-backdrop-filter:var(--blur-strong);backdrop-filter:var(--blur-strong);
+  box-shadow:inset 0 1px 0 var(--hi),inset 0 0 0 .5px var(--glass-edge),0 -10px 50px -6px rgba(0,0,0,.35);
+  padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.sheet.in{animation:sheetIn .55s var(--ease) both}
+@keyframes sheetIn{from{transform:translate(-50%,calc(100% + 24px))}to{transform:translate(-50%,0)}}
+.sheet .card,.sheet .list{background:var(--card2)}
+.sheet .card::after,.sheet .list::after{display:none}
+.grab{width:36px;background:color-mix(in srgb,var(--ink) 22%,transparent)}
+.modal{background:var(--dim);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.modal .box{background:var(--glass-strong);-webkit-backdrop-filter:var(--blur-strong);backdrop-filter:var(--blur-strong);border-radius:32px;padding:24px 18px 18px;
+  box-shadow:inset 0 1px 0 var(--hi),0 30px 70px -10px rgba(0,0,0,.45)}
+.modal.in .box{animation:popIn .5s var(--spring) both}
+@keyframes popIn{from{transform:scale(.86);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* 15.10 Появление экрана и карточек */
+.wrap{animation:screenIn .35s ease backwards}
+@keyframes screenIn{from{opacity:0}to{opacity:1}}
+/* только кнопки-плитки: внутри них не бывает шторок, а transform/opacity у предка сломали бы position:fixed */
+.dtile,.mtile,.opt{animation:rise .55s var(--ease) backwards}
+.dgrid>:nth-child(2),.mtiles>:nth-child(2),.optlist>:nth-child(2){animation-delay:.05s}
+.dgrid>:nth-child(3),.mtiles>:nth-child(3),.optlist>:nth-child(3){animation-delay:.1s}
+.dgrid>:nth-child(4),.mtiles>:nth-child(4),.optlist>:nth-child(4){animation-delay:.15s}
+.dgrid>:nth-child(n+5),.mtiles>:nth-child(n+5),.optlist>:nth-child(n+5){animation-delay:.2s}
+@keyframes rise{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+
+/* 15.11 Движение и запасные варианты */
+@media (prefers-reduced-motion: reduce){
+  body::before,.wrap,.dtile,.mtile,.opt,.fab,.wk-rest,.wk-live,.platebar,.toast,.upd,.pill.on,
+  .chk.on,.ck.on,.opt.on .optck,.wk-warm.done .ok,.bar i,.mbar i,.fmac i b,.obprog i,.nut-bar i,.wk-rest-bar i,
+  .nw-bars i,.minibars i,.fring::before,.sheet.in,.modal.in .box{animation:none !important}
+  .tabs::before,.tab .i,.sw i{transition:none !important}
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .tabs,.dnav,.sheet,.modal .box,.toast,.selbar,.wk-rest,.upd,.keybar,.ch-tip{background:var(--card-solid)}
+}
+
+/* 15.12 Типографика: системный шрифт (SF на iPhone) с трекингом по размеру, как в iOS,
+   ровные переносы, «стеклянные» крупные цифры */
+body{letter-spacing:-.011em;font-kerning:normal;font-optical-sizing:auto;font-feature-settings:"kern","calt"}
+button,input,select,textarea{letter-spacing:inherit}
+h1{line-height:1.08;letter-spacing:-.024em;text-wrap:balance}
+h2,.h2i,.sect,.prog-name,.calt,.sh-top b,.wk-today-h b,.exn{letter-spacing:-.018em;text-wrap:balance}
+.hint,.lfoot,.about-p,.ob-p,.obhero p,.disclaimer p,.modal .box p,.wk-prev,.fm,.dt-s{text-wrap:pretty}
+.ll,.fn,.opt b,.togrow b{letter-spacing:-.016em}
+.ls,.fm,.hint,.lfoot,.dt-s,.tg{letter-spacing:-.004em}
+.ltitle,.rl,.wk-cols,.gy-cols,.wk-rest-t small,.cw,.ttab th,.wk-grp{letter-spacing:.06em}
+.tab{letter-spacing:.005em}
+.fs-big,.wh-v b,.dt-v b,.big,.pc-k b,.nut-big b,.mt-v b,.wk-weekn b,.wk-tiles b,.wk-rest-t b,.stepper b,.bigin{letter-spacing:-.03em;font-feature-settings:"tnum","kern"}
+/* крупные цифры — с мягким светом сверху вниз, как гравировка на стекле */
+.fs-big:not(.over),.wh-v b,.pc-k b{background:linear-gradient(180deg,var(--ink) 35%,color-mix(in srgb,var(--ink) 68%,transparent));-webkit-background-clip:text;background-clip:text;color:transparent}
+/* подписи не переносятся и не вылезают: короткие кнопки — в одну строку, сегменты — ужимаются и при крайней нужде аккуратно в две */
+button.small,.chip,.lbadge,.status,.tstatus,.mealchip,.wk-mine{white-space:nowrap}
+.pill{height:auto;min-height:34px;padding:4px 6px;line-height:1.15;font-size:clamp(12.5px,3.6vw,14px)}
+.pill.sm{min-height:32px}
+.top h1{overflow-wrap:anywhere}
+.lrow .ll{overflow-wrap:anywhere}

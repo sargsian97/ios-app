@@ -50,7 +50,7 @@ export function More() {
       <${Row} icon="save" color="#14B8A6" label=${t('backup.title')} sub=${t('more.backup.sub')} href="/more/backup"/>
     <//>
     <${List} title=${t('more.about')}>
-      <${Row} icon="info" color="#34C759" label=${t('about.title')} value=${APP_VERSION} href="/more/about"/>
+      <${Row} icon="info" color="#34C759" label=${t('about.title')} href="/more/about"/>
     <//>
   <//>`;
 }
