@@ -104,12 +104,12 @@ export function History({ route }) {
           <span class="lico" style="--cc:var(--k-str)"><${Icon} name="train"/></span>
           <span class="ltext"><span class="ll">${t('hist.train')}</span><span class="ls">${t('hist.noTrain')}</span></span>
           <${Icon} name="right" cls="chev"/></button>`}
-        <button class="lrow" type="button" onClick=${() => navigate('/more/body/history')}>
+        <button class="lrow" type="button" onClick=${() => navigate('/body/history')}>
           <span class="lico" style="--cc:var(--k-body)"><${Icon} name="scale"/></span>
           <span class="ltext"><span class="ll">${t('hist.weight')}</span></span>
           <span class="lv">${weigh ? fmtWeight(weigh.weightKg, units) + ' ' + weightUnit(units) : '—'}</span>
           <${Icon} name="right" cls="chev"/></button>
-        <button class="lrow" type="button" onClick=${() => navigate('/more/body')}>
+        <button class="lrow" type="button" onClick=${() => navigate('/body')}>
           <span class="lico" style="--cc:var(--k-steps)"><${Icon} name="steps"/></span>
           <span class="ltext"><span class="ll">${t('hist.steps')}</span></span>
           <span class="lv">${steps != null ? fmtNum(steps) : '—'}</span>

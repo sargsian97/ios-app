@@ -21,7 +21,7 @@ export function Cycle() {
   const shift = (k) => { const d = new Date(y, m - 1 + k, 1); setMonth(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')); };
   const predicted = s.known ? new Set(Array.from({ length: s.avgPeriod || 5 }, (_, i) => addDays(s.nextStart, i))) : new Set();
   const dp = repos.dietProfile.get();
-  return html`<${Page} title=${t('body.cycle')} back="/more/body" backLabel=${t('body.title')}>
+  return html`<${Page} title=${t('body.cycle')} back="/body" backLabel=${t('body.title')}>
     <${Card}>
       ${s.known ? html`<div class="kv"><span>${t('body.cycle.day')}</span><span>${s.cycleDay}${s.inPeriod ? ' · ' + t('body.cycle.inPeriod') : ''}</span></div>
         <div class="kv"><span>${t('body.cycle.next')}</span><span>${fmtDate(s.nextStart, 'full')}</span></div>

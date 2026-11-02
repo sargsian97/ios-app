@@ -108,6 +108,7 @@ async function boot() {
     sync: pickSyncProvider(),
     updates: setupUpdates(store)
   };
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   if (!location.hash) history.replaceState(null, '', '#/');
   if (window.JOURNAL_DEBUG) window.__ctx = ctx; /* только для проверок в браузере (tests/e2e) */
   mountApp(root, ctx);

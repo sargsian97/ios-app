@@ -1,5 +1,5 @@
 /* Тело: тренд веса с графиком и прогнозом цели, замеры, процент жира и отношения, шаги, фото, цикл. */
-import { html, useApp, useData, useState, navigate, todayYmd } from '../../core.js';
+import { html, useApp, useData, useState, useEffect, navigate, todayYmd } from '../../core.js';
 import { Page, Card } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum, fmtFix, fmtDate } from '../../../i18n/index.js';
@@ -32,7 +32,9 @@ export function Body({ route }) {
   const units = profile.units;
   const [period, setPeriod] = useState(30);
   const [metric, setMetric] = useState('weight');
-  const [sheet, setSheet] = useState(route.query.open === 'weigh' ? { kind: 'weigh' } : route.query.open === 'measure' ? { kind: 'measure' } : null);
+  const [sheet, setSheet] = useState(null);
+  /* ?open=weigh|measure открывает шторку и убирает параметр из адреса (работает и когда экран уже открыт) */
+  useEffect(() => { const o = route.query.open; if (o === 'weigh' || o === 'measure') { setSheet({ kind: o }); navigate('/body', { replace: true }); } }, [route.query.open]);
   const w = useWeight();
   const goal = repos.goal.active();
   const bodyEntries = repos.bodyEntry.list();
@@ -76,8 +78,8 @@ export function Body({ route }) {
     : [{ key: metric, label: measureLabel(metric), kind: 'line', color: 'var(--k-body)', points: metricPts }];
   const goalLine = metric === 'weight' && goal && goal.targetWeightKg ? { y: toDisplay('weight', goal.targetWeightKg, units), label: t('body.goalShort') } : null;
 
-  return html`<${Page} title=${t('body.title')} icon="scale" color="linear-gradient(135deg,#DA7DF3,#AF52DE)" back="/more" backLabel=${t('nav.more')}
-      right=${html`<button class="small" onClick=${() => navigate('/more/body/history')}>${t('body.history')}</button>`}>
+  return html`<${Page} title=${t('body.title')} icon="scale" color="linear-gradient(135deg,#DA7DF3,#AF52DE)"
+      right=${html`<button class="small" onClick=${() => navigate('/body/history')}>${t('body.history')}</button>`}>
     <div class="card pad whero">
       <div class="row wh-top">
         <div class="grow">
@@ -128,7 +130,7 @@ export function Body({ route }) {
 
     <${Card} title=${t('body.photos')} icon="camera" color="#FF9500">
       <${PhotoThumbs} limit=${4}/>
-      <button class="small" style="margin-top:10px" onClick=${() => navigate('/more/body/photos')}>${t('body.photos.all')}</button>
+      <button class="small" style="margin-top:10px" onClick=${() => navigate('/body/photos')}>${t('body.photos.all')}</button>
     <//>
 
     ${showCycle ? html`<${Card} title=${t('body.cycle')} icon="heart" color="#FF2D55">
@@ -136,7 +138,7 @@ export function Body({ route }) {
         <div class="kv"><span>${t('body.cycle.next')}</span><span>${fmtDate(cyc.nextStart)}</span></div>
         <div class="kv"><span>${t('body.cycle.avg')}</span><span>${t('body.cycle.days', { count: cyc.avgLength })}</span></div>`
       : html`<div class="hint" style="margin:0 0 8px">${t('body.cycle.empty')}</div>`}
-      <button class="small" style="margin-top:10px" onClick=${() => navigate('/more/body/cycle')}>${t('body.cycle.open')}</button>
+      <button class="small" style="margin-top:10px" onClick=${() => navigate('/body/cycle')}>${t('body.cycle.open')}</button>
     <//>` : null}
 
     <${WeighSheet} open=${sheet && sheet.kind === 'weigh'} entry=${sheet && sheet.entry} onClose=${() => setSheet(null)}/>

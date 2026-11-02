@@ -28,7 +28,6 @@ export function More() {
       <${Row} icon="flame" color="#FF9500" label=${t('tdee.title')} sub=${t('more.tdee.sub')} href="/more/expenditure"/>
     <//>
     <${List} title=${t('more.journal')}>
-      <${Row} icon="scale" color="#AF52DE" label=${t('more.body')} href="/more/body"/>
       <${Row} icon="cal" color="#14B8A6" label=${t('more.history')} href="/more/history"/>
       <${Row} icon="list" color="#007AFF" label=${t('more.templates')} href="/more/templates"/>
     <//>

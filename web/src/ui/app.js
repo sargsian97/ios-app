@@ -1,7 +1,9 @@
-/* Корень приложения: экраны по адресу, нижняя панель, «+», плашка обновления. */
-import { html, render, useApp, useData, useRoute, navigate, useEffect, useState, AppCtx, todayYmd } from './core.js';
+/* Корень приложения: экраны по адресу, нижняя панель из 5 вкладок, полоска идущей тренировки, тосты, плашка обновления. */
+import { html, render, useApp, useData, useRoute, navigate, useEffect, useLayoutEffect, useState, AppCtx, takeScroll, todayYmd } from './core.js';
 import { Icon } from './icons.js';
-import { Sheet } from './kit.js';
+import { ToastHost } from './toast.js';
+import { useNow } from './train/timer.js';
+import { fmtClock } from './train/catalog.js';
 import { t } from '../i18n/index.js';
 import { Dashboard } from './screens/dashboard.js';
 import { More, About } from './screens/more.js';
@@ -72,10 +74,10 @@ const ROUTES = [
   ['/more/checkin-settings', CheckinSettings],
   ['/more/micro', MicroGoals],
   ['/more/profile', Profile],
-  ['/more/body', Body],
-  ['/more/body/photos', Photos],
-  ['/more/body/history', BodyHistory],
-  ['/more/body/cycle', Cycle],
+  ['/body', Body],
+  ['/body/photos', Photos],
+  ['/body/history', BodyHistory],
+  ['/body/cycle', Cycle],
   ['/more/settings', Settings],
   ['/more/about', About]
 ];
@@ -90,40 +92,34 @@ function screenFor(path) {
 }
 
 /* Цвет свечения фона по разделу */
-const GLOW = { '/': '10,132,255', '/food': '255,69,58', '/train': '138,135,255', '/more': '142,142,147' };
+const GLOW = { '/': '10,132,255', '/food': '255,69,58', '/train': '138,135,255', '/body': '175,82,222', '/more': '142,142,147' };
 
 function tabOf(path) {
   if (path === '/') return 'home';
   if (path.startsWith('/food')) return 'food';
   if (path.startsWith('/train')) return 'train';
+  if (path.startsWith('/body')) return 'body';
   return 'more';
 }
 
-function TabBar({ path, onPlus }) {
+const TABS = [['home', '/', 'nav.dashboard', 'var(--k-plan)'], ['food', '/food', 'nav.food', 'var(--k-food)'], ['train', '/train', 'nav.train', 'var(--k-str)'], ['body', '/body', 'nav.body', 'var(--k-body)', 'scale'], ['more', '/more', 'nav.more', 'var(--muted)']];
+
+function TabBar({ path }) {
   const cur = tabOf(path);
-  const T = [['home', '/', 'nav.dashboard', 'var(--k-plan)'], ['food', '/food', 'nav.food', 'var(--k-food)'], ['plus'], ['train', '/train', 'nav.train', 'var(--k-str)'], ['more', '/more', 'nav.more', 'var(--muted)']];
-  return html`<nav class="tabs" aria-label=${t('nav.aria')}>${T.map(([k, href, label, color]) => k === 'plus'
-    ? html`<button class="tab plus" aria-label=${t('nav.add')} onClick=${onPlus}><span class="plusc"><${Icon} name="plus"/></span></button>`
-    : html`<button class=${'tab' + (cur === k ? ' on' : '')} style=${'--tc:' + color} aria-current=${cur === k ? 'page' : null}
-        onClick=${() => (cur === k && path !== href ? navigate(href, { replace: true }) : navigate(href))}><${Icon} name=${k}/>${t(label)}</button>`)}</nav>`;
+  return html`<nav class="tabs" aria-label=${t('nav.aria')}>${TABS.map(([k, href, label, color, icon]) => html`<button class=${'tab' + (cur === k ? ' on' : '')} style=${'--tc:' + color} aria-current=${cur === k ? 'page' : null}
+        onClick=${() => (cur === k && path !== href ? navigate(href, { replace: true }) : navigate(href))}><${Icon} name=${icon || k}/>${t(label)}</button>`)}</nav>`;
 }
 
-function PlusSheet({ open, onClose }) {
-  function go(fn) { onClose(); fn(); }
-  const add = (extra) => navigate('/food/add?d=' + todayYmd() + (extra || ''));
-  const A = [
-    ['search', 'var(--k-food)', 'plus.food', 'plus.food.sub', () => add()],
-    ['camera', '#FF9500', 'plus.photo', 'plus.photo.sub', () => add('&open=photo')],
-    ['barcode', '#30B0C7', 'plus.scan', 'plus.scan.sub', () => add('&open=scan')],
-    ['bolt', '#FFCC00', 'plus.quick', 'plus.quick.sub', () => add('&open=quick')],
-    ['scale', 'var(--k-body)', 'plus.weight', 'plus.weight.sub', () => navigate('/more/body?open=weigh')],
-    ['train', 'var(--k-str)', 'plus.workout', 'plus.workout.sub', () => navigate('/train')]
-  ];
-  return html`<${Sheet} open=${open} onClose=${onClose} title=${t('plus.title')}>
-    <div class="plusgrid">${A.map(([icon, color, label, sub, fn]) => html`<button class=${'pbtn' + (fn ? '' : ' off')} disabled=${!fn} style=${'--cc:' + color} onClick=${fn ? () => go(fn) : null}>
-      <span class="hci"><${Icon} name=${icon}/></span><b>${t(label)}</b><small>${t(sub)}</small>
-    </button>`)}</div>
-  <//>`;
+/* Идёт тренировка, а открыт другой экран: полоска над вкладками с временем и «Продолжить» */
+function LiveBar() {
+  const { repos } = useApp();
+  useData(['workoutSessions']);
+  const s = repos.workoutSession.get('current');
+  const now = useNow(!!s, 1000);
+  if (!s) return null;
+  return html`<button class="wk-live" onClick=${() => navigate('/train/session')}>
+    <${Icon} name="timer"/><span class="grow">${t('train.live')} · ${fmtClock((now - Date.parse(s.startedAt)) / 1000)}</span><b>${t('train.continue')}</b>
+  </button>`;
 }
 
 function UpdateBanner() {
@@ -171,12 +167,16 @@ function Theme() {
 
 export function App() {
   const route = useRoute();
-  const [plus, setPlus] = useState(false);
   const path = route.path;
-  useEffect(() => {
+  /* старые адреса раздела «Тело» */
+  useEffect(() => { if (path.startsWith('/more/body')) navigate(path.replace('/more/body', '/body') + (Object.keys(route.query).length ? '?' + Object.entries(route.query).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&') : ''), { replace: true }); }, [path]);
+  const fullScreen = path === '/train/session' || path.startsWith('/onboarding') || path.startsWith('/checkin');
+  useLayoutEffect(() => {
     const g = GLOW[path] || GLOW['/' + (route.parts[0] || '')] || GLOW['/more'];
     document.body.style.setProperty('--tabrgb', g);
-    window.scrollTo(0, 0);
+    document.body.classList.toggle('no-tabs', fullScreen);
+    const y = takeScroll('#' + path);
+    if (y != null) window.scrollTo(0, y);
   }, [path]);
 
   const Screen = screenFor(path);
@@ -187,9 +187,9 @@ export function App() {
   return html`<${Theme}/>
     <${UpdateBanner}/>
     ${body}
-    ${path.startsWith('/onboarding') || path.startsWith('/checkin') ? null : html`<${TabBar} path=${path} onPlus=${() => setPlus(true)}/>`}
+    ${fullScreen ? null : html`<${LiveBar}/><${TabBar} path=${path}/>`}
     <${TdeeSnapshot}/>
-    <${PlusSheet} open=${plus} onClose=${() => setPlus(false)}/>`;
+    <${ToastHost}/>`;
 }
 
 export function mountApp(el, ctx) {

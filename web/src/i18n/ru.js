@@ -18,11 +18,12 @@ export default {
   'boot.migrate': 'Не удалось обновить данные до новой версии: {e}. Данные не изменены — перезапусти приложение.',
 
   'nav.aria': 'Разделы',
-  'nav.dashboard': 'Обзор',
+  'nav.dashboard': 'Сегодня',
   'nav.food': 'Питание',
   'nav.add': 'Добавить',
   'nav.train': 'Тренировка',
   'nav.more': 'Ещё',
+  'nav.body': 'Тело',
 
   'update.available': 'Доступна новая версия',
   'update.apply': 'Обновить',

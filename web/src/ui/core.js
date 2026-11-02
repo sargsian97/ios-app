@@ -26,12 +26,35 @@ export function parseHash(h) {
 }
 
 let depth = 0; /* сколько переходов внутри приложения можно отменить кнопкой «Назад» */
+/* прокрутка: при переходе вперёд — наверх, при «Назад» — туда, где были, при replace — не трогаем */
+const scrollPos = new Map();
+let navKind = 'pop';
 
 export function navigate(path, { replace = false } = {}) {
   const target = '#' + path;
   if (location.hash === target) return;
+  scrollPos.set(location.hash, window.scrollY);
+  navKind = replace ? 'replace' : 'push';
   if (replace) { history.replaceState(null, '', target); window.dispatchEvent(new HashChangeEvent('hashchange')); }
   else { depth++; location.hash = target; }
+}
+
+/* Куда прокрутить после смены адреса: число или null (не трогать) */
+export function takeScroll(hash) {
+  const kind = navKind;
+  navKind = 'pop';
+  if (kind === 'push') return 0;
+  if (kind === 'replace') return null;
+  return scrollPos.get(hash) || 0;
+}
+
+/* Запрет прокрутки страницы под шторкой; со счётчиком, чтобы вложенные шторки не снимали его раньше времени */
+let locks = 0;
+export function lockScroll() {
+  locks++;
+  document.body.style.overflow = 'hidden';
+  let done = false;
+  return () => { if (done) return; done = true; if (--locks <= 0) { locks = 0; document.body.style.overflow = ''; } };
 }
 
 export function goBack(fallback = '/') {

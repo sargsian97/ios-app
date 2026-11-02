@@ -1,5 +1,5 @@
 /* Строительные блоки экранов. Классы — из web/styles.css (дизайн-система v15–v16). */
-import { html, useEffect, useState, goBack } from './core.js';
+import { html, useEffect, useState, useRef, goBack, lockScroll } from './core.js';
 import { Icon } from './icons.js';
 import { t } from '../i18n/index.js';
 
@@ -63,24 +63,66 @@ export function Field({ label, hint, error, children }) {
   </label>`;
 }
 
-/* Нижняя шторка */
+/* Нижняя шторка: закрывается тапом по фону, Esc, крестиком и свайпом вниз за «ручку» или заголовок */
 export function Sheet({ open, onClose, title, children }) {
   const [shown, setShown] = useState(false);
+  const ref = useRef(null);
   useEffect(() => {
     if (!open) { setShown(false); return; }
     const k = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', k);
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     const tm = setTimeout(() => setShown(true), 450);
-    return () => { document.removeEventListener('keydown', k); document.body.style.overflow = ''; clearTimeout(tm); };
+    return () => { document.removeEventListener('keydown', k); unlock(); clearTimeout(tm); };
   }, [open]);
   if (!open) return null;
+  /* перетаскивание: слушаем окно, без захвата указателя — иначе клик по кнопке в заголовке не доходит до кнопки */
+  const onDown = (e) => {
+    if (e.target.closest('button') || !ref.current) return;
+    const el = ref.current;
+    const d = { y: e.clientY, t: Date.now(), dy: 0 };
+    el.style.transition = 'none';
+    const move = (ev) => { d.dy = Math.max(0, ev.clientY - d.y); el.style.transform = 'translate(-50%,' + d.dy + 'px)'; };
+    const up = () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up);
+      el.style.transition = ''; el.style.transform = '';
+      if (d.dy > 100 || (d.dy > 40 && Date.now() - d.t < 300)) onClose();
+    };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up);
+  };
+  const handle = { onPointerDown: onDown };
   return html`<div class=${'sheet-bg' + (shown ? '' : ' in')} onClick=${onClose}></div>
-    <div class=${'sheet' + (shown ? '' : ' in')} role="dialog" aria-modal="true" aria-label=${title}>
-      <div class="grab"></div>
-      ${title ? html`<div class="sh-top row"><b class="grow">${title}</b><button class="small icn" aria-label=${t('common.close')} onClick=${onClose}><${Icon} name="close" size=${16}/></button></div>` : null}
+    <div ref=${ref} class=${'sheet' + (shown ? '' : ' in')} role="dialog" aria-modal="true" aria-label=${title}>
+      <div class="grab-zone" ...${handle}><div class="grab"></div></div>
+      ${title ? html`<div class="sh-top row" ...${handle}><b class="grow">${title}</b><button class="small icn" aria-label=${t('common.close')} onClick=${onClose}><${Icon} name="close" size=${16}/></button></div>` : null}
       ${children}
     </div>`;
+}
+
+/* Число с кнопками − / +: value — число или null; шаг и пределы; onChange(число|null) */
+export function Stepper({ value, onChange, step = 1, min = 0, max = Infinity, digits = 1, unit = '', label, placeholder = '', mode = 'decimal', big = false }) {
+  const [text, setText] = useState(null);
+  const fmt = (v) => (v == null ? '' : String(Math.round(v * 10 ** digits) / 10 ** digits).replace('.', ','));
+  const parse = (s) => { const v = String(s || '').trim().replace(/\s/g, '').replace(',', '.'); if (v === '') return null; const n = Number(v); return isFinite(n) ? n : null; };
+  const clamp = (v) => Math.min(max, Math.max(min, Math.round(v * 10 ** digits) / 10 ** digits));
+  const bump = (d) => onChange(clamp((value == null ? (placeholder ? parse(placeholder) || 0 : 0) : value) + d));
+  return html`<div class=${'stepper2' + (big ? ' big' : '')}>
+    <button type="button" class="ghost" aria-label=${label ? label + ' −' : '−'} onClick=${() => bump(-step)}>−</button>
+    <label class="st-field"><input inputmode=${mode} value=${text != null ? text : fmt(value)} placeholder=${placeholder} aria-label=${label}
+      onFocus=${(e) => { setText(fmt(value)); setTimeout(() => { try { e.target.select(); } catch (x) { /* iOS */ } }, 0); }}
+      onInput=${(e) => { setText(e.currentTarget.value); onChange(parse(e.currentTarget.value)); }}
+      onBlur=${() => setText(null)}/>${unit ? html`<span>${unit}</span>` : null}</label>
+    <button type="button" class="ghost" aria-label=${label ? label + ' +' : '+'} onClick=${() => bump(step)}>+</button>
+  </div>`;
+}
+
+/* Поле поиска: иконка, очистка, слот справа (например, штрихкод) */
+export function SearchBox({ value, onInput, placeholder, autoFocus = false, right = null, onClear = null, inputRef = null, cls = '' }) {
+  return html`<div class=${'searchbox ' + cls}>
+    <${Icon} name="search"/>
+    <input ref=${inputRef} type="search" placeholder=${placeholder || ''} value=${value} onInput=${(e) => onInput(e.currentTarget.value)} enterkeyhint="search" autocomplete="off" autofocus=${autoFocus || null}/>
+    ${value ? html`<button class="clr" type="button" aria-label=${t('common.clear')} onClick=${() => (onClear ? onClear() : onInput(''))}><${Icon} name="close" size=${14}/></button>` : right}
+  </div>`;
 }
 
 /* Окно подтверждения */

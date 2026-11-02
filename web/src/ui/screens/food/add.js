@@ -1,7 +1,7 @@
 /* Добавление еды: поиск (свои + Open Food Facts + USDA), избранное, история, «тарелка» из нескольких
    продуктов, карточка продукта с порцией, быстрое добавление, штрихкод, фото еды через ИИ. */
 import { html, useApp, useData, useState, useEffect, useRef, navigate, goBack, todayYmd } from '../../core.js';
-import { Sheet, Field, Toggle } from '../../kit.js';
+import { Sheet, Field, Toggle, SearchBox } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum, fmtDate } from '../../../i18n/index.js';
 import { useEnergy, num, nowTime, per100Text, macroLine, Spinner } from '../../food/parts.js';
@@ -51,9 +51,16 @@ export function FoodAdd({ route }) {
   const [q, setQ] = useState('');
   const [online, setOnline] = useState({ busy: false, off: [], usda: [], errors: {} });
   const [item, setItem] = useState(null);
-  const [quick, setQuick] = useState(route.query.open === 'quick');
-  const [photo, setPhoto] = useState(route.query.open === 'photo');
-  const [scan, setScan] = useState(route.query.open === 'scan');
+  const [quick, setQuick] = useState(false);
+  const [photo, setPhoto] = useState(false);
+  const [scan, setScan] = useState(false);
+  /* ?open=quick|photo|scan и ?tab= применяются и когда экран уже открыт, потом убираются из адреса */
+  useEffect(() => {
+    const o = route.query.open;
+    if (o === 'quick') setQuick(true); else if (o === 'photo') setPhoto(true); else if (o === 'scan') setScan(true);
+    if (route.query.tab) setTab(route.query.tab);
+    if (o || route.query.tab) navigate('/food/add?d=' + date + (route.query.t ? '&t=' + route.query.t : ''), { replace: true });
+  }, [route.query.open, route.query.tab]);
   const [plateOpen, setPlateOpen] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -141,11 +148,7 @@ export function FoodAdd({ route }) {
     <div class="top"><h1>${t('food.add.title')}</h1>
       <label class="timechip"><span>${fmtDate(date)}</span><input type="time" value=${time} aria-label=${t('food.time')} onInput=${(e) => setTime(e.currentTarget.value || time)}/></label>
     </div>
-    <div class="searchbox">
-      <${Icon} name="search"/>
-      <input type="search" placeholder=${t('food.search.ph')} value=${q} onInput=${(e) => setQ(e.currentTarget.value)} enterkeyhint="search" autocomplete="off"/>
-      ${q ? html`<button class="clr" aria-label=${t('common.clear')} onClick=${() => setQ('')}><${Icon} name="close" size=${14}/></button>` : null}
-    </div>
+    <${SearchBox} value=${q} onInput=${setQ} placeholder=${t('food.search.ph')}/>
     <div class="scgrid">${shortcuts.map(([icon, label, fn]) => html`<button class="scbtn" onClick=${fn}><${Icon} name=${icon}/><span>${t(label)}</span></button>`)}</div>
     <div class="soonrow"><span>${t('food.ai.text')}</span><span class="soon">${t('common.soon')}</span></div>
     <div class="pills tabs5">${TABS.map(([k, l]) => html`<button class=${'pill' + (tab === k ? ' on' : '')} onClick=${() => setTab(k)}>${t(l)}</button>`)}</div>

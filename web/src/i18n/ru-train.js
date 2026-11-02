@@ -236,6 +236,7 @@ export default {
   'train.rest.over': 'Отдых окончен',
   'train.rest.skip': 'Пропустить',
   'train.rest.start': 'Начать подход',
+  'train.live': 'Тренировка идёт',
   'train.rest.ready': 'Следующий подход',
   'train.rest.work': 'Подход идёт',
   'train.rest.workHint': 'закончил — нажми галочку',

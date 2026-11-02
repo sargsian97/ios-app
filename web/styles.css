@@ -242,23 +242,28 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .tab.on{color:var(--tc,var(--accent));background:color-mix(in srgb,var(--tc,var(--accent)) 16%,transparent)}
 .tab.on .i{fill:currentColor;fill-opacity:.22;stroke-width:2}
 .tab:active:not(:disabled){transform:none;filter:none}
-.tab.plus{flex:0 0 72px}
-.plusc{width:52px;height:52px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 85%,#fff),var(--accent));box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 8px 20px color-mix(in srgb,var(--accent) 45%,transparent);transition:transform .15s}
-.tab.plus:active .plusc{transform:scale(.92)}
-.plusc .i{width:26px;height:26px;stroke-width:2.4}
-.plusgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
-.pbtn{color:var(--ink);display:flex;flex-direction:column;align-items:flex-start;gap:4px;height:auto;min-height:104px;padding:14px;border-radius:var(--r-lg);background:var(--input);box-shadow:var(--field-edge);text-align:left}
-.pbtn .hci{margin-bottom:6px;width:34px;height:34px;border-radius:10px}
-.pbtn .hci .i{width:20px;height:20px}
-.pbtn b{font-size:15px;font-weight:700}
-.pbtn small{font-size:12.5px;color:var(--muted);font-weight:500}
-.pbtn.off,.pbtn:disabled{opacity:.5}
 .fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:6;height:52px;border-radius:26px;padding:0 24px;font-size:16px;font-weight:700;color:#fff;
   background:var(--k-food);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 12px 28px color-mix(in srgb,var(--k-food) 45%,transparent)}
 .fab:active:not(:disabled){transform:translateX(-50%) scale(.97)}
 .selbar,.platebar{position:fixed;z-index:7;left:14px;right:14px;max-width:560px;margin:0 auto;bottom:calc(92px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:6px}
 .selbar{padding:8px 8px 8px 16px;border-radius:22px;background:var(--card);box-shadow:var(--edge),0 14px 34px rgba(0,0,0,.25);font-weight:600;font-size:14px}
 .selbar .small{padding:0 10px}
+
+/* полоска идущей тренировки над вкладками; тост; шторка — зона перетаскивания; степпер */
+.wk-live{position:fixed;z-index:6;left:14px;right:14px;max-width:560px;margin:0 auto;bottom:calc(var(--tabh) + 22px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:8px;height:44px;padding:0 10px 0 12px;border-radius:14px;background:var(--k-str);color:#fff;font-weight:600;font-size:14px;box-shadow:0 10px 26px color-mix(in srgb,var(--k-str) 40%,transparent);text-align:left}
+.wk-live .i{width:18px;height:18px}
+.wk-live b{font-weight:700;background:rgba(255,255,255,.18);padding:4px 10px;border-radius:999px;font-size:13px}
+.toast{position:fixed;z-index:45;left:16px;right:16px;max-width:560px;margin:0 auto;bottom:calc(var(--tabh) + 30px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:8px;min-height:48px;padding:6px 6px 6px 14px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:600;font-size:14px;box-shadow:0 14px 34px rgba(0,0,0,.35);animation:fadeIn .2s ease both}
+.toast .small{background:rgba(255,255,255,.18);color:inherit;height:32px}
+.no-tabs .toast{bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.grab-zone{padding:4px 0 2px;margin:-8px -18px 0;cursor:grab;touch-action:none}
+.sh-top{touch-action:none}
+.stepper2{display:flex;align-items:center;gap:8px}
+.stepper2 .ghost{width:52px;height:52px;border-radius:var(--r-md);font-size:26px;font-weight:500}
+.stepper2 .st-field{flex:1;position:relative;display:flex;align-items:center}
+.stepper2 input{height:52px;text-align:center;font-family:var(--num);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;padding:0 34px 0 14px}
+.stepper2 .st-field span{position:absolute;right:14px;color:var(--muted);font-size:14px;font-weight:600;pointer-events:none}
+.stepper2.big input{height:60px;font-size:30px}
 
 /* ---------- 7. Обзор ---------- */
 .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin:0 0 var(--gap)}
@@ -534,6 +539,8 @@ input:focus-visible,textarea:focus-visible{outline:none}
 
 /* ---------- 12. Тренировки ---------- */
 .wk-page{padding-bottom:190px}
+.no-tabs .wk-page{padding-bottom:140px}
+.no-tabs .wk-rest{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .wk-head{position:sticky;top:0;z-index:6;display:flex;align-items:center;gap:8px;margin:0 -16px 4px;padding:calc(8px + env(safe-area-inset-top,0px)) 16px 8px;background:color-mix(in srgb,var(--bg) 86%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 .wk-head .back{margin-right:auto}
 .wk-head .small{height:34px}

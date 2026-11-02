@@ -185,7 +185,7 @@ await go('#/more/history');
 check('история открывается: календарь и день', await p.locator('.hist-cal').count() === 1 && await p.locator('.hist-day .lrow').count() >= 3);
 
 /* шаги */
-await go('#/more/body');
+await go('#/body');
 const steps = p.getByLabel('Сегодня');
 if (await steps.count()) { await steps.first().fill('12345'); await steps.first().blur(); await wait(400); }
 check('шаги пишутся в новую модель', (await idbList('stepsEntries')).some((s) => s.steps === 12345));

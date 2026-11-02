@@ -54,7 +54,7 @@ export function Photos() {
     if (!comparing) { setView(p); return; }
     setCompare((c) => (c.find((x) => x.id === p.id) ? c.filter((x) => x.id !== p.id) : c.concat([p]).slice(-2)));
   };
-  return html`<${Page} title=${t('body.photos')} back="/more/body" backLabel=${t('body.title')}
+  return html`<${Page} title=${t('body.photos')} back="/body" backLabel=${t('body.title')}
       right=${html`<button class="small" onClick=${() => setAdd(true)}>${t('body.photos.add')}</button>`}>
     <${Segmented} value=${pose} onChange=${setPose} options=${[['all', t('body.pose.all')], ['front', t('body.pose.front')], ['side', t('body.pose.side')], ['back', t('body.pose.back')]]}/>
     <div class="row" style="justify-content:space-between;margin:12px 4px">

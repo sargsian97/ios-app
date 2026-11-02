@@ -59,11 +59,11 @@ export function Dashboard() {
       <${Tile} icon="food" color="var(--k-food)" label=${t('dash.food')} value=${fmtNum(energy)} unit=${t(unitKey('energy', units))}
         sub=${food.count ? t('dash.food.sub', { p: fmtNum(food.p), f: fmtNum(food.f), c: fmtNum(food.c) }) : t('dash.food.empty')} href="/food"/>
       <${Tile} icon="scale" color="var(--k-body)" label=${t('dash.weight')} value=${w ? fmtFix(toDisplay('weight', w.weight, units), 1) : '—'}
-        unit=${w ? t(unitKey('weight', units)) : null} sub=${wSub || t('dash.weight.empty')} href="/more/body"/>
+        unit=${w ? t(unitKey('weight', units)) : null} sub=${wSub || t('dash.weight.empty')} href="/body"/>
       <${Tile} icon="train" color="var(--k-str)" label=${t('dash.train')} value=${fmtNum(trainings)}
         sub=${t('dash.train.sub', { count: trainings })} href="/train"/>
       <${Tile} icon="steps" color="var(--k-steps)" label=${t('dash.steps')} value=${steps != null ? fmtNum(steps) : '—'}
-        sub=${steps != null ? t('dash.steps.sub') : t('dash.steps.empty')} href="/more/body"/>
+        sub=${steps != null ? t('dash.steps.sub') : t('dash.steps.empty')} href="/body"/>
     </div>
     <${GoalEta} trend=${wt.trend} units=${units}/>
     <${NutritionWeek} today=${today}/>

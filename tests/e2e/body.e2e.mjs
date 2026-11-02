@@ -52,7 +52,7 @@ await p.locator('input[type=date]').dispatchEvent('change');
 await p.locator('input[inputmode=decimal]').fill('178');
 await wait(400);
 
-await go('#/more/body');
+await go('#/body');
 await p.waitForSelector('.whero');
 await shot('01-overview');
 const hero = await p.locator('.whero').innerText();
@@ -73,7 +73,7 @@ await p.locator('.pills .pill', { hasText: '7 д' }).click(); await wait(300);
 
 /* взвешивание */
 await p.getByRole('button', { name: 'Взвеситься' }).click(); await wait(500);
-await p.locator('.sheet .bigin').fill('79,4');
+await p.locator('.sheet .stepper2 input').fill('79,4');
 await p.locator('.sheet input[inputmode=decimal]').nth(1).fill('19,5');
 await p.getByRole('button', { name: 'Сохранить' }).click(); await wait(500);
 const s2 = await idbList('scaleEntries');
@@ -112,7 +112,7 @@ check('шаги записаны в stepsEntries', (await idbList('stepsEntries'
 await shot('04-after');
 
 /* фото */
-await go('#/more/body/photos');
+await go('#/body/photos');
 await p.getByRole('button', { name: '+ Фото' }).click(); await wait(400);
 const png = new URL('../../web/icons/icon-192.png', import.meta.url).pathname;
 const fc2 = p.waitForEvent('filechooser');
@@ -124,14 +124,14 @@ check('фото в галерее', await p.locator('.pcell img').count() === 1)
 await shot('05-photos');
 
 /* цикл (включаем показ для мужского профиля) */
-await go('#/more/body/cycle');
+await go('#/body/cycle');
 await p.locator('.togrow .sw').click(); await wait(200);
 await p.getByRole('button', { name: 'Месячные сегодня' }).click(); await wait(400);
 check('отметка цикла', (await idbList('periodEntries')).length === 1);
 await shot('06-cycle');
 
 /* история и старый расход видят новый вес */
-await go('#/more/body/history');
+await go('#/body/history');
 check('история: взвешивание 79,4', /79,4/.test(await p.locator('.wrap').innerText()));
 /* расход «по журналу» (запасная цель) считает шаги по весу из новой модели: ккал на 1000 шагов = 0,37 × вес */
 const lb = await p.evaluate(async () => { const m = await import('/src/ui/food/budget.js'); const d = new Date(); return m.dayBudget(window.__ctx, d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')).journal; });

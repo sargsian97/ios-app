@@ -1,6 +1,6 @@
 /* Шторки тела: взвешивание, замеры за день, цель по весу. */
 import { html, useApp, useState, useEffect, todayYmd } from '../../core.js';
-import { Sheet, Field, Segmented, Confirm } from '../../kit.js';
+import { Sheet, Field, Segmented, Confirm, Stepper } from '../../kit.js';
 import { t, fmtNum } from '../../../i18n/index.js';
 import { toDisplay, fromDisplay, unitKey } from '../../../domain/units.js';
 import { MEASUREMENTS } from '../../../data/models/body.js';
@@ -20,12 +20,14 @@ export function WeighSheet({ open, entry, onClose }) {
   useEffect(() => {
     if (!open) { setD(null); return; }
     setErr('');
-    setD(entry ? { date: entry.date, time: entry.time || '', w: fmtNum(toDisplay('weight', entry.weightKg, units), 2).replace(/\s/g, ''), fat: entry.bodyFatPct == null ? '' : String(entry.bodyFatPct) }
-      : { date: todayYmd(), time: nowHM(), w: '', fat: '' });
+    /* новое взвешивание начинается с последнего веса: обычно нужно поправить одну цифру */
+    const last = repos.scaleEntry.list().sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || ''))).pop();
+    setD(entry ? { date: entry.date, time: entry.time || '', w: Math.round(toDisplay('weight', entry.weightKg, units) * 100) / 100, fat: entry.bodyFatPct == null ? '' : String(entry.bodyFatPct) }
+      : { date: todayYmd(), time: nowHM(), w: last ? Math.round(toDisplay('weight', last.weightKg, units) * 10) / 10 : null, fat: '' });
   }, [open, entry && entry.id]);
   if (!open || !d) return null;
   async function save() {
-    const kg = fromDisplay('weight', d.w, units);
+    const kg = d.w == null ? NaN : fromDisplay('weight', d.w, units);
     if (!(kg >= 20 && kg <= 400)) { setErr(t('body.err.weight')); return; }
     const fat = num(d.fat);
     if (fat != null && !(fat >= 2 && fat <= 70)) { setErr(t('body.err.fat')); return; }
@@ -35,7 +37,7 @@ export function WeighSheet({ open, entry, onClose }) {
   }
   return html`<${Sheet} open=${true} onClose=${onClose} title=${entry ? t('body.weighEdit') : t('body.weighIn')}>
     <${Field} label=${t('body.weightIn', { u: t(unitKey('weight', units)) })} error=${err}>
-      <input class="bigin" inputmode="decimal" value=${d.w} placeholder="0,0" onInput=${(e) => setD(Object.assign({}, d, { w: e.currentTarget.value }))}/>
+      <${Stepper} value=${d.w} step=${0.1} min=${20} max=${400} digits=${2} unit=${t(unitKey('weight', units))} big=${true} label=${t('body.weightIn', { u: t(unitKey('weight', units)) })} onChange=${(v) => setD(Object.assign({}, d, { w: v }))}/>
     <//>
     <div class="grid2" style="margin-top:12px">
       <${Field} label=${t('body.date')}><input type="date" value=${d.date} max=${todayYmd()} onChange=${(e) => setD(Object.assign({}, d, { date: e.currentTarget.value || d.date }))}/><//>

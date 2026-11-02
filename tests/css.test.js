@@ -27,7 +27,7 @@ const cssClasses = new Set([...css.matchAll(/\.([a-zA-Z_][a-zA-Z0-9_-]*)/g)].map
 /* классы, которые собираются из частей в коде */
 const DYNAMIC_PREFIXES = ['mm-', 'st-', 's-', 'd-', 'ch-k', 'm'];
 /* классы, которые ставит не разметка экранов: index.html, main.js (#write-error), SVG из chart/muscle-map, стороны подхода */
-const EXTRA_USED = ['warnb', 'status', 'err', 'on', 'off', 'in', 'over', 'hit', 'sel', 'cur', 'done', 'warm', 'past', 'fut', 'tod', 'busy', 'now', 'dash', 'ph', 'pred', 'today', 'rest', 'eq', 'eqf', 'less', 'skipped', 'grouped', 'up', 'dn', 'dl'];
+const EXTRA_USED = ['warnb', 'status', 'err', 'no-tabs', 'on', 'off', 'in', 'over', 'hit', 'sel', 'cur', 'done', 'warm', 'past', 'fut', 'tod', 'busy', 'now', 'dash', 'ph', 'pred', 'today', 'rest', 'eq', 'eqf', 'less', 'skipped', 'grouped', 'up', 'dn', 'dl'];
 
 test('css: каждый класс из экранов описан в styles.css', () => {
   const missing = [...usedClasses()].filter((c) => !cssClasses.has(c) && !DYNAMIC_PREFIXES.some((p) => c.startsWith(p)) && !/^[a-z]$/.test(c));

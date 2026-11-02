@@ -18,7 +18,7 @@ export function BodyHistory() {
   repos.bodyEntry.list().forEach((b) => { (days[b.date] = days[b.date] || { scale: [], body: null }).body = b; });
   const dates = Object.keys(days).sort().reverse();
   const wu = t(unitKey('weight', units)), lu = t(unitKey('length', units));
-  return html`<${Page} title=${t('body.history')} back="/more/body" backLabel=${t('body.title')}>
+  return html`<${Page} title=${t('body.history')} back="/body" backLabel=${t('body.title')}>
     ${dates.length ? dates.slice(0, limit).map((d) => {
       const x = days[d];
       return html`<div class="ltitle">${fmtDate(d, 'full')}</div><div class="list">

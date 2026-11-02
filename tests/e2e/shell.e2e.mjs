@@ -55,7 +55,7 @@ const meta = await p.evaluate(() => new Promise((r) => {
 check('схема данных обновлена', meta && meta.version >= 2, meta);
 
 /* вкладки */
-const tabs = [['Питание', '04-food', '.wrap h1'], ['Тренировка', '05-train', '.wrap h1'], ['Ещё', '06-more', '.list']];
+const tabs = [['Питание', '04-food', '.wrap h1'], ['Тренировка', '05-train', '.wrap h1'], ['Тело', '07-body', '.whero'], ['Ещё', '06-more', '.list']];
 for (const [name, file, sel] of tabs) {
   await p.locator('.tabs .tab', { hasText: name }).click();
   await p.waitForSelector(sel); await wait();
@@ -65,7 +65,7 @@ await p.locator('.tabs .tab', { hasText: 'Тренировка' }).click(); awai
 check('Тренировка: новый экран вкладки', await p.locator('.wk-today, .wk-active').count() === 1);
 
 /* разделы «Ещё» */
-const sub = [['Тело и замеры', '07-body'], ['История', '08-history'], ['Шаблоны тренировок', '09-templates'], ['Расход по журналу', '10-journal-settings'], ['О приложении', '11-about']];
+const sub = [['История', '08-history'], ['Шаблоны тренировок', '09-templates'], ['Расход по журналу', '10-journal-settings'], ['О приложении', '11-about']];
 for (const [name, file] of sub) {
   await p.locator('.tabs .tab', { hasText: 'Ещё' }).click(); await wait(200);
   await p.locator('.lrow', { hasText: name }).first().click(); await wait();
@@ -95,7 +95,7 @@ await p.getByRole('radio', { name: 'Тёмная' }).click(); await wait(200);
 check('тема тёмная применилась', (await p.evaluate(() => document.documentElement.dataset.theme)) === 'dark');
 await p.getByRole('button', { name: 'Имперские' }).click(); await wait(300);
 await shot('13-settings');
-await p.locator('.tabs .tab', { hasText: 'Обзор' }).click(); await wait(400);
+await p.locator('.tabs .tab', { hasText: 'Сегодня' }).click(); await wait(400);
 const dashText = await p.locator('.dgrid').innerText();
 check('обзор в имперских единицах', /фунт/.test(dashText), dashText.replace(/\s+/g, ' ').slice(0, 120));
 await shot('14-dashboard-imperial');
@@ -104,11 +104,16 @@ await p.getByRole('button', { name: 'Метрические' }).click();
 await p.getByRole('radio', { name: 'Авто' }).click(); await wait(200);
 check('тема снова системная', (await p.evaluate(() => document.documentElement.dataset.theme)) === undefined);
 
-/* «+» */
-await p.locator('.tabs .tab.plus').click(); await wait(600);
-await shot('15-plus', false);
-await p.locator('.pbtn', { hasText: 'Еда' }).click(); await wait(600);
-check('«+ → Еда» открывает поиск еды', await p.locator('.searchbox').count() > 0 && (await p.evaluate(() => location.hash)).startsWith('#/food/add'));
+/* вкладка «Тело» и главная кнопка «Добавить еду» */
+check('вкладок пять, без «+»', await p.locator('.tabs .tab').count() === 5 && await p.locator('.tabs .tab.plus').count() === 0);
+await p.locator('.tabs .tab', { hasText: 'Тело' }).click(); await wait(400);
+check('«Тело» — вкладка без «Назад»', (await p.evaluate(() => location.hash)) === '#/body' && await p.locator('.back').count() === 0);
+await p.goto('http://localhost:' + PORT + '/#/more/body?open=weigh'); await wait(600);
+check('старый адрес тела ведёт на вкладку и открывает взвешивание', (await p.evaluate(() => location.hash)) === '#/body' && await p.locator('.sheet').count() === 1);
+await p.locator('.sheet-bg').click({ position: { x: 20, y: 20 } }); await wait(300);
+await p.locator('.tabs .tab', { hasText: 'Питание' }).click(); await wait(400);
+await p.locator('.fab').click(); await wait(600);
+check('«Добавить еду» открывает поиск еды', await p.locator('.searchbox').count() > 0 && (await p.evaluate(() => location.hash)).startsWith('#/food/add'));
 await shot('16-food-add', false);
 
 /* после перезагрузки: офлайн-кэш и данные */
