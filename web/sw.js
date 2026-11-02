@@ -1,6 +1,6 @@
 /* Service worker: приложение открывается без интернета.
    При каждом выпуске новой версии меняй VERSION — тогда телефон предложит обновиться. */
-const VERSION = '2026-11-02.2';
+const VERSION = '2026-11-02.3';
 const CACHE = 'journal-' + VERSION;
 const SHELL = [
   './',
@@ -15,6 +15,7 @@ const SHELL = [
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png',
+  'liquid-glass-pro.css',
   'src/config.js',
   'src/main.js',
   'src/version.js',

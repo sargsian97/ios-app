@@ -1,0 +1,171 @@
+/* =====================================================================
+   Журнал — Liquid Glass Pro. Слой поверх styles.css: подключать ПОСЛЕ него.
+   Источник — холст «Журнал — премиальный редизайн» (артборды «Сегодня», «Питание»,
+   «Тренировка», «Упражнение», «Уровни мышц», «Тело», «Дизайн-система»).
+   Меняет только внешний вид существующих классов: разметку и логику не трогает.
+   ===================================================================== */
+
+/* ---------- 1. Токены ---------- */
+:root{
+  --r-xl:30px; --r-lg:26px; --r-md:16px; --r-sm:12px; --gap:14px;
+  --num:"SF Pro Rounded",ui-rounded,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --bg:#F2F2F7;
+  --muted:rgba(60,60,67,.75); --ink2:rgba(60,60,67,.82); --line:rgba(60,60,67,.18);
+  /* материалы */
+  --glass-card:linear-gradient(180deg,rgba(255,255,255,.78),rgba(255,255,255,.55));
+  --glass-blur:blur(28px) saturate(180%);
+  --glass-float:rgba(255,255,255,.55);
+  --glass-float-blur:blur(24px) saturate(200%);
+  --card-rim:inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(0,0,0,.05);
+  --card-drop:0 14px 36px -16px rgba(20,30,70,.22);
+  --float-rim:inset 0 1px 0 #fff,inset 0 -1px 1px rgba(255,255,255,.4),inset 0 0 0 .5px rgba(0,0,0,.06);
+  --float-drop:0 14px 34px -8px rgba(20,30,70,.28);
+  --lens:rgba(120,120,128,.12); --lens-rim:inset 0 1px 0 rgba(255,255,255,.9);
+  --btn-hi:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(0,0,0,.12);
+  --thumb:#FFFFFF;
+  /* фоновый свет раздела */
+  --amb-a:.22; --amb-b:.16;
+  /* карта мышц */
+  --mm-acc:#5856D6; --mm-acc-hi:#9C9AF0; --mm-acc-top:#DCDBFF;
+  --mm-idle:rgba(60,60,90,.11); --mm-nt:rgba(60,60,90,.08); --mm-sil-a:rgba(60,60,90,.075); --mm-sil-b:rgba(60,60,90,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#030306;
+    --muted:rgba(235,235,245,.6); --ink2:rgba(235,235,245,.72); --line:rgba(255,255,255,.1);
+    --glass-card:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.04));
+    --glass-float:rgba(38,38,44,.5);
+    --glass-float-blur:blur(24px) saturate(200%) brightness(1.08);
+    --card-rim:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 .5px rgba(255,255,255,.08);
+    --card-drop:0 22px 44px -26px rgba(0,0,0,.9);
+    --float-rim:inset 0 1px 0 rgba(255,255,255,.26),inset 0 -1px 1px rgba(255,255,255,.05),inset 0 0 0 .5px rgba(255,255,255,.14);
+    --float-drop:0 18px 40px -8px rgba(0,0,0,.7);
+    --lens:rgba(255,255,255,.11); --lens-rim:inset 0 1px 0 rgba(255,255,255,.16),inset 0 0 0 .5px rgba(255,255,255,.08);
+    --thumb:rgba(255,255,255,.18);
+    --amb-a:.34; --amb-b:.26;
+    --mm-acc:#7D7AFF; --mm-acc-hi:#AEACFF; --mm-acc-top:#E5E4FF;
+    --mm-idle:rgba(255,255,255,.085); --mm-nt:rgba(255,255,255,.065); --mm-sil-a:rgba(255,255,255,.075); --mm-sil-b:rgba(255,255,255,.03);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#030306;
+  --muted:rgba(235,235,245,.6); --ink2:rgba(235,235,245,.72); --line:rgba(255,255,255,.1);
+  --glass-card:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.04));
+  --glass-float:rgba(38,38,44,.5);
+  --glass-float-blur:blur(24px) saturate(200%) brightness(1.08);
+  --card-rim:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 .5px rgba(255,255,255,.08);
+  --card-drop:0 22px 44px -26px rgba(0,0,0,.9);
+  --float-rim:inset 0 1px 0 rgba(255,255,255,.26),inset 0 -1px 1px rgba(255,255,255,.05),inset 0 0 0 .5px rgba(255,255,255,.14);
+  --float-drop:0 18px 40px -8px rgba(0,0,0,.7);
+  --lens:rgba(255,255,255,.11); --lens-rim:inset 0 1px 0 rgba(255,255,255,.16),inset 0 0 0 .5px rgba(255,255,255,.08);
+  --thumb:rgba(255,255,255,.18);
+  --amb-a:.34; --amb-b:.26;
+  --mm-acc:#7D7AFF; --mm-acc-hi:#AEACFF; --mm-acc-top:#E5E4FF;
+  --mm-idle:rgba(255,255,255,.085); --mm-nt:rgba(255,255,255,.065); --mm-sil-a:rgba(255,255,255,.075); --mm-sil-b:rgba(255,255,255,.03);
+}
+
+/* ---------- 2. Фон: спокойный свет раздела в углах вместо движущегося сияния ---------- */
+body::before{animation:none;inset:0;transform:none;
+  background:
+    radial-gradient(420px 340px at 8% -2%,rgba(var(--tabrgb),var(--amb-a)),transparent 70%),
+    radial-gradient(360px 300px at 100% 5%,rgba(var(--au-ind),var(--amb-b)),transparent 70%),
+    radial-gradient(460px 380px at 30% 46%,rgba(var(--tabrgb),calc(var(--amb-a) * .22)),transparent 70%)}
+
+/* ---------- 3. Текст ---------- */
+h1{font-size:34px;line-height:41px;font-weight:700;letter-spacing:-.6px}
+.sect,.h2i{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.ltitle,.rl{font-size:12px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.big{font-size:32px;line-height:36px;font-weight:700;letter-spacing:-.8px}
+.bigin{font-weight:700;letter-spacing:-.6px}
+.ls,.hint,.lfoot,.lv{color:var(--muted)}
+
+/* ---------- 4. Карточки, плитки, списки — стекло ---------- */
+.card,.list,.dtile,.mtile{
+  background:var(--glass-card);
+  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+  box-shadow:var(--card-rim),var(--card-drop);
+  border-radius:var(--r-xl)}
+.dtile,.mtile{border-radius:var(--r-lg)}
+.card::after,.list::after,.dtile::after,.mtile::after{display:none}
+.pad{padding:18px}
+.lrow{min-height:56px;padding:10px 16px}
+.lrow+.lrow:before{left:62px}
+.lico{width:32px;height:32px;border-radius:9px}
+.hci{width:30px;height:30px;border-radius:9px}
+
+/* ---------- 5. Кнопки ---------- */
+button.primary:not(.small){height:52px;border-radius:26px;font-size:17px}
+button.primary{
+  background-image:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0) 70%);
+  box-shadow:var(--btn-hi),0 12px 28px -10px color-mix(in srgb,var(--accent) 85%,transparent)}
+button.ghost{width:44px;height:44px;
+  background:rgba(120,120,128,.22);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 .5px rgba(255,255,255,.12),0 8px 20px -8px rgba(0,0,0,.45)}
+button.small{height:36px;border-radius:18px}
+.chip{border-radius:999px}
+.fab{height:52px;border-radius:26px;font-size:17px;font-weight:600;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--k-food) 55%,#FFB59E),var(--k-food));
+  box-shadow:var(--btn-hi),0 14px 30px -10px color-mix(in srgb,var(--k-food) 85%,transparent)}
+
+/* ---------- 6. Переключатели ---------- */
+/* высота — минимальная: длинная подпись ужимается (styles.css 15.12) и в крайнем случае встаёт в две строки */
+.pills{min-height:40px;padding:3px;background:rgba(118,118,128,.2);border-radius:20px;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.06)}
+.pill{min-height:34px;border-radius:17px;font-weight:500}
+:root:root .pill.on{background:var(--thumb);font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 3px 8px rgba(0,0,0,.25)}
+
+/* ---------- 7. Поля ---------- */
+input,textarea,select{border-radius:14px}
+
+/* ---------- 8. Нижняя панель — плавающая стеклянная капсула ---------- */
+.tabs{left:16px;right:16px;padding:4px;border-radius:32px;
+  background:var(--glass-float);
+  -webkit-backdrop-filter:var(--glass-float-blur);backdrop-filter:var(--glass-float-blur);
+  box-shadow:var(--float-rim),var(--float-drop)}
+.tab{height:56px;border-radius:28px;gap:2px;font-size:10px;font-weight:500;color:var(--ink2)}
+.tab .i{width:24px;height:24px}
+/* «линза» выбранной вкладки — та же, что перетекает между вкладками (styles.css 15.7), в материале макета */
+.tabs::before{top:4px;bottom:4px;left:4px;width:calc((100% - 8px) / 5);border-radius:28px;background:var(--lens);box-shadow:var(--lens-rim)}
+.tab.on{font-weight:600}
+@supports not (selector(:has(*))){.tab.on{background:var(--lens);box-shadow:var(--lens-rim)}}
+.tab.on .i{fill:none;stroke-width:2}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tab.on{color:color-mix(in srgb,var(--tc,var(--accent)) 72%,#fff)}}
+:root[data-theme="dark"] .tab.on{color:color-mix(in srgb,var(--tc,var(--accent)) 72%,#fff)}
+
+/* остальные плавающие панели — тот же материал */
+.wk-rest,.selbar,.platebar,.wk-live,.upd,.toast{border-radius:26px;
+  -webkit-backdrop-filter:var(--glass-float-blur);backdrop-filter:var(--glass-float-blur);
+  box-shadow:var(--float-rim),var(--float-drop)}
+.sheet{bottom:0;width:100%;max-height:92vh;border-radius:38px 38px 0 0;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(180deg,color-mix(in srgb,var(--card-solid) 86%,transparent),var(--card-solid) 40%);
+  -webkit-backdrop-filter:blur(40px) saturate(190%);backdrop-filter:blur(40px) saturate(190%)}
+
+/* ---------- 9. Карта мышц (новый muscle-map.js) ---------- */
+.mm{margin:0 0 10px;padding:6px 0;border-radius:24px;
+  background:radial-gradient(60% 55% at 50% 45%,color-mix(in srgb,var(--mm-acc) 18%,transparent),transparent 72%)}
+.mm-lv{--mm-acc:#8F7CFF}
+.mm svg{max-width:360px}
+.mm svg .mm-i,.mm svg .mm-p,.mm svg .mm-s,.mm svg [class^="mm-l"]{stroke:none}
+.mm-nt{fill:var(--mm-nt)}
+.mm-i,.mm-l0{fill:var(--mm-idle)}
+.mm-hit{cursor:pointer;transition:opacity .2s}
+.mm-hit:active{opacity:.7}
+.mm figcaption{gap:16px;font-size:13px;margin-top:8px}
+.mm figcaption i{width:12px;height:12px;border-radius:4px}
+.mm figcaption i.mm-p{background:linear-gradient(180deg,var(--mm-acc-hi),var(--mm-acc));box-shadow:0 0 8px color-mix(in srgb,var(--mm-acc) 70%,transparent)}
+.mm figcaption i.mm-s{background:color-mix(in srgb,var(--mm-acc) 50%,transparent)}
+.mm figcaption i.mm-l0{background:var(--mm-idle)}
+.mm figcaption i.mm-l1{background:color-mix(in srgb,var(--mm-acc) 32%,transparent)}
+.mm figcaption i.mm-l2{background:color-mix(in srgb,var(--mm-acc) 64%,transparent)}
+.mm figcaption i.mm-l3{background:linear-gradient(90deg,var(--mm-acc),var(--mm-acc-hi));box-shadow:0 0 8px color-mix(in srgb,var(--mm-acc) 70%,transparent)}
+.mm figcaption i.mm-l4{background:linear-gradient(90deg,var(--mm-acc-hi),var(--mm-acc-top));box-shadow:0 0 10px color-mix(in srgb,var(--mm-acc-hi) 80%,transparent)}
+
+/* ---------- 11. Согласование со слоем стекла styles.css (раздел 15) ---------- */
+/* у плавающих панелей кромка — внутренней тенью (--float-rim), градиентная кромка ::after не нужна */
+.tabs::after,.fab::after,.wk-rest::after,.selbar::after,.toast::after,.upd::after,.wk-live::after,.platebar::after{display:none}
+/* внутри шторки фон уже размыт — второе размытие у карточек не нужно */
+.sheet .card,.sheet .list,.hist-day .list{-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:var(--card-rim)}
+
+/* ---------- 10. Доступность: меньше движения и прозрачности ---------- */
+@media (prefers-reduced-transparency: reduce){
+  .card,.list,.dtile,.mtile{background:var(--card-solid);-webkit-backdrop-filter:none;backdrop-filter:none}
+}

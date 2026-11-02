@@ -75,6 +75,16 @@ function audit() {
     if (ctl && lines.size > 1 && text.length <= 32) out.push({ kind: 'перенос', el: name(el), text });
     if (cs.overflowY !== 'visible' && el.scrollHeight > el.clientHeight + 2 && !/(auto|scroll)/.test(cs.overflowY)) out.push({ kind: 'обрезано снизу', el: name(el), text });
   }
+  /* плавающее (position: fixed) внутри предка с размытием, transform или filter прилипает к предку, а не к экрану */
+  for (const el of document.querySelectorAll('#root *')) {
+    if (getComputedStyle(el).position !== 'fixed') continue;
+    for (let a = el.parentElement; a && a.id !== 'root'; a = a.parentElement) {
+      const s = getComputedStyle(a);
+      if (s.backdropFilter !== 'none' || s.webkitBackdropFilter && s.webkitBackdropFilter !== 'none' || s.transform !== 'none' || s.filter !== 'none') {
+        out.push({ kind: 'ловушка fixed', el: name(el) + ' в ' + name(a), text: '' }); break;
+      }
+    }
+  }
   return out;
 }
 

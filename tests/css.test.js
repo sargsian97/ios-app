@@ -1,13 +1,15 @@
-/* Стили — один слой: каждый класс из экранов есть в styles.css, каждый класс в styles.css где-то используется,
-   без !important (кроме reduced-motion) и без лишних блоков :root. */
+/* Стили: каждый класс из экранов описан в styles.css или liquid-glass-pro.css (слой поверх), каждый описанный класс
+   где-то используется, без !important (кроме reduced-motion) и без лишних блоков :root в каждом файле. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const WEB = new URL('../web/', import.meta.url).pathname;
-const cssRaw = readFileSync(join(WEB, 'styles.css'), 'utf8');
-const css = cssRaw.replace(/\/\*[\s\S]*?\*\//g, ''); /* без комментариев */
+const FILES = ['styles.css', 'liquid-glass-pro.css'];
+const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ''); /* без комментариев */
+const each = FILES.map((f) => [f, strip(readFileSync(join(WEB, f), 'utf8'))]);
+const css = each.map(([, s]) => s).join('\n');
 const SRC = join(WEB, 'src');
 function walk(dir) { return readdirSync(dir).flatMap((n) => { const p = join(dir, n); return statSync(p).isDirectory() ? walk(p) : p.endsWith('.js') ? [p] : []; }); }
 
@@ -29,22 +31,24 @@ const DYNAMIC_PREFIXES = ['mm-', 'st-', 's-', 'd-', 'ch-k', 'm'];
 /* классы, которые ставит не разметка экранов: index.html, main.js (#write-error), SVG из chart/muscle-map, стороны подхода */
 const EXTRA_USED = ['warnb', 'status', 'err', 'no-tabs', 'on', 'off', 'in', 'over', 'hit', 'sel', 'cur', 'done', 'warm', 'past', 'fut', 'tod', 'busy', 'now', 'dash', 'ph', 'pred', 'today', 'rest', 'eq', 'eqf', 'less', 'skipped', 'grouped', 'up', 'dn', 'dl'];
 
-test('css: каждый класс из экранов описан в styles.css', () => {
+test('css: каждый класс из экранов описан в стилях', () => {
   const missing = [...usedClasses()].filter((c) => !cssClasses.has(c) && !DYNAMIC_PREFIXES.some((p) => c.startsWith(p)) && !/^[a-z]$/.test(c));
   assert.deepEqual(missing.sort(), []);
 });
 
-test('css: в styles.css нет классов, которые нигде не используются', () => {
+test('css: в стилях нет классов, которые нигде не используются', () => {
   const used = usedClasses();
   EXTRA_USED.forEach((c) => used.add(c));
   const unused = [...cssClasses].filter((c) => !used.has(c) && !DYNAMIC_PREFIXES.some((p) => c.startsWith(p)));
   assert.deepEqual(unused.sort(), []);
 });
 
-test('css: !important только для reduced-motion, не больше 3 блоков :root с токенами', () => {
-  const noMotion = css.replace(/@media \(prefers-reduced-motion: reduce\)\{[\s\S]*?\n\}/g, '');
-  const bad = noMotion.split('\n').filter((l) => l.includes('!important'));
-  assert.deepEqual(bad, []);
-  const roots = css.match(/^:root(?:\[[^\]]*\]|:not\([^)]*\))?\s*\{/gm) || [];
-  assert.ok(roots.length <= 3, 'блоков :root: ' + roots.length);
+test('css: !important только для reduced-motion, не больше 3 блоков :root с токенами в файле', () => {
+  for (const [f, s] of each) {
+    const noMotion = s.replace(/@media \(prefers-reduced-motion: reduce\)\{[\s\S]*?\n\}/g, '');
+    const bad = noMotion.split('\n').filter((l) => l.includes('!important'));
+    assert.deepEqual(bad, [], f);
+    const roots = s.match(/^\s*:root(?:\[[^\]]*\]|:not\([^)]*\))?\s*\{/gm) || [];
+    assert.ok(roots.length <= 3, f + ': блоков :root: ' + roots.length);
+  }
 });
