@@ -105,8 +105,6 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .back{background:none;box-shadow:none;color:var(--accent);height:44px;padding:0 8px 0 0;display:inline-flex;align-items:center;gap:2px;font-weight:600;font-size:17px}
 .back .i{width:22px;height:22px;stroke-width:2.2}
 .hsub{text-align:center;margin-top:0;font-size:12px;font-weight:500;color:var(--muted)}
-.dsub{margin:-8px 0 14px 2px;font-size:15px;font-weight:600;color:var(--ink2);text-align:left}
-.dsub::first-letter{text-transform:uppercase}
 .status{font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;background:var(--input);color:var(--muted);white-space:nowrap}
 .status:empty{display:none}
 .status.ok{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}

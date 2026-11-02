@@ -56,6 +56,7 @@ const SHELL = [
   'src/ui/icons.js',
   'src/ui/kit.js',
   'src/ui/toast.js',
+  'src/ui/viz.js',
   'src/data/models/body.js',
   'src/data/models/nutrients.js',
   'src/data/models/nutrition.js',

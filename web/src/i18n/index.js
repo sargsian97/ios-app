@@ -61,6 +61,7 @@ export function fmtDate(ymd, style = 'short') {
   const o = style === 'long' ? { weekday: 'long', day: 'numeric', month: 'long' }
     : style === 'wday' ? { weekday: 'short', day: 'numeric', month: 'long' }
     : style === 'full' ? { day: 'numeric', month: 'long', year: 'numeric' }
+    : style === 'dm' ? { day: 'numeric', month: 'long' }
     : style === 'month' ? { month: 'long', year: 'numeric' }
     : { day: 'numeric', month: 'short' };
   return new Intl.DateTimeFormat(locale(), o).format(d);
