@@ -1,4 +1,5 @@
-/* Дневник питания: липкая шапка «осталось / съедено» с полосками БЖУ, приёмы пищи (или таймлайн по часам),
+/* Дневник питания: липкая навигация по дням, итог «осталось / съедено» с полосой по приёмам и кольцами БЖУ,
+   быстрые действия, приёмы пищи (или таймлайн по часам),
    «как в прошлый раз» для пустого приёма, свайп-удаление с «Отменить», выделение записей (копировать,
    перенести, удалить), шторка «Разбор дня» (цель, БЖУ, расход, неделя, отметки, заметка). */
 import { html, useApp, useData, useState, useEffect, navigate, todayYmd, keyboardSoon } from '../../core.js';
@@ -13,6 +14,7 @@ import { formatClock } from '../../../domain/units.js';
 import { CheckinBanner } from '../checkin.js';
 import { scaleNutrients, roundNutrients } from '../../../data/models/nutrients.js';
 import { toast } from '../../toast.js';
+import { Ring } from '../../viz.js';
 
 export function FoodDiary({ route }) {
   const app = useApp();
@@ -78,15 +80,21 @@ export function FoodDiary({ route }) {
   const view = dp.diaryView === 'timeline' ? 'timeline' : 'classic';
   const rowProps = { energy, selecting, sel, onTap: tap, onLong: longPress, onDelete: (e) => removeEntries([e]) };
 
-  return html`<${Page} title=${t('nav.food')} icon="food" color="linear-gradient(135deg,#FF7A6E,#FF2D55)"
-      right=${html`<div class="row" style="gap:6px">
+  /* быстрые действия из настроек питания (dietProfile.shortcuts): поиск, штрихкод, быстро ккал, фото */
+  const quick = (open) => { const time = today ? nowTime() : null; navigate('/food/add?d=' + date + '&m=' + (time ? mealOf({ time }) : 'l') + (time ? '&t=' + time : '') + '&open=' + open); };
+  const QA = { search: ['search', 'food.qa.search', addNow], scan: ['barcode', 'food.qa.scan', () => quick('scan')], quick: ['bolt', 'food.qa.quick', () => quick('quick')], photo: ['camera', 'food.qa.photo', () => quick('photo')] };
+  const shortcuts = (dp.shortcuts || []).filter((k) => QA[k]);
+
+  return html`<${Page} title=${t('nav.food')}
+      right=${html`<div class="row" style="gap:10px">
         ${entries.length ? html`<button class="small" onClick=${() => { setSelecting(!selecting); setSel(new Set()); }}>${selecting ? t('common.done') : t('food.select')}</button>` : null}
-        <button class="small icn" aria-label=${t('food.menu')} onClick=${() => setMenu(true)}><${Icon} name="more" size=${18}/></button>
+        <button class="ghost" aria-label=${t('food.menu')} onClick=${() => setMenu(true)}><${Icon} name="more"/></button>
       </div>`}>
     <div class="fhead">
       <${DateNav} date=${date} onChange=${setDate}/>
-      <${Head} totals=${totals} budget=${budget} energy=${energy} day=${day} big=${dp.banner === 'eaten' ? 'eaten' : 'left'} showOver=${!!dp.showOverages} onOpen=${() => setReview(true)}/>
     </div>
+    <${Head} totals=${totals} budget=${budget} energy=${energy} day=${day} entries=${entries} big=${dp.banner === 'eaten' ? 'eaten' : 'left'} showOver=${!!dp.showOverages} onOpen=${() => setReview(true)}/>
+    ${shortcuts.length ? html`<div class="qacts">${shortcuts.map((k) => html`<button class="qact" onClick=${QA[k][2]}><${Icon} name=${QA[k][0]}/>${t(QA[k][1])}</button>`)}</div>` : null}
     ${today ? html`<${CheckinBanner}/>` : null}
 
     ${!entries.length && day && day.fasting ? html`<div class="card empty">${t('food.empty.fasting')}</div>` : null}
@@ -95,9 +103,9 @@ export function FoodDiary({ route }) {
 
     ${view === 'timeline'
       ? html`<${Timeline} entries=${entries} dp=${dp} fmtTime=${fmtTime} today=${today} onAdd=${(hh) => addAt(mealOf({ time: hh }), hh)} ...${rowProps}/>`
-      : html`<${Meals} entries=${entries} all=${all} date=${date} today=${today} onAdd=${addAt} onRepeat=${repeatMeal} ...${rowProps}/>`}
+      : html`<${Meals} entries=${entries} all=${all} date=${date} today=${today} fmtTime=${fmtTime} onAdd=${addAt} onRepeat=${repeatMeal} ...${rowProps}/>`}
 
-    ${!selecting ? html`<button class="fab primary" onClick=${addNow}>${t('food.addFab')}</button>` : null}
+    ${!selecting ? html`<button class="fab primary" onClick=${addNow}><${Icon} name="plus"/>${t('food.addFab')}</button>` : null}
     ${selecting ? html`<div class="selbar">
       <span class="grow">${t('food.selected', { count: chosen.length })}</span>
       <button class="small" disabled=${!chosen.length} onClick=${() => setCopyMove({ mode: 'copy', list: chosen })}>${t('food.copy')}</button>
@@ -117,49 +125,63 @@ export function FoodDiary({ route }) {
   <//>`;
 }
 
-/* ---------- шапка: осталось / съедено, кольцо, полоски БЖУ; тап — «Разбор дня» ---------- */
-function Head({ totals, budget, energy, day, big, showOver, onOpen }) {
+/* ---------- итог дня: осталось / съедено крупно, полоса по приёмам пищи, кольца БЖУ; тап — «Разбор дня» ---------- */
+function Head({ totals, budget, energy, day, entries, big, showOver, onOpen }) {
   const eaten = totals.kcal || 0, target = budget.kcal || 0;
   const rawLeft = target - eaten, over = showOver && rawLeft < 0, left = showOver ? rawLeft : Math.max(0, rawLeft);
-  const pct = target > 0 ? Math.round(eaten / target * 100) : 0;
   const showLeft = big === 'left' && target > 0;
   const flags = [day && day.fasting ? t('food.flag.fasting') : null, day && day.partial ? t('food.flag.partial') : null, totals.manual ? t('food.flag.manual') : null].filter(Boolean);
   const M = [['protein', 'food.macro.p', 'var(--m-p)'], ['fat', 'food.macro.f', 'var(--m-f)'], ['carbs', 'food.macro.c', 'var(--m-c)']];
-  return html`<button class="card pad fbanner" onClick=${onOpen} aria-label=${t('food.review')}>
-    <span class="fs-main">
+  /* съедено по приёмам; при ручном итоге — одним куском */
+  const parts = totals.manual ? (eaten ? [{ color: 'var(--k-food)', kcal: eaten }] : [])
+    : MEALS.map(([m, , color]) => ({ color, kcal: dayTotals(entries.filter((e) => mealOf(e) === m)).kcal || 0 })).filter((x) => x.kcal > 0);
+  const scale = Math.max(target, eaten) || 1;
+  return html`<button class="card fbanner" onClick=${onOpen} aria-label=${t('food.review')}>
+    <span class="fb-top">
       <span class="fs-txt">
         <span class="rl">${showLeft ? (over ? t('food.over') : t('food.left')) : t('food.eaten')}</span>
         <span class=${'fs-big' + (showLeft && over ? ' over' : '')}>${energy.fmt(showLeft ? Math.abs(left) : eaten)}<small>${energy.unit}</small></span>
-        <span class="hint">${target ? (showLeft ? t('food.eatenOf', { e: energy.fmt(eaten), g: energy.fmt(target) }) : t('food.ofGoal', { g: energy.fmt(target) })) : t('food.goalSrc.none')}${flags.length ? ' · ' + flags.join(' · ') : ''} · <span class="lnk">${t('food.review')} ›</span></span>
       </span>
-      ${target ? html`<span class=${'fring' + (over ? ' over' : '')} style=${'--p:' + Math.min(100, pct)}><i>${pct} %</i></span>` : null}
+      <span class="lnk fb-more">${t('food.review')}<${Icon} name="right"/></span>
     </span>
-    <span class="fmacs">${M.map(([k, label, color]) => {
+    <span class="fb-bar">${parts.map((x) => html`<i style=${'width:' + (x.kcal / scale * 100).toFixed(1) + '%;--mc:' + x.color}></i>`)}</span>
+    <span class="fb-leg">
+      <span class="fb-dots">${totals.manual ? null : parts.map((x) => html`<span><i style=${'background:' + x.color}></i>${energy.fmt(x.kcal)}</span>`)}</span>
+      <span class="fb-of">${showLeft ? html`<b>${energy.fmt(eaten)}</b> ${t('food.ofGoal', { g: energy.fmt(target) })}` : target ? t('food.ofGoal', { g: energy.fmt(target) }) : t('food.goalSrc.none')}</span>
+    </span>
+    ${flags.length ? html`<span class="fb-flags">${flags.join(' · ')}</span>` : null}
+    <span class="fb-rings">${M.map(([k, label, color]) => {
       const v = totals[k] || 0, tg = budget[k] || 0;
-      const w = tg > 0 ? Math.min(100, v / tg * 100) : 0;
-      return html`<span class="fmac" style=${'--mc:' + color}><b>${t(label)}</b><em>${fmtNum(v)}${tg ? ' / ' + fmtNum(tg) : ''} ${t('unit.g')}</em>${tg ? html`<i><b style=${'width:' + w.toFixed(1) + '%'}></b></i>` : null}</span>`;
+      return html`<span class="fb-m" style=${'--rc:' + color}>
+        <${Ring} share=${tg > 0 ? v / tg : 0}>${tg > 0 ? Math.round(v / tg * 100) + '%' : '—'}<//>
+        <span class="fb-ml"><span>${t(label)}</span><b>${fmtNum(v)} <small>${tg ? '/ ' + fmtNum(tg) + ' ' : ''}${t('unit.g')}</small></b></span>
+      </span>`;
     })}</span>
   </button>`;
 }
 
-/* ---------- по приёмам пищи ---------- */
-function Meals({ entries, all, date, today, energy, selecting, sel, onTap, onLong, onDelete, onAdd, onRepeat }) {
+/* ---------- по приёмам пищи: стеклянная карточка — точка цвета, время, сумма, строки, «Добавить» ---------- */
+function Meals({ entries, all, date, today, energy, fmtTime, selecting, sel, onTap, onLong, onDelete, onAdd, onRepeat }) {
   return html`${MEALS.map(([m, label, color]) => {
     const list = entries.filter((e) => mealOf(e) === m);
     const sum = dayTotals(list);
     const lm = !list.length ? lastMeal(all, m, { before: date, addDays }) : null;
     const lmSum = lm ? dayTotals(lm.entries) : null;
+    const time = list.map((e) => e.time).filter(Boolean).sort()[0];
     const add = () => onAdd(m, mealDefaultTime(m, today ? nowTime() : null));
-    return html`<div class="card meal">
-      <div class="mh row"><b class="grow"><span class="mdot" style=${'background:' + color}></span>${t(label)}</b>
-        ${list.length ? html`<span class="hs">${energy.fmt(sum.kcal)} ${energy.unit}</span>
-          <button class="tladd" aria-label=${t('food.addTo', { m: t(label) })} onClick=${add}><${Icon} name="plus" size=${16}/></button>` : html`<span class="hs muted">${t('food.meal.empty')}</span>`}</div>
+    return html`<div class=${'card meal' + (list.length ? '' : ' mempty')}>
+      <div class="mh row"><span class="mdot" style=${'background:' + color + ';color:' + color}></span><b>${t(label)}</b>
+        ${time ? html`<span class="mtime">${fmtTime(time)}</span>` : null}
+        ${list.length ? html`<span class="hs">${energy.fmt(sum.kcal)} <small>${energy.unit}</small></span>` : html`<span class="hs muted">${t('food.meal.empty')}</span>`}</div>
       ${list.length ? html`<div class="fm mline">${macroLine(sum)}</div>` : null}
       ${list.map((e) => html`<${SwipeRow} key=${e.id} disabled=${selecting} onDelete=${() => onDelete(e)} onLong=${() => onLong(e)}>
         <${EntryRow} e=${e} energy=${energy} selecting=${selecting} selected=${sel.has(e.id)} onTap=${() => onTap(e)}/>
       <//>`)}
-      ${!list.length && lm ? html`<button class="madd" onClick=${() => onRepeat(m, lm)}><${Icon} name="repeat" size=${18}/>${t('food.lastTime', { k: energy.fmt(lmSum.kcal), u: energy.unit })}</button>` : null}
-      ${!list.length ? html`<button class="madd" onClick=${add}><${Icon} name="plus" size=${18}/>${t('food.addEntry')}</button>` : null}
+      ${!list.length && lm ? html`<div class="mrep">
+          <button class="madd" onClick=${() => onRepeat(m, lm)}><${Icon} name="repeat" size=${18}/>${t('food.lastTime', { k: energy.fmt(lmSum.kcal), u: energy.unit })}</button>
+          <button class="mplus" aria-label=${t('food.addTo', { m: t(label) })} onClick=${add}><${Icon} name="plus"/></button>
+        </div>`
+      : html`<button class="madd" onClick=${add}><${Icon} name="plus" size=${18}/>${t('food.addEntry')}</button>`}
     </div>`;
   })}`;
 }

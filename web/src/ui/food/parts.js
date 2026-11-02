@@ -7,7 +7,7 @@ import { addDays } from '../../data/journal.js';
 
 export { addDays };
 
-export const MEALS = [['b', 'food.meal.b', '#FFB800'], ['l', 'food.meal.l', '#FF7A1A'], ['d', 'food.meal.d', '#8A87FF'], ['s', 'food.meal.s', '#FF2D55']];
+export const MEALS = [['b', 'food.meal.b', '#FFC800'], ['l', 'food.meal.l', '#FF8A00'], ['d', 'food.meal.d', '#C77DFF'], ['s', 'food.meal.s', '#FF375F']];
 export const MEAL_KEY = { b: 'food.meal.b', l: 'food.meal.l', d: 'food.meal.d', s: 'food.meal.s' };
 
 /* Энергия в единицах пользователя */
@@ -41,13 +41,14 @@ export function dayLabel(date) {
 }
 
 export function DateNav({ date, onChange }) {
+  const sub = dayLabel(date), long = fmtDate(date, 'long');
   return html`<div class="dnav row">
-    <button class="ghost" aria-label=${t('food.prevDay')} onClick=${() => onChange(addDays(date, -1))}>‹</button>
-    <div class="dmid grow">
+    <button class="ghost" aria-label=${t('food.prevDay')} onClick=${() => onChange(addDays(date, -1))}><${Icon} name="left"/></button>
+    <label class="dmid grow">
+      <span class="dm-d">${long}</span>${sub !== long ? html`<span class="hsub">${sub}</span>` : null}
       <input type="date" value=${date} aria-label=${t('food.pickDate')} onChange=${(e) => e.currentTarget.value && onChange(e.currentTarget.value)}/>
-      <div class="hsub">${dayLabel(date)}</div>
-    </div>
-    <button class="ghost" aria-label=${t('food.nextDay')} onClick=${() => onChange(addDays(date, 1))}>›</button>
+    </label>
+    <button class="ghost" aria-label=${t('food.nextDay')} onClick=${() => onChange(addDays(date, 1))}><${Icon} name="right"/></button>
   </div>`;
 }
 

@@ -45,3 +45,17 @@ export function Spark({ line = [], dots = [], w = 141, h = 34 }) {
     <circle class="sp-e" cx=${X(last.x)} cy=${Y(last.y)} r="3.4"/>
   </svg>`;
 }
+
+/* Кольцо доли: share 0…1, в центре — подпись (проценты); цвет — --rc */
+export function Ring({ share = 0, size = 58, width = 6, children }) {
+  const c = size / 2, r = c - width / 2 - 1;
+  const C = f1(2 * Math.PI * r);
+  const v = f1(Math.max(0, Math.min(1, share || 0)) * C);
+  return html`<span class="ring" style=${'width:' + size + 'px;height:' + size + 'px'}>
+    <svg width=${size} height=${size} viewBox=${'0 0 ' + size + ' ' + size} aria-hidden="true">
+      <circle class="rg-tr" cx=${c} cy=${c} r=${r} fill="none" stroke-width=${width}/>
+      ${v > 0 ? html`<circle class="rg-v" cx=${c} cy=${c} r=${r} fill="none" stroke-width=${width} stroke-linecap="round" stroke-dasharray=${v + ' ' + C} transform=${'rotate(-90 ' + c + ' ' + c + ')'} style=${'--len:' + v}/>` : null}
+    </svg>
+    <span class="rg-c">${children}</span>
+  </span>`;
+}
