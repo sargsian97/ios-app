@@ -32,6 +32,7 @@
   --track:rgba(120,120,128,.14); --arc1:#FF2D55; --arc2:#FF5A36; --arc3:#FF9F0A; --arc-glow:0;
   --t-body:#8E3CC8; --t-steps:#B86E00; --t-burn:#C25E00; --t-str:#4B48C9; --c-steps:#FF9500; --st-warn:#A35400; --t-food:#E0301E;
   --dnav-bg:rgba(255,255,255,.55); --card-empty:rgba(255,255,255,.38);
+  --sheet-a:rgba(255,255,255,.74); --sheet-b:rgba(246,246,250,.92);
   --chip-bg:rgba(255,255,255,.7); --chip-bg2:rgba(255,255,255,.4); --chip-rim:inset 0 0 0 .5px rgba(0,0,0,.06);
   --alt-bg:rgba(255,255,255,.75); --alt-c:#4B48C9; --alt-rim:inset 0 1px 0 #fff,inset 0 0 0 .5px rgba(0,0,0,.06),0 4px 12px -6px rgba(20,30,70,.2);
   --ghost-bg:rgba(255,255,255,.62); --ghost-rim:inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(0,0,0,.06),0 6px 16px -6px rgba(20,30,70,.22);
@@ -54,7 +55,7 @@
     --mm-acc:#7D7AFF; --mm-acc-hi:#AEACFF; --mm-acc-top:#E5E4FF;
     --mm-idle:rgba(255,255,255,.085); --mm-nt:rgba(255,255,255,.065); --mm-sil-a:rgba(255,255,255,.075); --mm-sil-b:rgba(255,255,255,.03);
     --track:rgba(255,255,255,.08); --arc1:#FF3D71; --arc2:#FF6B4A; --arc3:#FFB547; --arc-glow:.55;
-    --t-body:#D08CFF; --t-steps:#FFC247; --t-burn:#FF9F0A; --t-str:#9D9AFF; --c-steps:#FFC247; --st-warn:#FFB547; --t-food:#FF8A6B; --dnav-bg:rgba(120,120,128,.16); --card-empty:rgba(255,255,255,.035);
+    --t-body:#D08CFF; --t-steps:#FFC247; --t-burn:#FF9F0A; --t-str:#9D9AFF; --c-steps:#FFC247; --st-warn:#FFB547; --t-food:#FF8A6B; --dnav-bg:rgba(120,120,128,.16); --card-empty:rgba(255,255,255,.035); --sheet-a:rgba(44,40,42,.78); --sheet-b:rgba(22,20,22,.92);
     --chip-bg:rgba(255,255,255,.07); --chip-bg2:rgba(255,255,255,.04); --chip-rim:inset 0 0 0 .5px rgba(255,255,255,.1);
     --alt-bg:rgba(255,255,255,.1); --alt-c:#FFFFFF; --alt-rim:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 .5px rgba(255,255,255,.1);
     --ghost-bg:rgba(120,120,128,.22); --ghost-rim:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 .5px rgba(255,255,255,.12),0 8px 20px -8px rgba(0,0,0,.6);
@@ -77,7 +78,7 @@
   --mm-acc:#7D7AFF; --mm-acc-hi:#AEACFF; --mm-acc-top:#E5E4FF;
   --mm-idle:rgba(255,255,255,.085); --mm-nt:rgba(255,255,255,.065); --mm-sil-a:rgba(255,255,255,.075); --mm-sil-b:rgba(255,255,255,.03);
   --track:rgba(255,255,255,.08); --arc1:#FF3D71; --arc2:#FF6B4A; --arc3:#FFB547; --arc-glow:.55;
-  --t-body:#D08CFF; --t-steps:#FFC247; --t-burn:#FF9F0A; --t-str:#9D9AFF; --c-steps:#FFC247; --st-warn:#FFB547; --t-food:#FF8A6B; --dnav-bg:rgba(120,120,128,.16); --card-empty:rgba(255,255,255,.035);
+  --t-body:#D08CFF; --t-steps:#FFC247; --t-burn:#FF9F0A; --t-str:#9D9AFF; --c-steps:#FFC247; --st-warn:#FFB547; --t-food:#FF8A6B; --dnav-bg:rgba(120,120,128,.16); --card-empty:rgba(255,255,255,.035); --sheet-a:rgba(44,40,42,.78); --sheet-b:rgba(22,20,22,.92);
   --chip-bg:rgba(255,255,255,.07); --chip-bg2:rgba(255,255,255,.04); --chip-rim:inset 0 0 0 .5px rgba(255,255,255,.1);
   --alt-bg:rgba(255,255,255,.1); --alt-c:#FFFFFF; --alt-rim:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 .5px rgba(255,255,255,.1);
   --ghost-bg:rgba(120,120,128,.22); --ghost-rim:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 .5px rgba(255,255,255,.12),0 8px 20px -8px rgba(0,0,0,.6);
@@ -356,6 +357,40 @@ input,textarea,select{border-radius:14px}
 .mplus{width:44px;height:44px;padding:0;border-radius:22px;flex:none;display:inline-flex;align-items:center;justify-content:center;background:var(--chip-bg);box-shadow:inset 0 1px 0 var(--hi);color:var(--ink)}
 .fab{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
 .fab .i{width:20px;height:20px;stroke-width:2.4}
+
+/* ---------- 14. «Добавить еду» (макет FoodAdd): экран как стеклянная шторка ---------- */
+.addpage{margin-top:10px;padding:2px 16px 200px;min-height:100vh;border-radius:38px 38px 0 0;
+  background:linear-gradient(180deg,var(--sheet-a),var(--sheet-b) 40%);box-shadow:inset 0 1px 0 var(--hi),inset 0 0 0 .5px var(--glass-edge),0 -20px 60px -24px rgba(0,0,0,.4)}
+.addpage .grab{width:38px;margin:7px auto 10px;background:color-mix(in srgb,var(--muted) 55%,transparent)}
+.addhead{display:flex;align-items:center;gap:6px;margin:0 0 14px}
+.addhead .ghost{background:var(--alt-bg);box-shadow:var(--alt-rim);color:var(--ink);-webkit-backdrop-filter:none;backdrop-filter:none}
+.addhead .ghost .i{width:18px;height:18px;stroke-width:2.2}
+.addpage .addhead h1{flex:1;min-width:0;margin:0;font-size:17px;line-height:22px;font-weight:600;letter-spacing:-.2px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.addmeta{gap:6px;flex:none}
+.mealchip{height:44px;padding:0 10px 0 12px;gap:2px;border-radius:22px;font-size:15px;color:var(--ink);
+  background:color-mix(in srgb,var(--mc) 24%,var(--alt-bg));box-shadow:inset 0 1px 0 var(--hi),inset 0 0 0 .5px color-mix(in srgb,var(--mc) 55%,transparent),0 8px 18px -10px color-mix(in srgb,var(--mc) 80%,transparent)}
+.mealchip .i{color:var(--mc);transform:rotate(90deg);stroke-width:2.4}
+.timechip input::-webkit-calendar-picker-indicator{display:none}
+.timechip input{height:44px;padding:0 10px;border-radius:22px;font-size:15px;font-weight:600;background:var(--alt-bg);box-shadow:var(--alt-rim)}
+.addpage .searchbox{height:50px;padding:0 5px 0 16px;border-radius:25px;background:var(--input);box-shadow:inset 0 0 0 .5px var(--glass-edge);margin:0 0 14px}
+.addpage .searchbox::after{display:none}
+.addpage .searchbox input{font-size:17px}
+.searchbox .sbar{background:color-mix(in srgb,var(--k-food) 14%,transparent)}
+.searchbox .sbar .i{width:22px;height:22px;color:var(--t-food)}
+.aibtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.aibtn{--ac:var(--k-food);height:auto;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:20px;text-align:left;font-weight:400;color:var(--ink);
+  background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 20%,transparent),var(--chip-bg2));box-shadow:inset 0 1px 0 var(--hi),var(--chip-rim)}
+.aibtn.quick{--ac:var(--k-body)}
+.ai-i{width:34px;height:34px;border-radius:17px;flex:none;display:grid;place-items:center;color:var(--ac);background:color-mix(in srgb,var(--ac) 22%,transparent)}
+.ai-i .i{width:19px;height:19px}
+.ai-t{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.ai-t b{font-size:15px;font-weight:600}
+.ai-t small{font-size:12px;color:var(--muted)}
+.addpage .pills.sub{margin:0 0 14px}
+.addpage .list{background:var(--chip-bg2);box-shadow:inset 0 1px 0 var(--hi),var(--chip-rim);-webkit-backdrop-filter:none;backdrop-filter:none}
+.lrow.rrow{min-height:60px;padding:0 8px 0 16px}
+.radd{background:color-mix(in srgb,var(--k-food) 14%,transparent);color:var(--t-food)}
+.radd .i{width:22px;height:22px;padding:0;background:none;stroke-width:2.4}
 
 /* ---------- 10. Доступность: меньше движения и прозрачности ---------- */
 @media (prefers-reduced-motion: reduce){

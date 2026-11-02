@@ -22,7 +22,7 @@ import { nutrientLabel, unitLabel, sourceLabel, periodLabel } from '../../food/l
 import { NUTRIENT_UNITS } from '../../../data/models/nutrients.js';
 import { toast } from '../../toast.js';
 
-const FILTERS = [['all', 'food.tab.all'], ['mine', 'food.tab.mine'], ['recipes', 'food.tab.recipes'], ['fav', 'food.tab.fav']];
+const FILTERS = [['all', 'food.tab.all'], ['fav', 'food.tab.fav'], ['mine', 'food.tab.mine'], ['recipes', 'food.tab.recipes']];
 
 /* Запись дневника из элемента тарелки */
 function entryFrom(item, date, time, meal) {
@@ -187,6 +187,10 @@ export function FoodAdd({ route }) {
       return doc && (!s || doc.name.toLowerCase().includes(s.toLowerCase())) ? { kind: f.ref.kind, doc } : null;
     }).filter(Boolean);
     blocks = [{ title: t('food.tab.fav'), rows, empty: t('food.fav.empty') }];
+  } else if (!s && (filter === 'mine' || filter === 'recipes')) {
+    /* без запроса «Мои» и «Рецепты» — весь свой список, недавние сверху */
+    const rows = searchLocal(repos, '', { limit: 60 }).filter((x) => (filter === 'recipes' ? x.kind === 'recipe' : x.kind === 'food'));
+    blocks = [{ title: null, rows, empty: t(filter === 'recipes' ? 'food.recipes.none' : 'food.mine.none'), results: true }];
   } else if (!s) {
     const goTos = hourlyGoTos(all, { time, today: date, addDays });
     const seen = new Set(goTos.map(key));
@@ -206,19 +210,25 @@ export function FoodAdd({ route }) {
     ].filter(Boolean).filter((b) => b.rows.length || b.empty);
   }
 
+  const mealColor = (MEALS.find(([m]) => m === meal) || [])[2];
   return html`<div class="wrap page addpage">
-    <div class="navbar">
-      <button class="back" onClick=${() => goBack('/food?d=' + date)}><${Icon} name="left"/>${t('nav.food')}</button>
+    <div class="grab" aria-hidden="true"></div>
+    <div class="addhead">
+      <button class="ghost" aria-label=${t('common.close')} onClick=${() => goBack('/food?d=' + date)}><${Icon} name="close"/></button>
+      <h1>${t('food.add.title')}</h1>
       <div class="addmeta">
-        <label class="mealchip"><span>${t(MEAL_KEY[meal])}</span><${Icon} name="down" size=${14}/>
+        <label class="mealchip" style=${'--mc:' + mealColor}><span>${t(MEAL_KEY[meal])}</span><${Icon} name="right" size=${14}/>
           <select value=${meal} aria-label=${t('food.meal')} onChange=${(e) => { const m = e.currentTarget.value; setMeal(m); setTime(mealDefaultTime(m, now)); }}>${MEALS.map(([m, label]) => html`<option value=${m}>${t(label)}</option>`)}</select></label>
         <label class="timechip"><input type="time" value=${time} aria-label=${t('food.time')} onInput=${(e) => setTime(e.currentTarget.value || time)}/></label>
       </div>
     </div>
-    <h1>${t('food.add.title')}</h1>
     <${SearchBox} value=${q} onInput=${(v) => { setQ(v); if (filter === 'history') setFilter('all'); }} placeholder=${t('food.search.ph')} inputRef=${inputRef} onEnter=${searchNet}
       right=${html`<button class="sbar" type="button" aria-label=${t('food.sc.scan')} onClick=${() => setScan(true)}><${Icon} name="barcode"/></button>`}/>
-    ${s ? html`<div class="pills sub">${FILTERS.map(([k, l]) => html`<button class=${'pill' + (filter === k ? ' on' : '')} onClick=${() => setFilter(k)}>${t(l)}</button>`)}</div>` : null}
+    <div class="aibtns">
+      <button class="aibtn" onClick=${() => setPhoto(true)}><span class="ai-i"><${Icon} name="camera"/></span><span class="ai-t"><b>${t('food.photo.title')}</b><small>${t('food.ai.photoSub')}</small></span></button>
+      <button class="aibtn quick" onClick=${() => setQuick(true)}><span class="ai-i"><${Icon} name="bolt"/></span><span class="ai-t"><b>${t('food.qa.quick')}</b><small>${t('food.ai.quickSub')}</small></span></button>
+    </div>
+    <div class="pills sub" role="radiogroup">${FILTERS.map(([k, l]) => html`<button role="radio" aria-checked=${(filter === 'history' ? 'all' : filter) === k} class=${'pill' + ((filter === 'history' ? 'all' : filter) === k ? ' on' : '')} onClick=${() => setFilter(k)}>${k === 'all' && !s ? t('food.tab.recent') : t(l)}</button>`)}</div>
     ${msg ? html`<div class="banner">${msg}</div>` : null}
 
     ${blocks.map((b) => html`${b.title ? html`<div class="ltitle">${b.title}</div>` : null}
