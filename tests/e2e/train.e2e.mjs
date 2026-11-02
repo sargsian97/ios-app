@@ -17,6 +17,7 @@ const PORT = 8815 + (SC === 'dark' ? 1 : 0);
 const srv = await serve(PORT);
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'], colorScheme: SC, locale: 'ru-RU' });
+await ctx.addInitScript(() => { window.JOURNAL_DEBUG = true; });
 const p = await ctx.newPage();
 const errs = [];
 p.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
@@ -177,11 +178,11 @@ await p.locator('.sheet').getByRole('button', { name: 'Сохранить' }).cl
 const cardio = (await idbList('workoutLogs')).find((w) => w.exercises.some((e) => e.cardio && e.sets[0].distanceM === 3500));
 check('кардио записано', cardio && cardio.exercises[0].sets[0].timeSec === 1800);
 
-/* журнал видит тренировки и кардио */
-const budget = await p.evaluate(async () => { const m = await import('/app.js'); const d = new Date(); const ymd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); return m.legacyBudget(ymd); });
+/* расход «по журналу» видит тренировки и кардио */
+const budget = await p.evaluate(async () => { const m = await import('/src/ui/food/budget.js'); const d = new Date(); const ymd = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); return m.dayBudget(window.__ctx, ymd).journal; });
 check('расход журнала учитывает кардио и силовую', budget && budget.cardioOn && budget.lifted, budget && { cardioOn: budget.cardioOn, lifted: budget.lifted, train: budget.train });
 await go('#/more/history');
-check('история журнала открывается', await p.locator('#app').count() === 1);
+check('история открывается: календарь и день', await p.locator('.hist-cal').count() === 1 && await p.locator('.hist-day .lrow').count() >= 3);
 
 /* шаги */
 await go('#/more/body');

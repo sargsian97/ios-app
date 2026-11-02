@@ -128,7 +128,7 @@ export function BackupCard() {
   useData(null);
   const r = useRestore();
   const [msg, setMsg] = useState('');
-  const c = store.counts();
+  const c = store.counts(null, ['workoutLogs', 'foodEntries', 'scaleEntries', 'foodItems']);
   async function save() {
     setMsg('');
     try { const name = await exportBackup(store); if (name) setMsg(isArtifact() ? t('backup.downloadSaved', { name }) : t('backup.saved', { name })); }
@@ -138,7 +138,7 @@ export function BackupCard() {
     <div class="hint" style="margin:0 0 12px">${t('backup.text')}</div>
     <div class="stack"><button onClick=${save}>${t('backup.save')}</button><button onClick=${r.start}>${t('backup.load')}</button></div>
     ${msg || r.msg ? html`<div class="hint io">${msg || r.msg}</div>` : null}
-    <div class="hint">${t('backup.counts', { w: c.workouts, f: c.food, b: c.body, p: c.foods })}</div>
+    <div class="hint">${t('backup.counts', { w: c.workoutLogs, f: c.foodEntries, b: c.scaleEntries, p: c.foodItems })}</div>
     ${r.dialog}
   <//>`;
 }

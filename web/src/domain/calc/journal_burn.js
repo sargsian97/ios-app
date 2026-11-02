@@ -75,7 +75,7 @@ export function strengthForDay(w, { weightKg, age, sex = 'male', base }) {
   return r;
 }
 
-/* Расход и цель дня. day — { steps, lifted, cardioOn, cardio: [...] } (из daysForLegacy), strength — strengthForDay(...) | null.
+/* Расход и цель дня. day — { steps, lifted, cardioOn, cardio: [...] } (из daysByDate), strength — strengthForDay(...) | null.
    → { base, steps, gymSteps, cardioSteps, cardioOn, cardioNet, k, stepK, train, trainTimer, lifted, raw, corr, burned, goal, offset, hasSteps, protein, fat, fiber } */
 export function journalBurn({ settings, day = {}, strength = null, weightKg, heightCm = null }, { version = 'v1' } = {}) {
   if (version !== 'v1') throw new Error('journalBurn: неизвестная версия ' + version);

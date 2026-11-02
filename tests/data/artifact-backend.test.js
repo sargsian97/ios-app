@@ -288,8 +288,8 @@ test('artifact: миграции на данных журнала не меня�
 
   /* в хранилище нет служебных полей */
   Object.values(s.exportAll().data).forEach((m) => Object.values(m).forEach((d) => assert.ok(!('__k' in d))));
-  /* старый журнал переписывает документ через doc().set: в базе появляется __k, хранилище его не видит */
-  await s.doc('body/2026-10-07').set({ weight: 82.4, note: 'x' });
+  /* документ переписывается целиком: в базе появляется __k, хранилище его не видит */
+  await s.put('body', '2026-10-07', { weight: 82.4, note: 'x' });
   assert.equal(db.body('body', '2026-10-07'), '{"weight":82.4,"note":"x"}');
 
   const s2 = await createStore(artifactBackend(db, opts()));

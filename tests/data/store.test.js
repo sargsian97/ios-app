@@ -68,21 +68,6 @@ test('store: экспорт и импорт заменяют всё, включ�
   assert.ok(parseBackup(JSON.stringify(exp)).profile);
 });
 
-test('store: интерфейс старого журнала', async () => {
-  const s = await createStore(memoryBackend());
-  const got = [];
-  s.collection('body').onSnapshot((snap) => got.push(snap.docs.map((d) => d.id)));
-  await tick();
-  await s.doc('body/2026-02-02').set({ weight: 81 });
-  await tick();
-  assert.deepEqual(got, [[], ['2026-02-02']]);
-  const snapDoc = await new Promise((r) => { const off = s.collection('body').onSnapshot((snap) => { off(); r(snap.docs[0].data()); }); });
-  snapDoc.weight = 1; /* копия, можно менять */
-  assert.equal(s.get('body', '2026-02-02').weight, 81);
-  await s.doc('body/2026-02-02').delete();
-  assert.equal(s.get('body', '2026-02-02'), null);
-});
-
 test('store: counts по коллекциям журнала', async () => {
   const s = await createStore(memoryBackend({ workouts: { a: {}, b: {} } }));
   assert.equal(s.counts().workouts, 2);

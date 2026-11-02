@@ -1,5 +1,5 @@
 /* Корень приложения: экраны по адресу, нижняя панель, «+», плашка обновления. */
-import { html, render, useApp, useData, useRoute, navigate, goBack, useEffect, useRef, useState, AppCtx, todayYmd } from './core.js';
+import { html, render, useApp, useData, useRoute, navigate, useEffect, useState, AppCtx, todayYmd } from './core.js';
 import { Icon } from './icons.js';
 import { Sheet } from './kit.js';
 import { t } from '../i18n/index.js';
@@ -32,11 +32,7 @@ import { GymList, GymEditor } from './screens/train/gyms.js';
 import { PlateCalculator } from './screens/train/plates.js';
 import { Levels } from './screens/train/levels.js';
 import { ProgramList, ProgramGenerator } from './screens/train/programs.js';
-
-/* Экраны старого журнала: адрес → [вкладка журнала, вид плана, путь «назад»] */
-const LEGACY = {
-  '/more/history': ['hist', null, '/more']
-};
+import { History } from './screens/history.js';
 
 const ROUTES = [
   ['/', Dashboard],
@@ -67,6 +63,7 @@ const ROUTES = [
   ['/train/programs', ProgramList],
   ['/train/program/new', ProgramGenerator],
   ['/more/templates', PlanList],
+  ['/more/history', History],
   ['/more', More],
   ['/onboarding', Onboarding],
   ['/more/goal', GoalScreen],
@@ -111,23 +108,7 @@ function TabBar({ path, onPlus }) {
         onClick=${() => (cur === k && path !== href ? navigate(href, { replace: true }) : navigate(href))}><${Icon} name=${k}/>${t(label)}</button>`)}</nav>`;
 }
 
-/* Место для экрана журнала: один и тот же DOM-узел переезжает между адресами, состояние сохраняется */
-function LegacyHost({ tab, view, back }) {
-  const { legacy } = useApp();
-  const ref = useRef(null);
-  useEffect(() => {
-    ref.current.appendChild(legacy.container);
-    legacy.show(tab, view);
-    return () => { if (legacy.container.parentNode === ref.current) ref.current.removeChild(legacy.container); };
-  }, [tab, view]);
-  return html`<div class="legacy-host">
-    ${back ? html`<div class="wrap navbar-wrap"><div class="navbar"><button class="back" onClick=${() => goBack(back)}><${Icon} name="left"/>${t('nav.more')}</button></div></div>` : null}
-    <div ref=${ref}></div>
-  </div>`;
-}
-
 function PlusSheet({ open, onClose }) {
-  const { legacy } = useApp();
   function go(fn) { onClose(); fn(); }
   const add = (extra) => navigate('/food/add?d=' + todayYmd() + (extra || ''));
   const A = [
@@ -194,15 +175,13 @@ export function App() {
   const path = route.path;
   useEffect(() => {
     const g = GLOW[path] || GLOW['/' + (route.parts[0] || '')] || GLOW['/more'];
-    if (!LEGACY[path]) document.body.style.setProperty('--tabrgb', g);
+    document.body.style.setProperty('--tabrgb', g);
     window.scrollTo(0, 0);
   }, [path]);
 
-  const lg = LEGACY[path];
   const Screen = screenFor(path);
   let body;
-  if (lg) body = html`<${LegacyHost} tab=${lg[0]} view=${lg[1]} back=${lg[2]}/>`;
-  else if (Screen) body = html`<${Screen} route=${route}/>`;
+  if (Screen) body = html`<${Screen} route=${route}/>`;
   else body = html`<div class="wrap"><div class="card pad"><h2>${t('common.notFound')}</h2><button class="primary" onClick=${() => navigate('/', { replace: true })}>${t('nav.dashboard')}</button></div></div>`;
 
   return html`<${Theme}/>

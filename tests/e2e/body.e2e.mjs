@@ -17,6 +17,7 @@ const PORT = 8785 + (SC === 'dark' ? 1 : 0);
 const srv = await serve(PORT);
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'], colorScheme: SC, locale: 'ru-RU' });
+await ctx.addInitScript(() => { window.JOURNAL_DEBUG = true; });
 const p = await ctx.newPage();
 const errs = [];
 p.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
@@ -132,8 +133,8 @@ await shot('06-cycle');
 /* история и старый расход видят новый вес */
 await go('#/more/body/history');
 check('история: взвешивание 79,4', /79,4/.test(await p.locator('.wrap').innerText()));
-/* расход журнала (запасная цель) считает шаги по весу из новой модели: ккал на 1000 шагов = 0,37 × вес */
-const lb = await p.evaluate(async () => { const m = await import('/app.js'); const d = new Date(); return m.legacyBudget(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')); });
+/* расход «по журналу» (запасная цель) считает шаги по весу из новой модели: ккал на 1000 шагов = 0,37 × вес */
+const lb = await p.evaluate(async () => { const m = await import('/src/ui/food/budget.js'); const d = new Date(); return m.dayBudget(window.__ctx, d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')).journal; });
 check('расход журнала берёт вес и шаги из новой модели', lb && Math.abs(lb.k / 0.37 - 79.4) < 0.01 && lb.steps === 11500, lb && { k: lb.k, steps: lb.steps });
 
 const overflow = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);

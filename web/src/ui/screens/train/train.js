@@ -5,7 +5,7 @@ import { Page, Card, Sheet, Field, Toggle } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum, fmtDate } from '../../../i18n/index.js';
 import { buildSession, suggestPlan, planItems, sortLogs, workoutSummary, cardioExerciseId } from '../../../domain/workout.js';
-import { addDays, weekStart, workoutsBetween } from '../../../data/legacy.js';
+import { addDays, weekStart, workoutsBetween } from '../../../data/journal.js';
 import { toDisplay, fromDisplay, unitKey } from '../../../domain/units.js';
 import { uid } from '../../../data/ids.js';
 import { defaultGym, addWarmups, progressionFor } from '../../../domain/gym.js';

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { latestMeasure, valueOf, seriesOf, lastDays, dailyScale } from '../web/src/domain/body.js';
-import { addDays } from '../web/src/data/legacy.js';
+import { addDays } from '../web/src/data/journal.js';
 
 const E = [
   { date: '2026-10-01', measurements: { waist: 86 }, bodyFatPct: 22 },

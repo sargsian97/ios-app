@@ -1,5 +1,5 @@
 /* Тело: тренд веса с графиком и прогнозом цели, замеры, процент жира и отношения, шаги, фото, цикл. */
-import { html, useApp, useData, useLegacy, useState, navigate, todayYmd } from '../../core.js';
+import { html, useApp, useData, useState, navigate, todayYmd } from '../../core.js';
 import { Page, Card } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum, fmtFix, fmtDate } from '../../../i18n/index.js';
@@ -7,7 +7,7 @@ import { DateChart, MiniBars } from '../../chart.js';
 import { toDisplay, unitKey } from '../../../domain/units.js';
 import { trendWeight, weightRate, forecastGoalDate, bodyFatEstimate, bodyRatios, cycleSummary, ageOn } from '../../../domain/calc/index.js';
 import { latestMeasure, seriesOf, lastDays, dailyScale } from '../../../domain/body.js';
-import { addDays, stepsOn } from '../../../data/legacy.js';
+import { addDays, stepsOn } from '../../../data/journal.js';
 import { WeighSheet, MeasureSheet, GoalSheet } from './sheets.js';
 import { PhotoThumbs } from './photos.js';
 import { measureLabel, fatMethodLabel } from './labels.js';
@@ -27,7 +27,6 @@ export function useWeight() {
 export function Body({ route }) {
   const { repos, store } = useApp();
   useData(['scaleEntries', 'bodyEntries', 'profile', 'dietProfile', 'goals', 'stepsEntries', 'progressPhotos', 'periodEntries']);
-  useLegacy();
   const today = todayYmd();
   const profile = repos.profile.get();
   const units = profile.units;

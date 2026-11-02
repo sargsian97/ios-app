@@ -5,7 +5,7 @@ import { Page, Segmented } from '../../kit.js';
 import { t, fmtNum, fmtDate } from '../../../i18n/index.js';
 import { nutrientReport, completenessScore } from '../../../domain/nutrition.js';
 import { NUTRIENT_UNITS } from '../../../data/models/nutrients.js';
-import { addDays, weekStart } from '../../../data/legacy.js';
+import { addDays, weekStart } from '../../../data/journal.js';
 import { dayBudget } from '../../food/budget.js';
 import { nutrientLabel, unitLabel } from '../../food/labels.js';
 

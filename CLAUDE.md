@@ -8,7 +8,6 @@
 - `docs/DECISIONS.md` — решения по неясным местам спецификации, по одной строке. Пополняй, а не угадывай молча.
 - `docs/PROGRESS.md` — какие этапы готовы, что осталось, какие временные константы ждут части 2. Обновляй в конце каждой сессии.
 - `web/` — само приложение, публикуется на GitHub Pages из `main` (`.github/workflows/pages.yml`).
-  - `web/app.js` — старый журнал (экраны тренировок, питания, замеров, истории). Заменяется новыми экранами по этапам.
   - `web/src/` — новый код: `ui/` (экраны на Preact + htm), `data/` (хранилище, миграции, репозитории), `domain/calc/` (расчёты), `services/`, `i18n/`.
   - `web/sw.js` — офлайн-кэш. **При каждом выпуске меняй `VERSION`** (и `APP_VERSION` в `web/src/version.js`); список файлов `SHELL` обновляет `npm run shell` (тест `tests/sw.test.js` проверит).
 - `web/data/` — встроенный справочник упражнений (из free-exercise-db). Пересборка: `node scripts/build-exercises.mjs [exercises.json]`; русские названия и синонимы — `scripts/exercises/ru.json`.

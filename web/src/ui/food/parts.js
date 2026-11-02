@@ -3,7 +3,7 @@ import { html, useApp, todayYmd } from '../core.js';
 import { Icon } from '../icons.js';
 import { t, fmtNum, fmtDate } from '../../i18n/index.js';
 import { toDisplay, unitKey } from '../../domain/units.js';
-import { addDays } from '../../data/legacy.js';
+import { addDays } from '../../data/journal.js';
 
 export { addDays };
 

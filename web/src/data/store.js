@@ -249,25 +249,6 @@ export async function createStore(backend, preloaded) {
       });
       notify([...cols]);
       await persist(puts, [], true);
-    },
-
-    /* ---------- интерфейс старого журнала ---------- */
-    doc(path) {
-      const i = path.indexOf('/'), col = path.slice(0, i), id = path.slice(i + 1);
-      return {
-        set(data) { return store.put(col, id, data); },
-        delete() { return store.remove(col, id); }
-      };
-    },
-    collection(col) {
-      return {
-        onSnapshot(cb, err) {
-          const snap = () => ({ docs: Object.keys(mem[col] || {}).map((id) => ({ id, exists: true, data: () => clone(mem[col][id]) })) });
-          const fire = () => { try { cb(snap()); } catch (e) { if (err) err(e); else console.error(e); } };
-          setTimeout(fire, 0);
-          return store.subscribe(col, fire);
-        }
-      };
     }
   };
   return store;

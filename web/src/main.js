@@ -1,16 +1,12 @@
-/* Запуск: хранилище → миграции → старый журнал → новая оболочка → офлайн-кэш */
+/* Запуск: хранилище → миграции → оболочка → офлайн-кэш */
 import { defaultBackend, createStore, memoryBackend, openJournalDb } from './data/store.js';
 import { artifactBackend } from './data/artifact-backend.js';
 import { migrate } from './data/migrations.js';
 import { createRepos } from './data/repos/index.js';
 import { pickSyncProvider } from './services/sync.js';
 import { setLang, t } from './i18n/index.js';
-import { startLegacy, showLegacy, legacyOpenAdd, legacyPersist, legacyBudget, legacyWeekStats } from '../app.js';
-import { foodForLegacy, bodyForLegacy, workoutsForLegacy, daysForLegacy } from './data/legacy.js';
 import { idbBlobs, memoryBlobs } from './data/store.js';
-import { mealOf } from './domain/nutrition.js';
 import { mountApp } from './ui/app.js';
-import { navigate, todayYmd } from './ui/core.js';
 
 const PREVIEW = window.JOURNAL_PREVIEW || null;
 /* Внутри Artifact на claude.ai: данные в общей базе артефакта, без service worker */
@@ -24,7 +20,7 @@ function fail(text) {
 }
 
 /* Обновления: новый service worker ждёт, пока пользователь нажмёт «Обновить» */
-function setupUpdates() {
+function setupUpdates(store) {
   const subs = new Set();
   const u = {
     waiting: null,
@@ -44,7 +40,7 @@ function setupUpdates() {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (reloading || !hadController) return;
       reloading = true;
-      legacyPersist().finally(() => setTimeout(() => location.reload(), 150));
+      store.flush().finally(() => setTimeout(() => location.reload(), 150));
     });
   }
   return u;
@@ -104,31 +100,13 @@ async function boot() {
   const repos = createRepos(store);
   setLang(repos.profile.get().lang);
 
-  const container = document.createElement('div');
-  container.className = 'wrap';
-  container.id = 'app';
   const afterImport = () => migrate(store);
-  /* старые экраны читают питание из новой модели; новые экраны узнают об изменениях данных журнала */
-  const legacySubs = new Set();
-  const foodProjection = (cb) => { const push = () => cb(foodForLegacy(store, mealOf)); setTimeout(push, 0); store.subscribe('foodEntries', push); };
-  const bodyProjection = (cb) => { const push = () => cb(bodyForLegacy(store)); setTimeout(push, 0); store.subscribe(['scaleEntries', 'bodyEntries'], push); };
-  const workoutsProjection = (cb) => { const push = () => cb(workoutsForLegacy(store)); setTimeout(push, 0); store.subscribe('workoutLogs', push); };
-  const daysProjection = (cb) => { const push = () => cb(daysForLegacy(store, todayYmd())); setTimeout(push, 0); store.subscribe(['stepsEntries', 'workoutLogs', 'foodEntries'], push); };
-  /* «Удалить день» в истории журнала: питание, тренировки и шаги новой модели */
-  const deleteDay = (date) => store.batch(['foodEntries', 'workoutLogs', 'stepsEntries'].flatMap((col) => store.list(col).filter((d) => d.date === date).map((d) => ({ op: 'remove', col, id: d.id }))));
-  const openDay = (date) => navigate('/train?d=' + date);
-  startLegacy({ store, container, afterImport, foodProjection, bodyProjection, workoutsProjection, daysProjection, deleteDay, openDay, onChange: () => legacySubs.forEach((f) => f()) });
 
   const ctx = {
     store, repos, afterImport,
     blobs: await pickBlobs(),
     sync: pickSyncProvider(),
-    updates: setupUpdates(),
-    legacy: {
-      container, show: showLegacy, openAdd: legacyOpenAdd, persist: legacyPersist,
-      budget: legacyBudget, weekStats: legacyWeekStats,
-      listen(cb) { legacySubs.add(cb); return () => legacySubs.delete(cb); }
-    }
+    updates: setupUpdates(store)
   };
   if (!location.hash) history.replaceState(null, '', '#/');
   if (window.JOURNAL_DEBUG) window.__ctx = ctx; /* только для проверок в браузере (tests/e2e) */

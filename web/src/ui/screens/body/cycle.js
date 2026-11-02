@@ -3,7 +3,7 @@ import { html, useApp, useData, useState, todayYmd } from '../../core.js';
 import { Page, Card, Toggle } from '../../kit.js';
 import { t, fmtDate } from '../../../i18n/index.js';
 import { cycleSummary, periodRuns } from '../../../domain/calc/index.js';
-import { addDays } from '../../../data/legacy.js';
+import { addDays } from '../../../data/journal.js';
 
 export function Cycle() {
   const { repos } = useApp();

@@ -2,7 +2,7 @@
    Расчёт по журналу собирает данные новой модели (шаги, тренировки, кардио, вес) и кэшируется, пока данные не изменились. */
 import { KCAL_PER_G, journalBurn, journalWeightOn, strengthForDay, journalWeek, ageOn, addDays } from '../../domain/calc/index.js';
 import { weekdayOf } from '../../domain/calc/dates.js';
-import { daysForLegacy, workoutsForLegacy } from '../../data/legacy.js';
+import { daysByDate, strengthByDate } from '../../data/journal.js';
 import { dayTotals } from '../../domain/nutrition.js';
 import { todayYmd } from '../core.js';
 
@@ -19,7 +19,7 @@ function ensure(store, today) {
 export function journalBurnFor({ store, repos }, date, today = todayYmd()) {
   const c = ensure(store, today);
   if (c.burn.has(date)) return c.burn.get(date);
-  if (!c.days) { c.days = daysForLegacy(store, today); c.workouts = workoutsForLegacy(store); }
+  if (!c.days) { c.days = daysByDate(store, today); c.workouts = strengthByDate(store); }
   const settings = repos.expenditureSettings.get();
   const profile = repos.profile.get();
   const weightKg = journalWeightOn(repos.scaleEntry.list(), date);

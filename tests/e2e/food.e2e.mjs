@@ -193,11 +193,11 @@ await go('#/food?d=2026-10-16');
 check('перебор по умолчанию не показывается', await p.locator('.fbanner .over, .fbanner .rover').count() === 0);
 await shot('11b-no-overage');
 
-/* старая история видит новое питание */
-await go('#/more/history');
-await wait(800);
-const hist = await p.locator('#app').innerText();
-check('история журнала показывает питание из новой модели', /Овсянка|ккал/.test(hist));
+/* история показывает еду выбранного дня */
+await go('#/more/history?d=2026-10-16');
+await wait(600);
+const hist = await p.locator('.hist-day').innerText();
+check('история показывает питание дня', /ккал/.test(hist) && !/еда не записана/.test(hist), hist.slice(0, 120));
 await shot('12-history');
 
 /* нутриенты: оценка полноты и строки по группам (день с записями из копии, а не «сегодня») */

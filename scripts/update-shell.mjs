@@ -5,7 +5,7 @@ import { join, relative } from 'node:path';
 
 const WEB = new URL('../web/', import.meta.url).pathname;
 const SKIP = [/^sw\.js$/, /^\.nojekyll$/, /\.txt$/, /\.md$/];
-const FIRST = ['./', 'index.html', 'styles.css', 'app.js', 'ai.js', 'manifest.webmanifest'];
+const FIRST = ['./', 'index.html', 'styles.css', 'ai.js', 'manifest.webmanifest'];
 
 function walk(dir) {
   return readdirSync(dir).flatMap((n) => {

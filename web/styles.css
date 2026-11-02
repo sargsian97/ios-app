@@ -1427,3 +1427,10 @@ input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;appeara
 .prog-vol b{font-family:var(--num)}
 .prog-splits .lrow.on{color:var(--k-str)}
 .prog-focus .chip.less{opacity:.6;text-decoration:line-through}
+
+/* история (новый экран screens/history.js): ячейки календаря — кнопки, точки по разделам */
+.hist-cal .cell{background:none;border:0;padding:0;height:auto;border-radius:10px;font:inherit;color:var(--ink)}
+.hist-cal .cell.sel .cc:after{background:var(--k-cal)}
+.cdots .d-food,.legend .d-food{background:var(--k-food)}
+.cdots .d-train,.legend .d-train{background:var(--k-str)}
+.cdots .d-weight,.legend .d-weight{background:var(--k-body)}

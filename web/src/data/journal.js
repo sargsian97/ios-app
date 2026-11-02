@@ -1,8 +1,6 @@
-/* Мостик между старым журналом (web/app.js) и новой моделью, пока старые экраны не заменены:
-   проекции новой модели в форматы журнала (только чтение) и вспомогательные функции дат. */
+/* Данные новой модели по дням для расчёта расхода «по журналу» и для истории: силовые по датам, дни с шагами и кардио,
+   плюс помощники дат. (Раньше здесь же были проекции для старого журнала web/app.js — он удалён.) */
 import { legacyCardioType } from '../domain/workout.js';
-
-function n(v) { const x = Number(v); return v === '' || v == null || !isFinite(x) ? null : x; }
 
 export function addDays(ymd, k) {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -17,50 +15,13 @@ export function weekStart(ymd) {
   return addDays(ymd, -wd);
 }
 
-/* Записи новой модели питания в формате журнала: { дата: { date, entries: [{ id, name, grams, kcal, p, f, c, fib, pa, pv, meal }] } }.
-   Нужен старым экранам (история, расход за неделю), пока они не заменены. */
-export function foodForLegacy(store, mealOf) {
-  const out = {};
-  store.list('foodEntries').forEach((e) => {
-    const n = e.nutrients || {};
-    const d = out[e.date] || (out[e.date] = { date: e.date, entries: [] });
-    d.entries.push({ id: e.id, name: e.name, grams: e.amount == null ? '' : e.amount, kcal: n.kcal || 0, p: n.protein || 0, f: n.fat || 0, c: n.carbs || 0, fib: n.fiber || 0, pa: n.protein_animal || 0, pv: n.protein_plant || 0, meal: mealOf(e), time: e.time });
-  });
-  Object.keys(out).forEach((k) => out[k].entries.sort((a, b) => (a.time || '').localeCompare(b.time || '')));
-  return out;
-}
-
-/* Взвешивания и замеры новой модели в формате журнала: { дата: { weight, waist, neck, glute, thigh, bic, bicR, fat, note } }.
-   За день берётся последнее взвешивание. Нужно старым экранам (расход по весу, история). */
-export function bodyForLegacy(store) {
-  const out = {};
-  const day = (d) => out[d] || (out[d] = {});
-  store.list('scaleEntries').slice().sort((a, b) => (a.date + (a.time || '') + (a.createdAt || '')).localeCompare(b.date + (b.time || '') + (b.createdAt || ''))).forEach((s) => {
-    const o = day(s.date);
-    o.weight = s.weightKg;
-    if (s.bodyFatPct != null) o.fat = s.bodyFatPct;
-  });
-  store.list('bodyEntries').forEach((b) => {
-    const o = day(b.date), m = b.measurements || {};
-    if (m.waist != null) o.waist = m.waist;
-    if (m.neck != null) o.neck = m.neck;
-    if (m.hips != null) o.glute = m.hips;
-    if (m.thighL != null) o.thigh = m.thighL;
-    if (m.bicepsL != null) o.bic = m.bicepsL;
-    if (m.bicepsR != null) o.bicR = m.bicepsR;
-    if (b.bodyFatPct != null) o.fat = b.bodyFatPct;
-    if (b.note) o.note = b.note;
-  });
-  return out;
-}
-
 const v = (x) => (x == null ? '' : x);
 const byTime = (a, b) => (a.date + (a.finishedAt || a.startedAt || '') + a.id).localeCompare(b.date + (b.finishedAt || b.startedAt || '') + b.id);
 const isStrength = (w) => (w.exercises || []).some((e) => !e.cardio && (e.sets || []).some((s) => s.done !== false));
 
-/* Силовые тренировки новой модели в формате журнала: { дата: { date, day, exercises: [{ name, sets: [{ w, r, done, dur, rest }] }], durationMin, avgHr, kcalWatch, gymSteps, note } }.
-   Несколько тренировок за день складываются. Нужно расчёту расхода и истории журнала. */
-export function workoutsForLegacy(store) {
+/* Силовые тренировки по датам: { дата: { date, day, exercises: [{ name, sets: [{ w, r, t, done, dur, rest }] }], durationMin, avgHr, maxHr, vo2max, kcalWatch, gymSteps, note } }.
+   Несколько тренировок за день складываются. Вход расчёта расхода «по журналу» (strengthForDay). */
+export function strengthByDate(store) {
   const out = {};
   store.list('workoutLogs').slice().sort(byTime).forEach((w) => {
     if (!isStrength(w)) return;
@@ -82,10 +43,10 @@ export function workoutsForLegacy(store) {
   return out;
 }
 
-/* Дни журнала из новой модели: { дата: { date, steps, lifted, trainKcal, cardioOn, cardio: [...] } }.
+/* Дни по датам: { дата: { date, steps, lifted, trainKcal, cardioOn, cardio: [...] } }.
    lifted — была ли силовая: true только при записанной тренировке; для всех дней по сегодня включительно без записи — false
    (с 31.10 расписание пн/ср/пт не считается: калории за силовую появляются, когда тренировка проведена). */
-export function daysForLegacy(store, today) {
+export function daysByDate(store, today) {
   const out = {};
   const day = (d) => out[d] || (out[d] = { date: d });
   store.list('stepsEntries').forEach((s) => { const o = day(s.date); if (s.steps != null && !(Number(o.steps) >= s.steps)) o.steps = s.steps; });
