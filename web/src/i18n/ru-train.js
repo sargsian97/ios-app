@@ -273,6 +273,10 @@ export default {
   'train.rest.minus': 'Отдых на 15 секунд меньше',
   'train.rest.plus': 'Отдых на 15 секунд больше',
   'train.rest.left': 'отдых ещё {t}',
+  'train.rest.next': 'дальше: {s}',
+  'train.rest.plusShort': '+15 с',
+  'train.rest.minusShort': '−15 с',
+  'train.now.pos': 'Сейчас · {n} из {m}',
 
   'train.ex.add': 'Упражнение',
   'train.ex.menu': 'Действия с упражнением',
@@ -280,6 +284,7 @@ export default {
   'train.ex.note': 'Заметка',
   'train.ex.notePh': 'Заметка к упражнению',
   'train.ex.warmup': 'Добавить разминочный подход',
+  'train.ex.warmupShort': 'Разминка',
   'train.ex.link': 'Суперсет со следующим',
   'train.ex.unlink': 'Убрать из суперсета',
   'train.ex.up': 'Выше',

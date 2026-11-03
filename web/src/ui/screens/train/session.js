@@ -16,6 +16,7 @@ import { ExercisePicker } from '../../train/picker.js';
 import { RestBar, useNow, unlockAudio, useWakeLock } from '../../train/timer.js';
 import { NumIn, RirSheet, SetSheet } from '../../train/inputs.js';
 import { KeyBar } from '../../train/keybar.js';
+import { MuscleMap } from '../../train/muscle-map.js';
 import { StrengthKcalCard } from '../../train/zepp.js';
 import { fmtRecord } from './history.js';
 import { toast } from '../../toast.js';
@@ -40,7 +41,7 @@ function columnsFor(ex, cardio) {
 /* Время с начала тренировки — тикает отдельно, чтобы не перерисовывать все упражнения каждую секунду */
 function Clock({ startedAt }) {
   const now = useNow(true, 1000);
-  return html`<span class="wk-clock" aria-label=${t('train.session.elapsed')}><${Icon} name="timer"/>${fmtClock(startedAt ? (now - Date.parse(startedAt)) / 1000 : 0)}</span>`;
+  return html`<span class="wk-clock" aria-label=${t('train.session.elapsed')}><i class="rec" aria-hidden="true"></i>${fmtClock(startedAt ? (now - Date.parse(startedAt)) / 1000 : 0)}</span>`;
 }
 
 /* Перевести фокус на следующее поле ввода в строке подхода, иначе в следующей строке */
@@ -235,7 +236,7 @@ export function TrainSession() {
 
   /* стабильные обработчики для мемоизированных карточек */
   const actsRef = useRef(null);
-  actsRef.current = { updSet, toggleDone, completeWarm, setRir, setSetMenu, setExMenu, updEx, upd, setExpanded, setNotes, gym, configs, profile, units, cat };
+  actsRef.current = { updSet, toggleDone, completeWarm, setRir, setSetMenu, setExMenu, updEx, upd, setExpanded, setNotes, exAction, gym, configs, profile, units, cat };
   const acts = useMemo(() => ({
     onSet: (ei, si, patch) => actsRef.current.updSet(ei, si, patch),
     onDone: (ei, si) => actsRef.current.toggleDone(ei, si),
@@ -243,6 +244,7 @@ export function TrainSession() {
     onRir: (ei, si) => actsRef.current.setRir({ ei, si }),
     onSetMenu: (ei, si) => actsRef.current.setSetMenu({ ei, si }),
     onMenu: (ei) => actsRef.current.setExMenu(ei),
+    onAct: (ei, act) => actsRef.current.exAction(ei, act),
     onEx: (ei, patch) => actsRef.current.updEx(ei, (x) => Object.assign({}, x, patch)),
     onNote: (ei, text) => { const a = actsRef.current; a.upd((c) => Object.assign({}, c, { exercises: c.exercises.map((e, i) => (i === ei ? Object.assign({}, e, { notes: text }) : e)) })); },
     onExpand: (id) => actsRef.current.setExpanded((m) => Object.assign({}, m, { [id]: !m[id] })),
@@ -275,6 +277,9 @@ export function TrainSession() {
   const exPos = s.cursor ? active.indexOf(s.exercises[s.cursor.ei]) + 1 : active.length;
   const sum = workoutSummary({ exercises: s.exercises.map((e) => Object.assign({}, e, { sets: e.sets.filter((x) => x.done) })) });
   const rirSet = rir ? s.exercises[rir.ei] && s.exercises[rir.ei].sets[rir.si] : null;
+  /* следующий подход для панели отдыха: «70 кг × 12» */
+  const nextSet = s.cursor && s.exercises[s.cursor.ei] ? s.exercises[s.cursor.ei].sets[s.cursor.si] : null;
+  const nextTxt = nextSet ? (() => { const tg = nextSet.target || {}; const x = { weight: nextSet.weight ?? tg.weight, reps: nextSet.reps ?? tg.reps, timeSec: nextSet.timeSec ?? tg.timeSec, distanceM: nextSet.distanceM ?? tg.distanceM, assist: nextSet.assist ?? tg.assist }; return x.weight != null || x.reps != null || x.timeSec != null ? fmtSet(x, units, { cardio: !!s.exercises[s.cursor.ei].cardio }) : null; })() : null;
   const menuSet = setMenu ? s.exercises[setMenu.ei] && s.exercises[setMenu.ei].sets[setMenu.si] : null;
   const exm = exMenu != null ? s.exercises[exMenu] : null;
   const exmIsBar = exm && loadKind(cat.byId[exm.exerciseId]) === 'barbell';
@@ -286,16 +291,20 @@ export function TrainSession() {
 
   return html`<div class="wrap page wk-page">
     <div class="wk-head">
-      <button class="back" onClick=${() => { flush(); navigate('/train'); }}><${Icon} name="left"/>${t('train.session.minimize')}</button>
+      <button class="ghost" aria-label=${t('train.session.minimize')} onClick=${() => { flush(); navigate('/train'); }}><${Icon} name="left"/></button>
       <div class="wk-headmid"><${Clock} startedAt=${s.startedAt}/><span class="wk-pos">${t('train.pos', { e: exPos || 1, n: active.length, s: Math.min(done + 1, total), t: total })}</span></div>
-      <button class="small icn" aria-label=${t('train.session.menu')} onClick=${() => setMenuOpen(true)}><${Icon} name="more"/></button>
-      <button class="small primary" onClick=${askFinish}>${t('train.finish')}</button>
+      <button class="ghost" aria-label=${t('train.session.menu')} onClick=${() => setMenuOpen(true)}><${Icon} name="more"/></button>
+      <button class="small primary wk-fin" onClick=${askFinish}>${t('train.finish')}</button>
     </div>
-    <div class="top"><h1 class="wk-title">${s.name || t('train.session.untitled')}</h1></div>
+    <div class="wk-titlerow"><h1 class="wk-title">${s.name || t('train.session.untitled')}</h1><span class="wk-count">${done} / ${total}</span></div>
+    <div class="wk-segs" role="progressbar" aria-label=${t('train.session.progress', { done, total })} aria-valuemin="0" aria-valuemax=${total} aria-valuenow=${done}>${active.map((e) => {
+      const n = e.sets.length, d = e.sets.filter((x) => x.done).length;
+      return html`<i class=${n && d === n ? 'done' : ''} style=${'flex-grow:' + Math.max(1, n) + ';--p:' + (n ? Math.round(d / n * 100) : 0) + '%'}></i>`;
+    })}</div>
     <div class="hint wk-sub">${gym ? gym.name + ' · ' : ''}${s.date !== todayYmd() ? fmtDate(s.date, 'long') + ' · ' : ''}${t('train.session.progress', { done, total })}${sum.volumeKg ? ' · ' + fmtNum(Math.round(toDisplay('weight', sum.volumeKg, units))) + ' ' + weightUnit(units) : ''}</div>
-    <div class="bar wk-prog"><i style=${'width:' + (total ? Math.round(done / total * 100) : 0) + '%'}></i></div>
 
     ${s.exercises.map((e, ei) => html`<${ExerciseCard} key=${e.id} e=${e} ei=${ei} cur=${s.cursor && s.cursor.ei === ei ? s.cursor.si : -1} total=${s.exercises.length}
+      pos=${s.cursor && s.cursor.ei === ei ? t('train.now.pos', { n: exPos || 1, m: active.length }) : null}
       ex=${cat.byId[e.exerciseId]} byId=${cat.byId} prev=${prevByEx[e.exerciseId]} units=${units} hideDone=${!!profile.hideDoneSets}
       showNote=${!!(notes[e.id] || e.notes)} expanded=${!!expanded[e.id]} acts=${acts}/>`)}
 
@@ -308,7 +317,7 @@ export function TrainSession() {
     ${s.exercises.some((e) => !e.cardio) ? html`<${StrengthKcalCard} log=${s} elapsedSec=${s.startedAt ? (Date.now() - Date.parse(s.startedAt)) / 1000 : null} onStats=${(stats) => upd((c) => Object.assign({}, c, { stats }))}/>` : null}
     <div class="wk-bottom-space"></div>
 
-    <${RestBar} rest=${s.rest} work=${s.workStart} canStart=${!!s.cursor} sound=${profile.sound} vibration=${profile.vibration} onChange=${(r) => upd((c) => Object.assign({}, c, { rest: r }))}
+    <${RestBar} rest=${s.rest} work=${s.workStart} canStart=${!!s.cursor} next=${nextTxt} sound=${profile.sound} vibration=${profile.vibration} onChange=${(r) => upd((c) => Object.assign({}, c, { rest: r }))}
       onStart=${() => { unlockAudio(); upd((c) => Object.assign({}, c, { rest: null, workStart: new Date().toISOString() })); }}/>
     <${KeyBar}/>
 
@@ -373,10 +382,10 @@ function FinishSheet({ open, s, logs, units, byId, plan, onClose, onNotes, onFin
 }
 
 /* Карточка упражнения: сделанное схлопывается в строку, разминка — одна строка, подходы — сетка с полями */
-const ExerciseCard = memo(ExerciseCardView, (a, b) => a.ei === b.ei && a.cur === b.cur && a.units === b.units && a.hideDone === b.hideDone && a.showNote === b.showNote && a.expanded === b.expanded
+const ExerciseCard = memo(ExerciseCardView, (a, b) => a.ei === b.ei && a.cur === b.cur && a.pos === b.pos && a.units === b.units && a.hideDone === b.hideDone && a.showNote === b.showNote && a.expanded === b.expanded
   && a.ex === b.ex && a.total === b.total && a.acts === b.acts && a.prev === b.prev && JSON.stringify(a.e) === JSON.stringify(b.e));
 
-function ExerciseCardView({ e, ei, cur, ex, byId, prev, units, hideDone, showNote, expanded, acts }) {
+function ExerciseCardView({ e, ei, cur, pos, ex, byId, prev, units, hideDone, showNote, expanded, acts }) {
   const cardio = !!e.cardio || isCardio(ex);
   const { cols, rir } = columnsFor(ex, cardio);
   const bw = ex && (ex.equipment || []).includes('bodyweight');
@@ -395,7 +404,7 @@ function ExerciseCardView({ e, ei, cur, ex, byId, prev, units, hideDone, showNot
     const same = working.length && working.every((x) => fmtSet(x, units, { cardio }) === fmtSet(working[0], units, { cardio }));
     const line = working.length ? (same ? t('train.doneLine', { n: working.length, s: fmtSet(working[0], units, { cardio }) }) : working.map((x) => fmtSet(x, units, { cardio })).join(' · ')) : t('train.warmup.done');
     return html`<button class="card wk-ex done" id=${'wk-' + e.id} type="button" onClick=${() => acts.onExpand(e.id)} aria-expanded="false">
-      <span class="wk-ok"><${Icon} name="check"/></span><b class="grow">${name}</b><span>${line}</span>
+      <span class="wk-ok"><${Icon} name="check"/></span><span class="ltext"><b>${name}</b><span class="ls">${line}</span></span><${Icon} name="right" cls="chev"/>
     </button>`;
   }
 
@@ -425,20 +434,24 @@ function ExerciseCardView({ e, ei, cur, ex, byId, prev, units, hideDone, showNot
     </div>`;
   };
 
-  return html`<div class=${'card ex wk-ex' + (e.skipped ? ' skipped' : '') + (e.group ? ' grouped' : '')} id=${'wk-' + e.id}>
+  const now = cur >= 0 && !e.skipped;
+  return html`<div class=${'card ex wk-ex' + (e.skipped ? ' skipped' : '') + (e.group ? ' grouped' : '') + (now ? ' now' : '')} id=${'wk-' + e.id}>
     <div class="wk-exh">
       <div class="grow">
+        ${pos && now ? html`<span class="wk-now">${pos}</span>` : null}
         ${e.group ? html`<span class="wk-grp">${t(e.groupKind === 'circuit' ? 'train.group.circuit' : 'train.group.superset', { g: e.group })}</span>` : null}
         <div class="exn">${name}</div>
         ${tgText ? html`<div class="tg">${t('train.target')}: ${tgText}</div>` : null}
+        ${now && prev ? html`<div class="wk-prev">${t('train.prev', { d: fmtDate(prev.date) })}: ${prev.sets.filter((x) => x.type !== 'warmup').map((x) => fmtSet(x, units, { cardio })).join(' · ')}</div>` : null}
       </div>
+      ${now && !cardio && ex && (ex.primaryMuscles || []).length ? html`<div class="wk-map"><${MuscleMap} primary=${ex.primaryMuscles} secondary=${ex.secondaryMuscles || []}/></div>` : null}
       ${allDone ? html`<button class="small icn" aria-label=${t('train.ex.collapse')} onClick=${() => acts.onExpand(e.id)}><${Icon} name="up"/></button>` : null}
       <button class="small icn" aria-label=${t('train.ex.menu')} onClick=${() => acts.onMenu(ei)}><${Icon} name="more"/></button>
     </div>
     ${!e.skipped && e.exerciseId && e.sets.some((x) => !x.done && x.target && x.target.expanded) ? html`<div class="wk-fix" role="note"><span class="wand" aria-hidden="true"></span>
       <span class="grow">${t('train.prog.fixText', { reason: progReason((e.sets.find((x) => !x.done && x.target && x.target.expanded).target || {}).reason) })}</span>
       <button class="small" onClick=${() => navigate('/train/exercise/' + encodeURIComponent(e.exerciseId))}>${t('train.prog.fix')}</button></div>` : null}
-    ${prev ? html`<div class="wk-prev">${t('train.prev', { d: fmtDate(prev.date) })}: ${prev.sets.filter((x) => x.type !== 'warmup').map((x) => fmtSet(x, units, { cardio })).join(' · ')}</div>` : null}
+    ${prev && !now ? html`<div class="wk-prev">${t('train.prev', { d: fmtDate(prev.date) })}: ${prev.sets.filter((x) => x.type !== 'warmup').map((x) => fmtSet(x, units, { cardio })).join(' · ')}</div>` : null}
     ${e.skipped ? html`<div class="hint">${t('train.ex.skipped')}</div>` : html`
     ${warm.length && !warmOpen ? html`<div class=${'wk-warm' + (warmDone ? ' done' : '')}>
       <b>${t('settype.s.warmup')}</b>
@@ -448,7 +461,9 @@ function ExerciseCardView({ e, ei, cur, ex, byId, prev, units, hideDone, showNot
     <div class="wk-cols" style=${'grid-template-columns:' + grid}><span>${t('train.col.set')}</span>${cols.map((c) => html`<span>${colLabel(c)}</span>`)}${rir ? html`<span>RIR</span>` : null}<span></span></div>
     ${e.sets.map((x, si) => (x.type === 'warmup' && !warmOpen ? null : setRow(x, si)))}
     ${cardio ? html`<${CardioFields} e=${e} onEx=${(patch) => acts.onEx(ei, patch)}/>` : null}
-    <div class="acts"><button class="small" onClick=${() => acts.onAddSet(ei)}>${t('train.set.add')}</button>${warmOpen ? html`<button class="small" onClick=${() => setWarmOpen(false)}>${t('train.warmup.collapse')}</button>` : null}</div>`}
+    <div class="acts wk-acts"><button class="small wk-addset" onClick=${() => acts.onAddSet(ei)}>${t('train.set.add')}</button>${warmOpen ? html`<button class="small" onClick=${() => setWarmOpen(false)}>${t('train.warmup.collapse')}</button>` : null}
+      ${now && !cardio && !warm.length ? html`<button class="small" onClick=${() => acts.onAct(ei, 'warmup')}>${t('train.ex.warmupShort')}</button>` : null}
+      ${now && !showNote ? html`<button class="small" onClick=${() => acts.onAct(ei, 'note')}>${t('train.ex.note')}</button>` : null}</div>`}
     ${showNote ? html`<textarea class="wk-note" placeholder=${t('train.ex.notePh')} value=${e.notes} onInput=${(ev) => acts.onNote(ei, ev.currentTarget.value)}></textarea>` : null}
   </div>`;
 }

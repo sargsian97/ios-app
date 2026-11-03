@@ -34,6 +34,7 @@
   --dnav-bg:rgba(255,255,255,.55); --card-empty:rgba(255,255,255,.38);
   --sheet-a:rgba(255,255,255,.74); --sheet-b:rgba(246,246,250,.92);
   --seg-bg:rgba(118,118,128,.12); --th-list:rgba(255,255,255,.62); --t-cardio:#D70040;
+  --set-in:rgba(255,255,255,.8); --rest-bg:rgba(255,255,255,.62); --rest-c:#007AFF; --btn-soft:rgba(118,118,128,.14);
   --chip-bg:rgba(255,255,255,.7); --chip-bg2:rgba(255,255,255,.4); --chip-rim:inset 0 0 0 .5px rgba(0,0,0,.06);
   --alt-bg:rgba(255,255,255,.75); --alt-c:#4B48C9; --alt-rim:inset 0 1px 0 #fff,inset 0 0 0 .5px rgba(0,0,0,.06),0 4px 12px -6px rgba(20,30,70,.2);
   --ghost-bg:rgba(255,255,255,.62); --ghost-rim:inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 .5px rgba(0,0,0,.06),0 6px 16px -6px rgba(20,30,70,.22);
@@ -56,7 +57,7 @@
     --mm-acc:#7D7AFF; --mm-acc-hi:#AEACFF; --mm-acc-top:#E5E4FF;
     --mm-idle:rgba(255,255,255,.085); --mm-nt:rgba(255,255,255,.065); --mm-sil-a:rgba(255,255,255,.075); --mm-sil-b:rgba(255,255,255,.03);
     --track:rgba(255,255,255,.08); --arc1:#FF3D71; --arc2:#FF6B4A; --arc3:#FFB547; --arc-glow:.55;
-    --t-body:#D08CFF; --t-steps:#FFC247; --t-burn:#FF9F0A; --t-str:#9D9AFF; --c-steps:#FFC247; --st-warn:#FFB547; --t-food:#FF8A6B; --dnav-bg:rgba(120,120,128,.16); --card-empty:rgba(255,255,255,.035); --sheet-a:rgba(44,40,42,.78); --sheet-b:rgba(22,20,22,.92); --seg-bg:rgba(0,0,0,.22); --th-list:rgba(0,0,0,.18); --t-cardio:#FF6482;
+    --t-body:#D08CFF; --t-steps:#FFC247; --t-burn:#FF9F0A; --t-str:#9D9AFF; --c-steps:#FFC247; --st-warn:#FFB547; --t-food:#FF8A6B; --dnav-bg:rgba(120,120,128,.16); --card-empty:rgba(255,255,255,.035); --sheet-a:rgba(44,40,42,.78); --sheet-b:rgba(22,20,22,.92); --seg-bg:rgba(0,0,0,.22); --th-list:rgba(0,0,0,.18); --t-cardio:#FF6482; --set-in:rgba(0,0,0,.25); --rest-bg:rgba(40,40,50,.55); --rest-c:#64D2FF; --btn-soft:rgba(255,255,255,.12);
     --chip-bg:rgba(255,255,255,.07); --chip-bg2:rgba(255,255,255,.04); --chip-rim:inset 0 0 0 .5px rgba(255,255,255,.1);
     --alt-bg:rgba(255,255,255,.1); --alt-c:#FFFFFF; --alt-rim:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 .5px rgba(255,255,255,.1);
     --ghost-bg:rgba(120,120,128,.22); --ghost-rim:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 .5px rgba(255,255,255,.12),0 8px 20px -8px rgba(0,0,0,.6);
@@ -79,7 +80,7 @@
   --mm-acc:#7D7AFF; --mm-acc-hi:#AEACFF; --mm-acc-top:#E5E4FF;
   --mm-idle:rgba(255,255,255,.085); --mm-nt:rgba(255,255,255,.065); --mm-sil-a:rgba(255,255,255,.075); --mm-sil-b:rgba(255,255,255,.03);
   --track:rgba(255,255,255,.08); --arc1:#FF3D71; --arc2:#FF6B4A; --arc3:#FFB547; --arc-glow:.55;
-  --t-body:#D08CFF; --t-steps:#FFC247; --t-burn:#FF9F0A; --t-str:#9D9AFF; --c-steps:#FFC247; --st-warn:#FFB547; --t-food:#FF8A6B; --dnav-bg:rgba(120,120,128,.16); --card-empty:rgba(255,255,255,.035); --sheet-a:rgba(44,40,42,.78); --sheet-b:rgba(22,20,22,.92); --seg-bg:rgba(0,0,0,.22); --th-list:rgba(0,0,0,.18); --t-cardio:#FF6482;
+  --t-body:#D08CFF; --t-steps:#FFC247; --t-burn:#FF9F0A; --t-str:#9D9AFF; --c-steps:#FFC247; --st-warn:#FFB547; --t-food:#FF8A6B; --dnav-bg:rgba(120,120,128,.16); --card-empty:rgba(255,255,255,.035); --sheet-a:rgba(44,40,42,.78); --sheet-b:rgba(22,20,22,.92); --seg-bg:rgba(0,0,0,.22); --th-list:rgba(0,0,0,.18); --t-cardio:#FF6482; --set-in:rgba(0,0,0,.25); --rest-bg:rgba(40,40,50,.55); --rest-c:#64D2FF; --btn-soft:rgba(255,255,255,.12);
   --chip-bg:rgba(255,255,255,.07); --chip-bg2:rgba(255,255,255,.04); --chip-rim:inset 0 0 0 .5px rgba(255,255,255,.1);
   --alt-bg:rgba(255,255,255,.1); --alt-c:#FFFFFF; --alt-rim:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 .5px rgba(255,255,255,.1);
   --ghost-bg:rgba(120,120,128,.22); --ghost-rim:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 .5px rgba(255,255,255,.12),0 8px 20px -8px rgba(0,0,0,.6);
@@ -425,9 +426,85 @@ input,textarea,select{border-radius:14px}
 .wl-all{justify-content:center;min-height:50px;font-size:16px;color:var(--accent)}
 .list .wl-all:before{left:0}
 
+/* ---------- 16. «Идёт тренировка» (макет Session) ---------- */
+.wk-head{display:grid;grid-template-columns:44px minmax(0,1fr) 44px auto;gap:8px}
+.wk-headmid{align-items:center}
+.wk-clock{gap:6px;font-size:22px;color:var(--ink)}
+.wk-clock .rec{width:8px;height:8px;border-radius:4px;background:#FF453A;box-shadow:0 0 10px #FF453A;animation:recPulse 1.6s ease-in-out infinite}
+@keyframes recPulse{50%{opacity:.35}}
+.wk-pos{font-size:12px;font-weight:400}
+.wk-head button.wk-fin.primary{height:44px;padding:0 16px;border-radius:22px;font-size:15px;color:#fff;
+  background:linear-gradient(180deg,#4CD964,#28B04A);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 8px 20px -8px rgba(48,209,88,.7)}
+.wk-titlerow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:6px 4px 8px}
+.wk-titlerow .wk-title{margin:0;min-width:0;font-family:var(--num);font-size:34px;line-height:40px;letter-spacing:-.8px}
+.wk-count{font-size:15px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wk-segs{display:flex;gap:4px;height:6px;margin:0 4px 10px}
+.wk-segs i{flex-basis:0;border-radius:3px;background:linear-gradient(90deg,color-mix(in srgb,var(--k-str) 55%,#fff) var(--p),var(--track) var(--p))}
+.wk-segs i.done{background:var(--ok);box-shadow:0 0 8px color-mix(in srgb,var(--ok) 60%,transparent)}
+.wk-page .wk-sub{margin:0 4px 12px}
+.wk-ex.done{gap:12px;min-height:60px;padding:12px 16px;border-radius:22px;opacity:1;background:color-mix(in srgb,var(--ok) 8%,transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--ok) 30%,transparent);-webkit-backdrop-filter:none;backdrop-filter:none}
+.wk-ex.done .ltext b{font-size:16px;font-weight:600}
+.wk-ex.done .ltext .ls{font-size:13px;color:var(--muted)}
+.wk-ok{width:28px;height:28px;border-radius:14px;color:#00210A;background:var(--ok)}
+.wk-ex.now{background:linear-gradient(180deg,color-mix(in srgb,var(--k-str) 15%,transparent),var(--card2) 50%);
+  box-shadow:inset 0 1px 0 var(--hi),inset 0 0 0 1px color-mix(in srgb,var(--k-str) 35%,transparent),0 0 40px -10px color-mix(in srgb,var(--k-str) 45%,transparent),var(--card-drop)}
+.wk-now{display:block;margin-bottom:4px;font-size:12px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--t-str)}
+.wk-ex.now .exn{font-size:24px;line-height:28px;letter-spacing:-.4px}
+.wk-ex.now .tg{font-size:14px;color:var(--ink2)}
+.wk-ex.now .wk-prev{margin:4px 0 0}
+.wk-map{width:96px;flex:none}
+.wk-map .mm{margin:0;padding:0}
+.wk-map figcaption{display:none}
+.wk-exh .small.icn{width:44px;height:44px;border-radius:22px;background:var(--btn-soft);color:var(--ink)}
+.wk-set{border-radius:18px;padding:6px 4px}
+.wk-set.cur{background:color-mix(in srgb,var(--k-str) 10%,transparent)}
+.wk-set.done{background:color-mix(in srgb,var(--ok) 7%,transparent)}
+.wk-set input{height:44px;border-radius:14px;font-size:20px;font-weight:600}
+.wk-ex.now .wk-set:not(.done) input{background:var(--set-in);box-shadow:inset 0 0 0 .5px var(--glass-edge)}
+.wk-ex .wk-set input:focus{border-color:transparent;box-shadow:inset 0 0 0 1.5px var(--k-str),0 0 16px -4px color-mix(in srgb,var(--k-str) 80%,transparent)}
+.wk-set.done input{color:var(--ink);background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.wk-rir{border-radius:14px}
+.wk-chk{width:44px;height:44px;border-radius:22px;justify-self:center}
+.chk.on{color:#00210A;background:linear-gradient(180deg,#5BE37A,#30D158);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 6px 16px -6px rgba(48,209,88,.8)}
+.wk-set.cur .wk-chk:not(.on){color:var(--ink);background:var(--chip-bg);box-shadow:inset 0 1px 0 var(--hi),inset 0 0 0 1.5px color-mix(in srgb,var(--k-str) 70%,transparent)}
+.wk-acts{gap:8px}
+.wk-acts .small{height:40px;border-radius:20px;color:var(--ink2);background:var(--btn-soft)}
+.wk-acts .wk-addset{color:var(--t-str);background:color-mix(in srgb,var(--k-str) 14%,transparent)}
+/* панель отдыха */
+.no-tabs .wk-page{padding-bottom:240px}
+.wk-rest{left:12px;right:12px;padding:14px 14px 14px 16px;display:flex;flex-direction:column;gap:12px;border-radius:34px;background:var(--rest-bg);
+  -webkit-backdrop-filter:blur(30px) saturate(200%) brightness(1.08);backdrop-filter:blur(30px) saturate(200%) brightness(1.08);box-shadow:var(--float-rim),0 24px 50px -10px rgba(0,0,0,.6)}
+.no-tabs .wk-rest{bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+.wr-top{display:flex;align-items:center;gap:14px}
+.wr-ring{--rc:var(--rest-c);flex:none}
+.wr-ring .rg-c .i{width:20px;height:20px;color:var(--rest-c)}
+.wr-ring .rg-v{animation:none;transition:stroke-dasharray .5s linear}
+.wk-rest .wk-rest-t{flex:1;min-width:0;display:flex;flex-direction:column;text-align:left;line-height:1.15}
+.wk-rest .wk-rest-t small{font-size:13px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink2)}
+.wk-rest .wk-rest-t b{font-size:34px;font-weight:700;letter-spacing:-.6px;color:var(--ink)}
+.wk-rest.over{--rest-c:var(--ok)}
+.wk-rest.over .wk-rest-t b{color:var(--ok)}
+.wk-rest.work .wk-rest-t b{color:var(--accent)}
+.wk-rest .wk-rest-t .wr-sm{font-size:20px}
+.wk-rest .wk-rest-t .wr-next{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wr-adj{display:flex;flex-direction:column;gap:4px}
+.wr-adj .small{position:relative;width:64px;height:40px;padding:0;border-radius:20px;font-size:14px;color:var(--ink);background:var(--btn-soft)}
+.wr-adj .small::before{content:'';position:absolute;inset:-2px 0}
+.wr-acts{display:flex;gap:8px}
+.wr-skip{flex:1;height:50px;border-radius:25px;font-size:16px;color:var(--ink);background:var(--btn-soft);box-shadow:inset 0 1px 0 var(--hi)}
+/* тост (рекорд, отмена) — над панелью отдыха, а не поверх её кнопок */
+.no-tabs:has(.wk-rest) .toast{bottom:calc(186px + env(safe-area-inset-bottom,0px))}
+.no-tabs:has(.wk-rest.work) .toast,.no-tabs:has(.wk-rest.ready) .toast{bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+.wk-rest button.wr-go{flex:1.4;height:50px;border-radius:25px;font-size:16px;background:linear-gradient(180deg,color-mix(in srgb,var(--k-str) 68%,#fff),var(--k-str));
+  box-shadow:var(--btn-hi),0 12px 26px -10px color-mix(in srgb,var(--k-str) 85%,transparent)}
+.wk-rest.ready button.wr-go{flex:none;padding:0 20px}
+
 /* ---------- 10. Доступность: меньше движения и прозрачности ---------- */
+/* маленькие кнопки-иконки: зона нажатия 44 × 44 без изменения вида */
+button.small.icn{position:relative}
+button.small.icn::before{content:'';position:absolute;inset:-5px}
 @media (prefers-reduced-motion: reduce){
-  .arc-v,.arc-glow,.tf-m em,.dt-steps i,.rg-v,.fb-bar i{animation:none !important}
+  .wk-clock .rec,.arc-v,.arc-glow,.tf-m em,.dt-steps i,.rg-v,.fb-bar i{animation:none !important}
 }
 @media (prefers-reduced-transparency: reduce){
   .card,.list,.dtile,.mtile{background:var(--card-solid);-webkit-backdrop-filter:none;backdrop-filter:none}

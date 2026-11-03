@@ -3,6 +3,8 @@
    показывает остаток, когда приложение снова открыто. */
 import { html, useState, useEffect, useRef } from '../core.js';
 import { t } from '../../i18n/index.js';
+import { Ring } from '../viz.js';
+import { Icon } from '../icons.js';
 import { fmtClock } from './catalog.js';
 
 /* Текущее время, обновляется раз в секунду, пока active */
@@ -62,9 +64,10 @@ export function useWakeLock(on) {
   }, [on]);
 }
 
-/* Плашка отдыха над нижней панелью: остаток, −15 / +15 с, пропуск; по окончании — звук и вибрация.
-   work — время нажатия «Начать подход»: тогда вместо отдыха идёт таймер подхода; canStart/onStart — кнопка «Начать подход». */
-export function RestBar({ rest, work = null, canStart = false, sound, vibration, onChange, onStart = null }) {
+/* Плавающая панель отдыха (стекло): кольцо отдыха, остаток крупно, что дальше, +15 / −15 с, «Пропустить» и «Начать подход»;
+   по окончании — звук и вибрация. work — время нажатия «Начать подход»: тогда вместо отдыха идёт таймер подхода;
+   canStart/onStart — кнопка «Начать подход»; next — подпись следующего подхода («70 кг × 12»). */
+export function RestBar({ rest, work = null, canStart = false, next = null, sound, vibration, onChange, onStart = null }) {
   const now = useNow(!!rest || !!work, 500);
   const fired = useRef(null);
   const elapsed = rest ? (now - Date.parse(rest.startedAt)) / 1000 : 0;
@@ -75,26 +78,33 @@ export function RestBar({ rest, work = null, canStart = false, sound, vibration,
     fired.current = rest.startedAt;
     if (elapsed - rest.targetSec < 5) { if (sound) beep(); if (vibration) vibrate(); } /* не пищим, если отдых кончился, пока приложение было свёрнуто */
   }, [over, rest && rest.startedAt]);
-  const startBtn = onStart ? html`<button class="small primary" onClick=${onStart}>${t('train.rest.start')}</button>` : null;
+  const startBtn = onStart ? html`<button class="primary wr-go" onClick=${onStart}>${t('train.rest.start')}</button>` : null;
   if (!rest && work) {
     const w = Math.max(0, (now - Date.parse(work)) / 1000);
-    return html`<div class="wk-rest work" role="timer"><div class="wk-rest-row">
+    return html`<div class="wk-rest work" role="timer"><div class="wr-top">
       <div class="wk-rest-t"><small>${t('train.rest.work')} · ${t('train.rest.workHint')}</small><b>${fmtClock(w)}</b></div>
     </div></div>`;
   }
   if (!rest) {
     if (!canStart || !startBtn) return null;
-    return html`<div class="wk-rest"><div class="wk-rest-row"><div class="wk-rest-t"><small>${t('train.rest.ready')}</small></div>${startBtn}</div></div>`;
+    return html`<div class="wk-rest ready"><div class="wr-top">
+      <div class="wk-rest-t"><small>${t('train.rest.ready')}</small>${next ? html`<b class="wr-sm">${next}</b>` : null}</div>${startBtn}
+    </div></div>`;
   }
-  const pct = Math.max(0, Math.min(100, (elapsed / Math.max(1, rest.targetSec)) * 100));
+  const share = Math.max(0, Math.min(1, elapsed / Math.max(1, rest.targetSec)));
   const adj = (d) => onChange(Object.assign({}, rest, { targetSec: Math.max(5, Math.round(rest.targetSec + d)) }));
   return html`<div class=${'wk-rest' + (over ? ' over' : '')} role="timer" aria-live="polite">
-    <div class="wk-rest-bar"><i style=${'width:' + pct + '%'}></i></div>
-    <div class="wk-rest-row">
-      <button class="small icn" onClick=${() => adj(-15)} aria-label=${t('train.rest.minus')}>−15</button>
-      <div class="wk-rest-t"><small>${over ? t('train.rest.over') : t('train.rest.title')}</small><b>${over ? '+' + fmtClock(-left) : fmtClock(left)}</b></div>
-      <button class="small icn" onClick=${() => adj(15)} aria-label=${t('train.rest.plus')}>+15</button>
-      ${startBtn || html`<button class="small" onClick=${() => onChange(null)}>${over ? t('common.done') : t('train.rest.skip')}</button>`}
+    <div class="wr-top">
+      <span class="wr-ring"><${Ring} share=${share} size=${64} width=${6}><${Icon} name="timer"/><//></span>
+      <div class="wk-rest-t"><small>${over ? t('train.rest.over') : t('train.rest.title')}</small><b>${over ? '+' + fmtClock(-left) : fmtClock(left)}</b>${next ? html`<small class="wr-next">${t('train.rest.next', { s: next })}</small>` : null}</div>
+      <div class="wr-adj">
+        <button class="small" onClick=${() => adj(15)} aria-label=${t('train.rest.plus')}>${t('train.rest.plusShort')}</button>
+        <button class="small" onClick=${() => adj(-15)} aria-label=${t('train.rest.minus')}>${t('train.rest.minusShort')}</button>
+      </div>
+    </div>
+    <div class="wr-acts">
+      <button class="wr-skip" onClick=${() => onChange(null)}>${over ? t('common.done') : t('train.rest.skip')}</button>
+      ${startBtn}
     </div>
   </div>`;
 }

@@ -549,7 +549,6 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .wk-headmid{display:flex;flex-direction:column;align-items:center;line-height:1.1;min-width:0}
 .wk-pos{font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
 .wk-ex.done{display:flex;align-items:center;gap:10px;width:100%;height:auto;padding:12px 14px;text-align:left;color:var(--ink);font-weight:600;font-size:16px;opacity:.88}
-.wk-ex.done span:last-child{color:var(--muted);font-family:var(--num);font-variant-numeric:tabular-nums;font-size:14px;font-weight:500;white-space:nowrap}
 .wk-ok{width:26px;height:26px;border-radius:50%;background:var(--ok);color:#fff;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .wk-ok .i{width:16px;height:16px;stroke-width:2.6}
 .wk-warm{display:flex;align-items:center;gap:8px;margin:4px 0 8px;padding:4px 4px 4px 10px;border-radius:12px;background:var(--card2);font-size:14px}
@@ -564,7 +563,6 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .keybar .done{background:transparent;color:var(--accent);font-family:inherit;font-weight:700}
 .wk-title{font-size:28px}
 .wk-sub{margin:-8px 0 8px}
-.wk-prog{margin:0 0 12px}
 .ex{padding:16px 14px 10px}
 .wk-ex{padding:14px 14px 10px}
 .wk-ex.grouped{box-shadow:inset 3px 0 0 var(--k-str),var(--edge),var(--lift)}
@@ -601,11 +599,6 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .wk-fix .wand{width:4px;height:22px;border-radius:2px;background:#FFCC00;transform:rotate(20deg);flex:none}
 .zepp-shot button{width:100%}
 .wk-rest{position:fixed;left:12px;right:12px;max-width:568px;margin:0 auto;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:7;border-radius:22px;background:var(--card);box-shadow:0 0 0 .5px var(--glass-edge),0 14px 40px rgba(0,0,0,.28);overflow:hidden}
-.wk-rest-bar{height:4px;background:var(--input)}
-.wk-rest-bar i{display:block;height:100%;background:var(--k-str);transition:width .5s linear}
-.wk-rest.over .wk-rest-bar i{background:var(--ok)}
-.wk-rest-row{display:flex;align-items:center;gap:8px;padding:8px 10px}
-.wk-rest-row .small{height:38px;flex:none}
 .wk-rest-t{flex:1;text-align:center;line-height:1.1}
 .wk-rest-t small{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .wk-rest-t b{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:26px;font-weight:800;color:var(--k-str)}
@@ -798,7 +791,7 @@ input:focus-visible,textarea:focus-visible{outline:none}
 /* ---------- 14. Движение и доступность ---------- */
 @media (prefers-reduced-motion: reduce){
   .sheet.in,.sheet-bg.in,.modal.in,.modal.in .box,.sc-frame i,.spin,.prog-stage.cur .dot{animation:none !important}
-  button,.tab,.wk-set,.wk-rest-bar i{transition:none !important}
+  button,.tab,.wk-set{transition:none !important}
 }
 @media (max-width:360px){.wk-pnums{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
@@ -881,7 +874,7 @@ button.ghost{background:var(--card);box-shadow:var(--edge),0 4px 12px -4px rgba(
 @keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
 
 /* 15.6 Полоски и кольцо: рост при появлении */
-.bar i,.mbar i,.obprog i,.nut-bar i,.wk-rest-bar i{transform-origin:left center;animation:growX .9s var(--ease) both}
+.bar i,.mbar i,.obprog i,.nut-bar i{transform-origin:left center;animation:growX .9s var(--ease) both}
 .bar i,.mbar i,.obprog i{box-shadow:inset 0 1px 0 rgba(255,255,255,.35);transition:width .6s var(--ease)}
 @keyframes growX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .nw-bars i,.minibars i{transform-origin:bottom;animation:growY .8s var(--ease) both}
@@ -934,8 +927,6 @@ button.ghost{background:var(--card);box-shadow:var(--edge),0 4px 12px -4px rgba(
 .selbar,.wk-rest,.upd{background:var(--glass-strong);-webkit-backdrop-filter:var(--blur-strong);backdrop-filter:var(--blur-strong);box-shadow:inset 0 1px 0 var(--hi),var(--float)}
 .selbar{border-radius:999px}
 .wk-rest{border-radius:28px;animation:floatIn .5s var(--spring) backwards}
-.wk-rest-bar{background:transparent;margin:0 22px}
-.wk-rest-bar i{border-radius:4px}
 .upd{border-radius:999px;animation:floatDown .5s var(--spring) backwards}
 .wk-live,.platebar{-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-radius:999px;
   background-image:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,0) 60%);animation:floatIn .5s var(--spring) backwards}
@@ -982,7 +973,7 @@ button.ghost{background:var(--card);box-shadow:var(--edge),0 4px 12px -4px rgba(
 /* 15.11 Движение и запасные варианты */
 @media (prefers-reduced-motion: reduce){
   body::before,.wrap,.dtile,.mtile,.opt,.fab,.wk-rest,.wk-live,.platebar,.toast,.upd,.pill.on,
-  .chk.on,.ck.on,.opt.on .optck,.wk-warm.done .ok,.bar i,.mbar i,.obprog i,.nut-bar i,.wk-rest-bar i,
+  .chk.on,.ck.on,.opt.on .optck,.wk-warm.done .ok,.bar i,.mbar i,.obprog i,.nut-bar i,
   .nw-bars i,.minibars i,.sheet.in,.modal.in .box{animation:none !important}
   .tabs::before,.tab .i,.sw i{transition:none !important}
 }
