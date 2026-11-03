@@ -184,6 +184,8 @@ input,textarea,select{border-radius:14px}
 .mm figcaption i.mm-l4{background:linear-gradient(90deg,var(--mm-acc-hi),var(--mm-acc-top));box-shadow:0 0 10px color-mix(in srgb,var(--mm-acc-hi) 80%,transparent)}
 
 /* ---------- 11. Согласование со слоем стекла styles.css (раздел 15) ---------- */
+/* у значка онбординга градиент задан картинкой — глянец раздела 15 её заменил; возвращаем цвет */
+.obicon{background-color:#0A84FF}
 /* у плавающих панелей кромка — внутренней тенью (--float-rim), градиентная кромка ::after не нужна */
 .tabs::after,.fab::after,.wk-rest::after,.selbar::after,.toast::after,.upd::after,.wk-live::after,.platebar::after{display:none}
 /* внутри шторки фон уже размыт — второе размытие у карточек не нужно */
@@ -370,11 +372,11 @@ input,textarea,select{border-radius:14px}
 .addhead .ghost .i{width:18px;height:18px;stroke-width:2.2}
 .addpage .addhead h1{flex:1;min-width:0;margin:0;font-size:17px;line-height:22px;font-weight:600;letter-spacing:-.2px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .addmeta{gap:6px;flex:none}
-.mealchip{height:44px;padding:0 10px 0 12px;gap:2px;border-radius:22px;font-size:15px;color:var(--ink);
+.mealchip{height:44px;padding:0 8px 0 12px;gap:2px;border-radius:22px;font-size:15px;color:var(--ink);
   background:color-mix(in srgb,var(--mc) 24%,var(--alt-bg));box-shadow:inset 0 1px 0 var(--hi),inset 0 0 0 .5px color-mix(in srgb,var(--mc) 55%,transparent),0 8px 18px -10px color-mix(in srgb,var(--mc) 80%,transparent)}
 .mealchip .i{color:var(--mc);transform:rotate(90deg);stroke-width:2.4}
 .timechip input::-webkit-calendar-picker-indicator{display:none}
-.timechip input{height:44px;padding:0 10px;border-radius:22px;font-size:15px;font-weight:600;background:var(--alt-bg);box-shadow:var(--alt-rim)}
+.timechip input{height:44px;padding:0 8px;border-radius:22px;font-size:15px;font-weight:600;background:var(--alt-bg);box-shadow:var(--alt-rim)}
 .addpage .searchbox{height:50px;padding:0 5px 0 16px;border-radius:25px;background:var(--input);box-shadow:inset 0 0 0 .5px var(--glass-edge);margin:0 0 14px}
 .addpage .searchbox::after{display:none}
 .addpage .searchbox input{font-size:17px}

@@ -19,7 +19,7 @@ const ROUTES = process.env.ROUTES ? process.env.ROUTES.split(',') : ['/', '/food
   '/checkin', '/onboarding'];
 const WIDTHS = (process.env.WIDTHS || '375,390').split(',').map(Number);
 
-const PORT = 8770 + (SC === 'dark' ? 1 : 0);
+const PORT = Number(process.env.PORT) || 8770 + (SC === 'dark' ? 1 : 0);
 const srv = await serve(PORT);
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'], colorScheme: SC, locale: 'ru-RU', serviceWorkers: 'block' });
@@ -56,8 +56,16 @@ function audit() {
     if (cs.visibility === 'hidden' || +cs.opacity === 0) continue;
     const text = el.textContent.trim().replace(/\s+/g, ' ').slice(0, 70);
     if (el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0) {
-      out.push({ kind: cs.textOverflow === 'ellipsis' ? 'многоточие' : 'вылезает', el: name(el), text, by: el.scrollWidth - el.clientWidth });
-      continue;
+      /* при overflow: visible в scrollWidth попадает и невидимая зона нажатия (::before с отрицательным inset) —
+         тогда считаем по настоящему содержимому: текст и вложенные элементы в потоке */
+      let by = el.scrollWidth - el.clientWidth;
+      if (cs.overflowX === 'visible') {
+        let right = 0;
+        for (const n of own) { const rg = document.createRange(); rg.selectNodeContents(n); for (const q of rg.getClientRects()) right = Math.max(right, q.right); }
+        for (const c of el.querySelectorAll('*')) { const p = getComputedStyle(c).position; if (p !== 'absolute' && p !== 'fixed') right = Math.max(right, c.getBoundingClientRect().right); }
+        by = Math.round(right - r.right);
+      }
+      if (by > 1) { out.push({ kind: cs.textOverflow === 'ellipsis' ? 'многоточие' : 'вылезает', el: name(el), text, by }); continue; }
     }
     let lines = new Set();
     for (const n of own) {

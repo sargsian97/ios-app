@@ -19,7 +19,7 @@ export function More() {
   const age = ageOn(p.birthDate, todayYmd());
   const bits = [p.sex === 'male' ? t('profile.sex.male') : p.sex === 'female' ? t('profile.sex.female') : null, age != null ? t('profile.age', { count: age }) : null, heightText(p)].filter(Boolean);
 
-  return html`<${Page} title=${t('nav.more')} icon="more" color="linear-gradient(135deg,#A1A1AA,#636366)">
+  return html`<${Page} title=${t('nav.more')}>
     <${List}>
       <${Row} icon="user" color="#5856D6" label=${p.name || t('profile.title')} sub=${bits.length ? bits.join(' · ') : t('more.profile.empty')} href="/more/profile"/>
     <//>
