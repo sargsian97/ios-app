@@ -532,12 +532,44 @@ input,textarea,select{border-radius:14px}
 .exhist .ll::first-letter{text-transform:uppercase}
 .exhist .lv b{font-weight:600;color:var(--ink)}
 
+/* ---------- 18. «Уровни» (макет Levels) ---------- */
+.lvhero{padding:16px 16px 18px;display:flex;flex-direction:column;gap:12px;border-radius:34px;
+  background:radial-gradient(260px 220px at 50% 45%,color-mix(in srgb,#8F7CFF 18%,transparent),transparent 70%),var(--glass-card)}
+.lv-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px}
+.lv-chip{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--t-str);background:color-mix(in srgb,#8F7CFF 18%,transparent)}
+.lvhero .mm{margin:0;padding:0;background:none}
+.lvhero .mm svg{max-width:326px}
+.lvhero figcaption{display:none}
+.lv-scale{display:flex;flex-direction:column;gap:8px;padding:0 4px}
+.lv-sbar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;height:8px}
+.lv-sbar i,.lv-bar i{border-radius:4px;background:color-mix(in srgb,var(--mm-acc) calc(var(--o) * 100%),var(--track))}
+.lv-sbar i:first-child{background:var(--mm-idle)}
+.lv-sbar i.glow,.lv-bar i.glow{background:linear-gradient(90deg,var(--mm-acc),var(--mm-acc-hi));box-shadow:0 0 10px color-mix(in srgb,var(--mm-acc) 70%,transparent)}
+.lv-sbar i:last-child{background:linear-gradient(90deg,var(--mm-acc-hi),var(--mm-acc-top))}
+.lv-slab{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;text-align:center;font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.lvzero{display:flex;align-items:center;gap:12px;margin:0 0 var(--gap);padding:12px 16px;border-radius:22px;background:color-mix(in srgb,var(--k-burn) 10%,transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--k-burn) 28%,transparent)}
+.lz-i{width:32px;height:32px;border-radius:16px;flex:none;display:grid;place-items:center;color:var(--st-warn);background:color-mix(in srgb,var(--k-burn) 16%,transparent)}
+.lz-i .i{width:18px;height:18px}
+.lz-t{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+.lz-t b{font-size:15px;font-weight:600}
+.lz-t span{font-size:13px;color:var(--ink2)}
+.lvlist{padding:6px 0}
+.lvlist .lv-row{display:grid;grid-template-columns:minmax(0,1fr) 108px 40px;gap:12px;min-height:44px;padding:8px 16px}
+.lvlist .lv-row:before{display:none}
+.lvlist .lv-row.off{opacity:1}
+.lvlist .lv-row.off .ll{color:var(--ink2)}
+.lvlist .ll{font-size:16px;font-weight:400}
+.lv-bar{height:8px;border-radius:4px;overflow:hidden;background:var(--track)}
+.lv-bar i{display:block;height:100%;transform-origin:left;animation:growX .9s var(--ease) both}
+.lvlist .lv{text-align:right;font-size:15px}
+.lvlist .lv b{font-weight:600;color:var(--ink)}
+
 /* ---------- 10. Доступность: меньше движения и прозрачности ---------- */
 /* маленькие кнопки-иконки: зона нажатия 44 × 44 без изменения вида */
 button.small.icn{position:relative}
 button.small.icn::before{content:'';position:absolute;inset:-5px}
 @media (prefers-reduced-motion: reduce){
-  .wk-clock .rec,.arc-v,.arc-glow,.tf-m em,.dt-steps i,.rg-v,.fb-bar i{animation:none !important}
+  .wk-clock .rec,.arc-v,.arc-glow,.tf-m em,.dt-steps i,.rg-v,.fb-bar i,.lv-bar i{animation:none !important}
 }
 @media (prefers-reduced-transparency: reduce){
   .card,.list,.dtile,.mtile{background:var(--card-solid);-webkit-backdrop-filter:none;backdrop-filter:none}

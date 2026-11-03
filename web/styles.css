@@ -691,9 +691,6 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .mm figcaption i.mm-l4{background:var(--k-str)}
 .mm-fb,.mm-lv{font-size:13px;color:var(--ink2)}
 .lv-row .lv b{font-family:var(--num)}
-.lv-dots{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}
-.lv-dots i{width:6px;height:6px;border-radius:3px;background:var(--input)}
-.lv-dots i.on{background:var(--k-str)}
 /* залы, блины, гриф */
 .bp{display:block;width:100%;max-width:360px;height:auto;margin:6px auto 4px}
 .bp-shaft{fill:color-mix(in srgb,var(--muted) 55%,var(--card))}
