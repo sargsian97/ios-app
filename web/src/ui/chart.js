@@ -17,12 +17,15 @@ function ticks(lo, hi, n = 4) {
   return { list: out, step };
 }
 
-/* series: [{ key, label, kind: 'dots' | 'line' | 'dash' | 'bars' | 'squares', color, points: [{ x: 'YYYY-MM-DD', y }] }]
-   bars — столбики от нуля (тогда ось Y начинается с 0); dash — пунктир (цель); squares — квадратные маркеры (пауза расчёта) */
+/* series: [{ key, label, kind: 'dots' | 'line' | 'dash' | 'bars' | 'squares', color, points: [{ x: 'YYYY-MM-DD', y }], glow?, badge? }]
+   bars — столбики от нуля (тогда ось Y начинается с 0); dash — пунктир (цель); squares — квадратные маркеры (пауза расчёта);
+   glow — у линии свечение и заливка под ней; badge — последнее значение линии в капсуле */
+let chartSeq = 0;
 const KEY = { line: 'ch-kl', dash: 'ch-kl dash', bars: 'ch-kb', squares: 'ch-kq', dots: 'ch-kd' };
 export function DateChart({ series, goal, digits = 1, unit = '', ariaLabel, empty }) {
   const box = useRef(null);
   const [hover, setHover] = useState(null);
+  const uid = useMemo(() => 'ch' + (++chartSeq).toString(36), []);
   const all = series.flatMap((s) => s.points);
 
   const geo = useMemo(() => {
@@ -69,10 +72,18 @@ export function DateChart({ series, goal, digits = 1, unit = '', ariaLabel, empt
         ${xLabels.map((d, i) => html`<text class="ch-t" x=${X(d)} y=${H - 6} text-anchor=${i === 0 ? 'start' : i === xLabels.length - 1 ? 'end' : 'middle'}>${fmtDate(d)}</text>`)}
         ${goal && goal.y != null ? html`<g><line class="ch-goal" x1=${M.l} x2=${W - M.r} y1=${Y(goal.y)} y2=${Y(goal.y)}/><text class="ch-t ch-gl" x=${W - M.r + 4} y=${Y(goal.y) + 4}>${goal.label}</text></g>` : null}
         ${series.filter((s) => s.kind === 'bars').map((s) => s.points.map((p) => html`<rect class="ch-b" x=${X(p.x) - bw / 2} y=${Y(Math.max(p.y, 0))} width=${bw} height=${Math.max(0, Y(0) - Y(Math.max(p.y, 0)))} rx=${Math.min(3, bw / 3)} style=${'fill:' + s.color}/>`))}
-        ${lines.map((s) => html`<polyline class=${'ch-l' + (s.kind === 'dash' ? ' dash' : '')} style=${'stroke:' + s.color} points=${s.points.map((p) => X(p.x).toFixed(1) + ',' + Y(p.y).toFixed(1)).join(' ')}/>`)}
+        ${lines.filter((s) => s.glow && s.points.length > 1).map((s, i) => { const pts = s.points.map((p) => X(p.x).toFixed(1) + ',' + Y(p.y).toFixed(1)); const id = uid + 'a' + i;
+          return html`<g><defs><linearGradient id=${id} x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="ch-a1" style=${'stop-color:' + s.color}/><stop offset="1" class="ch-a2" style=${'stop-color:' + s.color}/></linearGradient>
+            <filter id=${id + 'g'} x="-10%" y="-40%" width="120%" height="180%"><feGaussianBlur stdDeviation="3"/></filter></defs>
+            <polygon class="ch-area" fill=${'url(#' + id + ')'} points=${X(s.points[0].x).toFixed(1) + ',' + (H - M.b) + ' ' + pts.join(' ') + ' ' + X(s.points[s.points.length - 1].x).toFixed(1) + ',' + (H - M.b)}/>
+            <polyline class="ch-glow" filter=${'url(#' + id + 'g)'} style=${'stroke:' + s.color} points=${pts.join(' ')}/></g>`; })}
+        ${lines.map((s) => html`<polyline class=${'ch-l' + (s.kind === 'dash' ? ' dash' : '')} style=${'stroke:' + s.color + (s.glow ? ';stroke-width:2.6' : '')} points=${s.points.map((p) => X(p.x).toFixed(1) + ',' + Y(p.y).toFixed(1)).join(' ')}/>`)}
         ${series.filter((s) => s.kind === 'dots').map((s) => s.points.map((p) => html`<circle class="ch-d" cx=${X(p.x)} cy=${Y(p.y)} r="4" style=${'fill:' + s.color}/>`))}
         ${series.filter((s) => s.kind === 'squares').map((s) => s.points.map((p) => html`<rect class="ch-d" x=${X(p.x) - 4} y=${Y(p.y) - 4} width="8" height="8" rx="1.5" style=${'fill:' + s.color}/>`))}
-        ${lines.filter((s) => s.kind === 'line').map((s) => { const p = s.points[s.points.length - 1]; return html`<g><circle class="ch-d" cx=${X(p.x)} cy=${Y(p.y)} r="4.5" style=${'fill:' + s.color}/><text class="ch-t ch-end" x=${X(p.x) + 7} y=${Y(p.y) + 4}>${fmtNum(p.y, digits)}</text></g>`; })}
+        ${lines.filter((s) => s.kind === 'line').map((s) => { const p = s.points[s.points.length - 1]; const txt = fmtNum(p.y, digits);
+          if (s.badge) { const bw2 = txt.length * 7.2 + 14, bx = Math.min(X(p.x) - bw2 / 2, W - bw2), by = Math.max(0, Y(p.y) - 30);
+            return html`<g><circle class="ch-d ch-dot" cx=${X(p.x)} cy=${Y(p.y)} r="5" style=${'fill:' + s.color}/><rect class="ch-bdg" x=${bx.toFixed(1)} y=${by.toFixed(1)} width=${bw2.toFixed(1)} height="19" rx="9.5" style=${'fill:' + s.color}/><text class="ch-bt" x=${(bx + bw2 / 2).toFixed(1)} y=${(by + 13.5).toFixed(1)} text-anchor="middle">${txt}</text></g>`; }
+          return html`<g><circle class="ch-d" cx=${X(p.x)} cy=${Y(p.y)} r="4.5" style=${'fill:' + s.color}/><text class="ch-t ch-end" x=${X(p.x) + 7} y=${Y(p.y) + 4}>${txt}</text></g>`; })}
         ${hover ? html`<line class="ch-x" x1=${hx} x2=${hx} y1=${M.t} y2=${H - M.b}/>` : null}
       </svg>
       ${hover && hv.length ? html`<div class="ch-tip" style=${'left:' + Math.min(78, Math.max(4, hx / W * 100 - 18)) + '%'}>
@@ -81,10 +92,4 @@ export function DateChart({ series, goal, digits = 1, unit = '', ariaLabel, empt
       </div>` : null}
     </div>
   </div>`;
-}
-
-/* Маленькие столбики за последние дни (шаги) */
-export function MiniBars({ values, color, labels }) {
-  const mx = Math.max(1, ...values.map((v) => v || 0));
-  return html`<div class="minibars">${values.map((v, i) => html`<div class="mb"><i style=${'height:' + Math.max(3, (v || 0) / mx * 100) + '%;background:' + (v ? color : 'var(--line)')}></i>${labels ? html`<span>${labels[i]}</span>` : null}</div>`)}</div>`;
 }

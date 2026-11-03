@@ -3,17 +3,26 @@ import { html, useApp, useData, useState, useEffect, navigate, todayYmd, useMemo
 import { Page, Card } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum, fmtFix, fmtDate } from '../../../i18n/index.js';
-import { DateChart, MiniBars } from '../../chart.js';
+import { DateChart } from '../../chart.js';
 import { toDisplay, unitKey } from '../../../domain/units.js';
 import { trendWeight, weightRate, forecastGoalDate, bodyFatEstimate, bodyRatios, cycleSummary, ageOn } from '../../../domain/calc/index.js';
 import { latestMeasure, seriesOf, lastDays, dailyScale } from '../../../domain/body.js';
 import { addDays, stepsOn } from '../../../data/journal.js';
 import { WeighSheet, MeasureSheet, GoalSheet } from './sheets.js';
 import { PhotoThumbs } from './photos.js';
+import { BODY_OUTLINE } from '../../train/muscle-map.js';
 import { measureLabel, fatMethodLabel } from './labels.js';
 
 const PERIODS = [[7, 'body.p.7'], [14, 'body.p.14'], [30, 'body.p.30'], [90, 'body.p.90'], [0, 'body.p.all']];
-const TILES = ['waist', 'hips', 'bodyFatPct', 'chest', 'thighL', 'bicepsL', 'neck', 'shoulders'];
+/* выноски силуэта (координаты макета 326 × 282): лента e = [cx, cy, rx, ry, поворот], линия к выноске, точка, сторона и высота выноски */
+const BM_POINTS = [
+  { k: 'neck', e: [163, 44, 9, 2.6], ln: 'M84 44H153', dot: [153, 44], side: 'l', top: 16 },
+  { k: 'waist', e: [163, 109, 19, 3.6], ln: 'M84 109H143', dot: [143, 109], side: 'l', top: 82 },
+  { k: 'hips', e: [163, 132, 23.5, 4], ln: 'M84 176H118L139 134', dot: [139, 133], side: 'l', top: 148 },
+  { k: 'shoulders', e: [163, 56, 37, 4], ln: 'M241 56H200', dot: [200, 56], side: 'r', top: 28 },
+  { k: 'bicepsL', e: [195, 80, 6.5, 2.4, -12], ln: 'M241 116H220L201 82', dot: [201, 81], side: 'r', top: 88 },
+  { k: 'thighL', e: [176, 160, 10, 3], ln: 'M241 180H200L187 161', dot: [187, 160], side: 'r', top: 152 }
+];
 
 /* Тренд и взвешивания — для экрана и обзора */
 /* Взвешивания и тренд; считается заново только когда меняются взвешивания или версия алгоритма */
@@ -78,48 +87,69 @@ export function Body({ route }) {
   const cyc = showCycle ? cycleSummary(repos.periodEntry.list((p) => p.kind === 'period').map((p) => p.date), today) : null;
 
   const series = metric === 'weight'
-    ? [{ key: 'scale', label: t('body.scale'), kind: 'dots', color: 'var(--c-scale)', points: scalePts }, { key: 'trend', label: t('body.trend'), kind: 'line', color: 'var(--k-body)', points: trendPts }]
-    : [{ key: metric, label: measureLabel(metric), kind: 'line', color: 'var(--k-body)', points: metricPts }];
+    ? [{ key: 'scale', label: t('body.scale'), kind: 'dots', color: 'var(--c-scale)', points: scalePts }, { key: 'trend', label: t('body.trend'), kind: 'line', color: 'var(--t-body)', points: trendPts, glow: true, badge: true }]
+    : [{ key: metric, label: measureLabel(metric), kind: 'line', color: 'var(--t-body)', points: metricPts, glow: true, badge: true }];
   const goalLine = metric === 'weight' && goal && goal.targetWeightKg ? { y: toDisplay('weight', goal.targetWeightKg, units), label: t('body.goalShort') } : null;
 
-  return html`<${Page} title=${t('body.title')} icon="scale" color="linear-gradient(135deg,#DA7DF3,#AF52DE)"
-      right=${html`<button class="small" onClick=${() => navigate('/body/history')}>${t('body.history')}</button>`}>
-    <div class="card pad whero">
+  /* силуэт с замерами: выноски слева и справа, лента на теле; изменение — с первого замера */
+  const lastFull = bodyEntries.filter((e) => e.date <= today && e.measurements && Object.values(e.measurements).some((v) => v != null)).map((e) => e.date).sort().pop();
+  const callout = (k) => {
+    const v = latestMeasure(bodyEntries, k, today);
+    const pts = seriesOf(bodyEntries, k).filter((p) => p.x <= today);
+    const d = v && pts.length > 1 ? v.value - pts[0].y : null;
+    return { k, v, d };
+  };
+  const BM = BM_POINTS.map((x) => Object.assign({}, x, callout(x.k)));
+  const extra = ['chest', 'bodyFatPct'];
+
+  return html`<${Page} title=${t('body.title')}
+      right=${html`<button class="ghost hist" onClick=${() => navigate('/body/history')}>${t('body.history')}</button>`}>
+    <div class="card whero">
       <div class="row wh-top">
         <div class="grow">
           <div class="rl">${t('body.trendWeight')}</div>
           <div class="wh-v"><b>${w.last ? dw(w.last.trend) : '—'}</b><small>${wu}</small></div>
-          <div class="hint" style="margin-top:2px">${w.daily.length ? t('body.lastScale', { v: dw(w.daily[w.daily.length - 1].weightKg, 2), u: wu, d: fmtDate(w.daily[w.daily.length - 1].date) }) : t('body.noWeight')}</div>
+          <div class="wh-s">${w.daily.length ? t('body.lastScale', { v: dw(w.daily[w.daily.length - 1].weightKg, 2), u: wu, d: fmtDate(w.daily[w.daily.length - 1].date) }) : t('body.noWeight')}</div>
         </div>
-        <button class="primary small-cta" onClick=${() => setSheet({ kind: 'weigh' })}>${t('body.weighIn')}</button>
+        <button class="primary small-cta" onClick=${() => setSheet({ kind: 'weigh' })}><${Icon} name="plus"/>${t('body.weighIn')}</button>
       </div>
       <div class="wstats">
-        <div><b>${change == null ? '—' : (change > 0 ? '+' : change < 0 ? '−' : '') + fmtNum(Math.abs(change), 1)}</b><span>${t('body.changeFor', { p: t(PERIODS.find((x) => x[0] === period)[1]) })}</span></div>
+        <div><b class=${change != null && goal && ((goal.type === 'lose' && change < 0) || (goal.type === 'gain' && change > 0)) ? 'dn' : ''}>${change == null ? '—' : (change > 0 ? '+' : change < 0 ? '−' : '') + fmtNum(Math.abs(change), 1)}</b><span>${t('body.changeFor', { p: t(PERIODS.find((x) => x[0] === period)[1]) })}</span></div>
         <div><b>${rate == null ? '—' : (rate > 0 ? '+' : rate < 0 ? '−' : '') + fmtNum(Math.abs(toDisplay('weight', rate, units)), 2)}</b><span>${t('body.perWeek', { u: wu })}</span></div>
-        <div><button class="linkish" onClick=${() => setSheet({ kind: 'goal' })}><b>${goal && goal.targetWeightKg ? dw(goal.targetWeightKg) : '—'}</b><span>${t('body.goal')}</span></button></div>
+        <div><button class="linkish" onClick=${() => setSheet({ kind: 'goal' })}><b class="gl">${goal && goal.targetWeightKg ? dw(goal.targetWeightKg) : '—'}</b><span>${t('body.goal')}</span></button></div>
       </div>
       ${forecast ? html`<div class="banner forecast">${forecast.reached ? t('body.reached') : forecast.date ? t('body.forecast', { d: fmtDate(forecast.date, 'full') }) : t('body.noForecast')}</div>` : html`<button class="linkbtn" onClick=${() => setSheet({ kind: 'goal' })}>${t('body.setGoal')}</button>`}
     </div>
 
-    <div class="pills" style="margin:0 0 10px">${PERIODS.map(([p, l]) => html`<button class=${'pill' + (period === p ? ' on' : '')} onClick=${() => setPeriod(p)}>${t(l)}</button>`)}</div>
-    <div class="card pad">
-      <div class="row" style="margin-bottom:6px"><b class="grow ch-title">${metric === 'weight' ? t('body.weight') : measureLabel(metric)}</b>
-        ${metric !== 'weight' ? html`<button class="small" onClick=${() => setMetric('weight')}>${t('body.backToWeight')}</button>` : null}</div>
+    <div class="card bchart">
+      <div class="pills" role="radiogroup">${PERIODS.map(([p, l]) => html`<button role="radio" aria-checked=${period === p} class=${'pill' + (period === p ? ' on' : '')} onClick=${() => setPeriod(p)}>${t(l)}</button>`)}</div>
+      ${metric !== 'weight' ? html`<div class="row bc-h"><b class="grow ch-title">${measureLabel(metric)}</b>
+        <button class="small" onClick=${() => setMetric('weight')}>${t('body.backToWeight')}</button></div>` : null}
       <${DateChart} series=${series} goal=${goalLine} digits=${1} unit=${metric === 'weight' ? wu : metric === 'bodyFatPct' ? '%' : lu}
         ariaLabel=${t('body.chartAria')} empty=${t('body.chartEmpty')}/>
     </div>
 
-    <div class="row" style="justify-content:space-between;margin:4px 4px 8px"><b class="sect">${t('body.measures')}</b><button class="small" onClick=${() => setSheet({ kind: 'measure' })}>${t('body.addMeasures')}</button></div>
-    <div class="mtiles">${TILES.map((k) => {
-      const v = tileVal(k);
-      const d = v && v.prev ? v.value - v.prev.value : null;
-      const isFat = k === 'bodyFatPct';
-      return html`<button class=${'mtile' + (metric === k ? ' on' : '')} onClick=${() => setMetric(metric === k ? 'weight' : k)}>
-        <span class="mt-l">${measureLabel(k)}</span>
-        <span class="mt-v"><b>${v ? (isFat ? fmtNum(v.value, 1) : dl(v.value)) : '—'}</b><small>${v ? (isFat ? '%' : lu) : ''}</small></span>
-        <span class=${'mt-d' + (d == null ? '' : d < 0 ? ' dn' : d > 0 ? ' up' : '')}>${v ? (d == null ? fmtDate(v.date) : (d > 0 ? '+' : d < 0 ? '−' : '±') + (isFat ? fmtNum(Math.abs(d), 1) : dl(Math.abs(d)))) : t('body.noData')}</span>
-      </button>`;
-    })}</div>
+    <section class="card bmeas">
+      <div class="row bm-h"><b class="grow">${t('body.measures')}</b><button class="small bm-add" onClick=${() => setSheet({ kind: 'measure' })}>${t('body.addMeasures')}</button></div>
+      <div class="bm">
+        <svg viewBox="0 0 326 282" aria-hidden="true">
+          <defs><linearGradient id="bm-sil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="bm-s1"/><stop offset="1" class="bm-s2"/></linearGradient>
+            <filter id="bm-tape" x="-30%" y="-200%" width="160%" height="500%"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+          <g transform="translate(95.5 4) scale(1.35)"><path class="bm-body" d=${BODY_OUTLINE.silhouette}/><path class="bm-body" d=${BODY_OUTLINE.head}/></g>
+          ${BM.map((x) => html`<ellipse class=${x.v ? 'bm-tape on' : 'bm-tape'} cx=${x.e[0]} cy=${x.e[1]} rx=${x.e[2]} ry=${x.e[3]} transform=${x.e[4] ? 'rotate(' + x.e[4] + ' ' + x.e[0] + ' ' + x.e[1] + ')' : null} filter=${x.v ? 'url(#bm-tape)' : null}/>`)}
+          ${BM.map((x) => html`<path class="bm-ln" d=${x.ln}/>`)}
+          ${BM.filter((x) => x.v).map((x) => html`<circle class="bm-dot" cx=${x.dot[0]} cy=${x.dot[1]} r="2.2"/>`)}
+        </svg>
+        ${BM.map((x) => html`<button class=${'mtile bm-c' + (x.side === 'l' ? ' bm-l' : ' bm-r') + (metric === x.k ? ' on' : '')} style=${'top:' + (x.top / 282 * 100).toFixed(1) + '%'} onClick=${() => setMetric(metric === x.k ? 'weight' : x.k)}>
+          <span class="mt-l">${measureLabel(x.k).replace(/\s*\(.*\)$/, '')}</span>
+          <span class="mt-v"><b>${x.v ? dl(x.v.value) : '—'}</b>${x.v ? html`<small>${lu}</small>` : null}</span>
+          ${x.v ? html`<span class=${'mt-d' + (x.d == null ? '' : x.d < 0 ? ' dn' : x.d > 0 ? ' up' : '')}>${x.d == null ? fmtDate(x.v.date) : t('body.sinceFirst', { v: (x.d > 0 ? '+' : x.d < 0 ? '−' : '±') + dl(Math.abs(x.d)) })}</span>` : null}
+        </button>`)}
+      </div>
+      <div class="bm-more">${extra.map((k) => { const v = tileVal(k); const isFat = k === 'bodyFatPct';
+        return html`<button class=${'chip' + (metric === k ? ' on' : '')} onClick=${() => setMetric(metric === k ? 'weight' : k)}>${measureLabel(k)}${v ? ' · ' + (isFat ? fmtNum(v.value, 1) + ' %' : dl(v.value) + ' ' + lu) : ''}</button>`; })}</div>
+      <div class="bm-foot">${lastFull ? t('body.lastFull', { d: fmtDate(lastFull, 'dm') }) : t('body.noData')}</div>
+    </section>
 
     <${Card} title=${t('body.fat')} icon="target" color="var(--k-body)">
       <div class="kv"><span>${t('body.fat.manual')}</span><span>${manualFat ? fmtNum(manualFat.value, 1) + ' % · ' + fmtDate(manualFat.date) : '—'}</span></div>
@@ -132,10 +162,12 @@ export function Body({ route }) {
 
     <${StepsCard} today=${today} stepsToday=${stepsToday} steps7=${steps7} onSave=${(v) => saveSteps(repos, today, v)}/>
 
-    <${Card} title=${t('body.photos')} icon="camera" color="#FF9500">
+    <div class="card pad bphoto">
+      <div class="row bp-h"><span class="bp-i"><${Icon} name="camera"/></span>
+        <span class="ltext"><b>${t('body.photos')}</b><span class="ls">${t('body.photos.sub')}</span></span>
+        <button class="ghost" aria-label=${t('body.photos.all')} onClick=${() => navigate('/body/photos')}><${Icon} name="right"/></button></div>
       <${PhotoThumbs} limit=${4}/>
-      <button class="small" style="margin-top:10px" onClick=${() => navigate('/body/photos')}>${t('body.photos.all')}</button>
-    <//>
+    </div>
 
     ${showCycle ? html`<${Card} title=${t('body.cycle')} icon="heart" color="#FF2D55">
       ${cyc && cyc.known ? html`<div class="kv"><span>${t('body.cycle.day')}</span><span>${cyc.cycleDay}${cyc.inPeriod ? ' · ' + t('body.cycle.inPeriod') : ''}</span></div>
@@ -160,15 +192,21 @@ export function saveSteps(repos, date, steps) {
 
 function StepsCard({ today, stepsToday, steps7, onSave }) {
   const [v, setV] = useState(null);
-  const labels = steps7.map((_, i) => fmtDate(addDays(today, i - 6)).split(' ')[0]);
   const cur = v != null ? v : (stepsToday != null ? String(stepsToday) : '');
-  return html`<${Card} title=${t('body.steps')} icon="steps" color="var(--k-steps)">
-    <div class="row">
+  const known = steps7.filter((x) => x != null);
+  const avg = known.length ? Math.round(known.reduce((a, x) => a + x, 0) / known.length) : null;
+  const mx = Math.max(1, ...steps7.map((x) => x || 0));
+  return html`<div class="card pad bsteps">
+    <h2 class="h2i" style="--cc:var(--k-steps)"><${Icon} name="steps"/><span class="grow">${t('body.steps')}</span>${avg != null ? html`<small>${t('body.steps.avg', { n: fmtNum(avg) })}</small>` : null}</h2>
+    <label class="bs-in">
       <input inputmode="numeric" placeholder=${t('body.steps.ph')} value=${cur} aria-label=${t('body.steps.today')} onInput=${(e) => setV(e.currentTarget.value)}
         onBlur=${() => { if (v != null) { const n = Math.round(Number(String(v).replace(/\s/g, ''))); onSave(v.trim() === '' ? null : isFinite(n) && n >= 0 ? n : null); setV(null); } }}/>
-      <span class="hint" style="margin:0;white-space:nowrap">${t('body.steps.today')}</span>
+      <span>${t('body.steps.today')}</span>
+    </label>
+    <div class="tw-chart bs-chart">
+      <div class="nw-bars" role="img" aria-label=${t('body.steps.aria')}>${steps7.map((x, i) => html`<i class=${x ? 'hit' : i === 6 ? 'tod' : 'z'} style=${x ? 'height:' + Math.max(8, x / mx * 100).toFixed(1) + '%' : null}></i>`)}</div>
+      <div class="nw-days7">${steps7.map((_, i) => html`<span class=${i === 6 ? 'on' : ''}>${Number(addDays(today, i - 6).slice(8))}</span>`)}</div>
     </div>
-    <${MiniBars} values=${steps7} color="var(--k-steps)" labels=${labels}/>
     <div class="hint">${t('body.steps.hint')}</div>
-  <//>`;
+  </div>`;
 }

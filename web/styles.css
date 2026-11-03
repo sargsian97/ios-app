@@ -121,7 +121,6 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .hint.warn,.warn,.danger-t{color:var(--warn)}
 .hint.ok{color:var(--ok)}
 .empty{color:var(--muted);text-align:center;padding:26px 12px;font-size:14px}
-.sect{font-size:18px;font-weight:800}
 .ltitle{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:20px 6px 8px}
 .lfoot{font-size:13px;line-height:1.4;color:var(--muted);margin:-4px 8px var(--gap)}
 .rl{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
@@ -471,10 +470,6 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .ch-tr b{font-family:var(--num);font-size:14px}
 .ch-tr span{color:var(--muted)}
 .chart-empty{padding:30px 10px;text-align:center;color:var(--muted);font-size:14px}
-.minibars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;height:74px;margin-top:12px;align-items:end}
-.minibars .mb{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
-.minibars i{display:block;width:100%;max-width:22px;border-radius:4px 4px 0 0}
-.minibars span{font-size:10px;color:var(--muted);font-weight:600}
 .mtiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 var(--gap)}
 .mtile{display:flex;flex-direction:column;align-items:flex-start;height:auto;padding:12px 14px;border-radius:var(--r-lg);background:var(--card);box-shadow:var(--edge),var(--lift);text-align:left;font-weight:400}
 .mtile.on{box-shadow:0 0 0 2px var(--k-body),var(--lift)}
@@ -874,13 +869,13 @@ button.ghost{background:var(--card);box-shadow:var(--edge),0 4px 12px -4px rgba(
 .bar i,.mbar i,.obprog i,.nut-bar i{transform-origin:left center;animation:growX .9s var(--ease) both}
 .bar i,.mbar i,.obprog i{box-shadow:inset 0 1px 0 rgba(255,255,255,.35);transition:width .6s var(--ease)}
 @keyframes growX{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-.nw-bars i,.minibars i{transform-origin:bottom;animation:growY .8s var(--ease) both}
-.nw-bars i:nth-child(2),.minibars .mb:nth-child(2) i{animation-delay:.04s}
-.nw-bars i:nth-child(3),.minibars .mb:nth-child(3) i{animation-delay:.08s}
-.nw-bars i:nth-child(4),.minibars .mb:nth-child(4) i{animation-delay:.12s}
-.nw-bars i:nth-child(5),.minibars .mb:nth-child(5) i{animation-delay:.16s}
-.nw-bars i:nth-child(6),.minibars .mb:nth-child(6) i{animation-delay:.2s}
-.nw-bars i:nth-child(7),.minibars .mb:nth-child(7) i{animation-delay:.24s}
+.nw-bars i{transform-origin:bottom;animation:growY .8s var(--ease) both}
+.nw-bars i:nth-child(2){animation-delay:.04s}
+.nw-bars i:nth-child(3){animation-delay:.08s}
+.nw-bars i:nth-child(4){animation-delay:.12s}
+.nw-bars i:nth-child(5){animation-delay:.16s}
+.nw-bars i:nth-child(6){animation-delay:.2s}
+.nw-bars i:nth-child(7){animation-delay:.24s}
 @keyframes growY{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 .ch-d{stroke:var(--card-solid)}
 .ch-tip{background:var(--glass-strong);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border-radius:16px;box-shadow:var(--edge),var(--float)}
@@ -971,7 +966,7 @@ button.ghost{background:var(--card);box-shadow:var(--edge),0 4px 12px -4px rgba(
 @media (prefers-reduced-motion: reduce){
   body::before,.wrap,.dtile,.mtile,.opt,.fab,.wk-rest,.wk-live,.platebar,.toast,.upd,.pill.on,
   .chk.on,.ck.on,.opt.on .optck,.wk-warm.done .ok,.bar i,.mbar i,.obprog i,.nut-bar i,
-  .nw-bars i,.minibars i,.sheet.in,.modal.in .box{animation:none !important}
+  .nw-bars i,.sheet.in,.modal.in .box{animation:none !important}
   .tabs::before,.tab .i,.sw i{transition:none !important}
 }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
@@ -983,7 +978,7 @@ button.ghost{background:var(--card);box-shadow:var(--edge),0 4px 12px -4px rgba(
 body{letter-spacing:-.011em;font-kerning:normal;font-optical-sizing:auto;font-feature-settings:"kern","calt"}
 button,input,select,textarea{letter-spacing:inherit}
 h1{line-height:1.08;letter-spacing:-.024em;text-wrap:balance}
-h2,.h2i,.sect,.prog-name,.calt,.sh-top b,.wk-today-h b,.exn{letter-spacing:-.018em;text-wrap:balance}
+h2,.h2i,.prog-name,.calt,.sh-top b,.wk-today-h b,.exn{letter-spacing:-.018em;text-wrap:balance}
 .hint,.lfoot,.about-p,.ob-p,.obhero p,.disclaimer p,.modal .box p,.wk-prev,.fm,.dt-s{text-wrap:pretty}
 .ll,.fn,.opt b,.togrow b{letter-spacing:-.016em}
 .ls,.fm,.hint,.lfoot,.dt-s,.tg{letter-spacing:-.004em}
