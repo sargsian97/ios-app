@@ -3,10 +3,10 @@ import { html, useEffect, useState, useRef, goBack, lockScroll } from './core.js
 import { Icon } from './icons.js';
 import { t } from '../i18n/index.js';
 
-/* Экран с большим заголовком; back — путь «назад» (показывает кнопку) */
-export function Page({ title, icon, color, back, backLabel, right, children }) {
+/* Экран с большим заголовком; back — путь «назад» (показывает кнопку); navRight — кнопка справа в строке «назад» */
+export function Page({ title, icon, color, back, backLabel, right, navRight, children }) {
   return html`<div class="wrap page">
-    ${back ? html`<div class="navbar"><button class="back" onClick=${() => goBack(back)}><${Icon} name="left"/>${backLabel || t('common.back')}</button></div>` : null}
+    ${back ? html`<div class="navbar"><button class="back" onClick=${() => goBack(back)}><${Icon} name="left"/>${backLabel || t('common.back')}</button>${navRight || null}</div>` : null}
     <div class="top">
       <h1>${icon ? html`<span class="tbadge" style=${'background:' + color}><${Icon} name=${icon}/></span>` : null}${title}</h1>
       ${right || null}

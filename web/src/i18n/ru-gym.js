@@ -128,7 +128,7 @@ export default {
   'train.load.wu.always': 'Всегда',
   'train.load.wu.never': 'Никогда',
   'train.load.scheme': 'Схема разминки',
-  'train.load.sc.def': 'Как в настройках',
+  'train.load.sc.def': 'Общая',
   'train.load.sc.short': 'Короткая',
   'train.load.sc.default': 'Обычная',
   'train.load.sc.long': 'Длинная',

@@ -76,12 +76,19 @@ export function ExerciseCard({ route }) {
   const own = e.source !== 'library';
   const used = h.rows.length > 0;
   const recs = [['e1rm', h.best.e1rm], ['weight', h.best.weight], ['reps', h.best.reps], ['volume', h.best.volume], ['timeSec', h.best.timeSec], ['distanceM', h.best.distanceM]].filter(([, v]) => v > 0);
+  const sub = [e.primaryMuscles.map(muscleLabel).join(', '), (e.equipment || []).map(equipLabel).join(', ')].filter(Boolean).join(' · ');
+  /* «102,7 кг» → крупно число, мелко единица и что это за рекорд */
+  const split = (str) => { const m = /^(.*\d)\s(\D+)$/.exec(str); return m ? [m[1], m[2]] : [str, '']; };
   return html`<${Page} title=${e.name} back="/train/library" backLabel=${t('train.lib.title')}
-      right=${html`<button class="small" onClick=${() => navigate('/train/exercise-edit/' + encodeURIComponent(id))}>${t('common.edit')}</button>`}>
-    ${e.nameEn && e.nameEn !== e.name ? html`<div class="hint" style="margin:-6px 0 10px">${e.nameEn}</div>` : null}
+      navRight=${html`<button class="ghost exedit" onClick=${() => navigate('/train/exercise-edit/' + encodeURIComponent(id))}>${t('common.edit')}</button>`}>
+    <div class="ex-sub">${sub}${e.nameEn && e.nameEn !== e.name ? html`<small>${e.nameEn}</small>` : null}</div>
     ${e.archived ? html`<div class="banner">${t('train.ex.archivedNote')}</div>` : null}
-    <div class="card pad">
+    <section class="card exhero">
       <${MuscleMap} primary=${e.primaryMuscles} secondary=${e.secondaryMuscles}/>
+      <div class="ex-fb"><span>${t('train.map.front')}</span><span>${t('train.map.back')}</span></div>
+      <div class="ex-leg"><span><i class="lg-p"></i>${t('train.map.primary')}</span><span><i class="lg-s"></i>${t('train.map.secondary')}</span><span><i class="lg-i"></i>${t('train.map.idle')}</span></div>
+    </section>
+    <div class="list exinfo">
       <div class="kv"><span>${t('train.ex.primary')}</span><span>${e.primaryMuscles.map(muscleLabel).join(', ') || '—'}</span></div>
       ${e.secondaryMuscles.length ? html`<div class="kv"><span>${t('train.ex.secondary')}</span><span>${e.secondaryMuscles.map(muscleLabel).join(', ')}</span></div>` : null}
       <div class="wk-chips">
@@ -96,19 +103,22 @@ export function ExerciseCard({ route }) {
       ${(e.synonyms || []).length ? html`<div class="hint">${t('train.ex.synonyms')}: ${e.synonyms.join(', ')}</div>` : null}
     </div>
 
-    <${Card} title=${t('train.ex.records')} icon="target" color="#FF9F0A">
-      ${recs.length ? recs.map(([k, v]) => html`<div class="kv"><span>${recordLabel(k)}</span><span><b>${fmtRecord(k, v, units)}</b></span></div>`) : html`<div class="hint">${t('train.ex.noHistory')}</div>`}
-    <//>
-    ${h.rows.length ? html`<div class="ltitle">${t('train.ex.history')}</div><div class="list">${h.rows.slice(0, 12).map(({ w, e: x }) => html`<button class="lrow" type="button" onClick=${() => navigate('/train/log/' + w.id)}>
-      <span class="ltext"><span class="ll">${fmtDate(w.date, 'long')}</span><span class="ls">${x.sets.filter((s) => s.type !== 'warmup').map((s) => fmtSet(s, units, { cardio: !!x.cardio })).join(' · ')}</span></span></button>`)}</div>` : null}
+    <h3 class="th-h3">${t('train.ex.records')}</h3>
+    ${recs.length ? html`<div class="exrecs">${recs.map(([k, v], i) => { const [n, u] = split(fmtRecord(k, v, units)); return html`<div class=${i ? 'exrec' : 'exrec gold'}>
+      <${Icon} name=${i ? 'target' : 'bolt'}/><b>${n}</b><small>${u ? u + ' · ' : ''}${recordLabel(k)}</small></div>`; })}</div>`
+      : html`<div class="card pad"><div class="hint" style="margin:0">${t('train.ex.noHistory')}</div></div>`}
+    ${h.rows.length ? html`<h3 class="th-h3">${t('train.ex.history')}</h3><div class="list exhist">${h.rows.slice(0, 12).map(({ w, e: x }) => { const vol = bests(x.sets).volume; return html`<button class="lrow" type="button" onClick=${() => navigate('/train/log/' + w.id)}>
+      <span class="ltext"><span class="ll">${fmtDate(w.date, 'long')}</span><span class="ls">${x.sets.filter((s) => s.type !== 'warmup').map((s) => fmtSet(s, units, { cardio: !!x.cardio })).join(' · ')}</span></span>
+      ${vol ? html`<span class="lv"><b>${fmtNum(Math.round(toDisplay('weight', vol, units)))}</b> ${weightUnit(units)}</span>` : null}</button>`; })}</div>` : null}
 
-    <${Card} title=${t('train.ex.settings')} icon="gear" color="#8E8E93">
+    <h3 class="th-h3">${t('train.ex.settings')}</h3>
+    <div class="card pad">
       <div class="grid2">
         <label class="fld"><span class="lbl">${t('train.ex.rest')}</span><${NumIn} mode="numeric" value=${cfg && cfg.restSec} placeholder=${t('train.ex.restAuto')} label=${t('train.ex.rest')} onCommit=${(v) => saveCfg({ restSec: v == null ? null : Math.max(0, Math.round(v)) })}/></label>
         <label class="fld"><span class="lbl">${t('train.ex.restSides')}</span><${NumIn} mode="numeric" value=${cfg && cfg.restBetweenSidesSec} placeholder=${t('train.ex.restAuto')} label=${t('train.ex.restSides')} onCommit=${(v) => saveCfg({ restBetweenSidesSec: v == null ? null : Math.max(0, Math.round(v)) })}/></label>
       </div>
       <${Field} label=${t('train.ex.myNotes')}><textarea value=${(cfg && cfg.notes) || ''} placeholder=${t('train.ex.myNotesPh')} onInput=${(ev) => saveCfg({ notes: ev.currentTarget.value })}></textarea><//>
-    <//>
+    </div>
     <${LoadSettings} e=${e} cfg=${cfg} saveCfg=${saveCfg}/>
 
     ${e.instructions ? html`<${Card} title=${t('train.ex.howto')} icon="info" color="var(--k-plan)"><p class="about-p">${e.instructions}</p><//>` : null}

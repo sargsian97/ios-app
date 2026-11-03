@@ -358,6 +358,7 @@ export default {
   'train.map.secondary': 'вторичные',
   'train.map.front': 'спереди',
   'train.map.back': 'сзади',
+  'train.map.idle': 'не работают',
 
   'train.stats.title': 'Данные с часов (для расчёта расхода)',
   'train.stats.avgHr': 'Средний пульс',
