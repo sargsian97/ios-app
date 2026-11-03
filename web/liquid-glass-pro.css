@@ -554,11 +554,12 @@ input,textarea,select{border-radius:14px}
 .lz-t b{font-size:15px;font-weight:600}
 .lz-t span{font-size:13px;color:var(--ink2)}
 .lvlist{padding:6px 0}
-.lvlist .lv-row{display:grid;grid-template-columns:minmax(0,1fr) 108px 40px;gap:12px;min-height:44px;padding:8px 16px}
+.lvlist .lv-row{display:grid;grid-template-columns:minmax(0,1fr) clamp(56px,17vw,108px) 36px;gap:10px;min-height:44px;padding:8px 16px}
 .lvlist .lv-row:before{display:none}
 .lvlist .lv-row.off{opacity:1}
 .lvlist .lv-row.off .ll{color:var(--ink2)}
-.lvlist .ll{font-size:16px;font-weight:400}
+.lvlist .ll{font-size:15px;font-weight:400}
+@media (max-width:380px){.lvlist .lv-row{grid-template-columns:minmax(0,1fr) 44px 36px}}
 .lv-bar{height:8px;border-radius:4px;overflow:hidden;background:var(--track)}
 .lv-bar i{display:block;height:100%;transform-origin:left;animation:growX .9s var(--ease) both}
 .lvlist .lv{text-align:right;font-size:15px}
