@@ -80,8 +80,9 @@ export function FoodDiary({ route }) {
   const view = dp.diaryView === 'timeline' ? 'timeline' : 'classic';
   const rowProps = { energy, selecting, sel, onTap: tap, onLong: longPress, onDelete: (e) => removeEntries([e]) };
 
-  /* быстрые действия из настроек питания (dietProfile.shortcuts): поиск, штрихкод, быстро ккал, фото */
-  const quick = (open) => { const time = today ? nowTime() : null; navigate('/food/add?d=' + date + '&m=' + (time ? mealOf({ time }) : 'l') + (time ? '&t=' + time : '') + '&open=' + open); };
+  /* быстрые действия из настроек питания (dietProfile.shortcuts): поиск, штрихкод, «Быстро» (свой продукт: ИИ по названию), фото;
+     у «Быстро» сразу поле названия — клавиатуру поднимаем ещё в нажатии (iOS) */
+  const quick = (open) => { if (open === 'quick') keyboardSoon(); const time = today ? nowTime() : null; navigate('/food/add?d=' + date + '&m=' + (time ? mealOf({ time }) : 'l') + (time ? '&t=' + time : '') + '&open=' + open); };
   const QA = { search: ['search', 'food.qa.search', addNow], scan: ['barcode', 'food.qa.scan', () => quick('scan')], quick: ['bolt', 'food.qa.quick', () => quick('quick')], photo: ['camera', 'food.qa.photo', () => quick('photo')] };
   const shortcuts = (dp.shortcuts || []).filter((k) => QA[k]);
 

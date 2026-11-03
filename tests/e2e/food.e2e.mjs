@@ -1,6 +1,6 @@
 /* Проверка питания в браузере (профиль iPhone): перенос дневника журнала, таймлайн, добавление,
-   тарелка, быстрое добавление, правка, копирование, отметки дня, свой продукт, рецепт, штрихкод.
-   Запросы к Open Food Facts подменяются ответами из tests/fixtures.
+   тарелка, «Быстро» (свой продукт: ИИ по названию), правка, копирование, отметки дня, свой продукт, рецепт, штрихкод.
+   Запросы к Open Food Facts подменяются ответами из tests/fixtures, к Claude API — готовым ответом.
    Запуск: node tests/e2e/food.e2e.mjs [light|dark]; снимки — в .e2e-shots/ (или OUT). */
 import { serve } from './serve.mjs';
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -30,6 +30,18 @@ await ctx.route('**/world.openfoodfacts.org/**', (route) => {
   if (u.includes('/api/v2/product/4607001771562')) return route.fulfill({ contentType: 'application/json', body: fx('off-product.json') });
   if (u.includes('/api/v2/product/')) return route.fulfill({ contentType: 'application/json', body: '{"status":0}' });
   return route.fulfill({ contentType: 'application/json', body: fx('off-search.json') });
+});
+/* Claude API: автозаполнение «Быстро» по названию (запросы считаются — проверяем паузу перед запросом) */
+const aiCalls = [];
+const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, OPTIONS' };
+await ctx.route('**/api.anthropic.com/**', (route) => {
+  const rq = route.request();
+  if (rq.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS });
+  const body = rq.postData() || '';
+  aiCalls.push(body);
+  const text = /гречк/i.test(body) ? '{"kcal":110,"p":4.2,"f":1.1,"c":21.3,"fib":2.7,"pa":0,"pv":4.2,"note":"гречка варёная на воде"}' : '{"kcal":0,"p":0,"f":0,"c":0,"fib":0,"pa":0,"pv":0,"note":""}';
+  return route.fulfill({ headers: CORS, contentType: 'application/json',
+    body: JSON.stringify({ id: 'msg_test', type: 'message', role: 'assistant', model: 'test', content: [{ type: 'text', text }], stop_reason: 'end_turn', stop_sequence: null, usage: { input_tokens: 1, output_tokens: 1 } }) });
 });
 const p = await ctx.newPage();
 const errs = [];
@@ -180,8 +192,13 @@ check('выдача Open Food Facts (запасной путь search.pl)', awai
 await p.locator('.results .lrow', { hasText: 'Домик в деревне' }).click(); await wait(500);
 check('у молока порция 200 мл', await p.locator('.chip', { hasText: '200 мл' }).count() > 0);
 await p.getByRole('button', { name: 'В тарелку' }).click(); await wait(300);
-await p.locator('.srcs button', { hasText: 'Быстро' }).click(); await wait(400);
-await p.locator('.sheet input').nth(1).fill('250');
+/* «Быстро» без ключа Claude: значения вручную → «Сохранить» → карточка продукта → в тарелку */
+await p.locator('.aibtn.quick').click(); await wait(400);
+check('«Быстро» без ключа: подсказка про ключ, кнопка настроек', /ключом Claude/.test(await p.locator('.sheet').innerText()) && await p.locator('.sheet .linkbtn', { hasText: 'Открыть настройки' }).count() === 1);
+await p.locator('.sheet input').first().fill('Тестовый перекус');
+await p.locator('.sheet .fld', { hasText: 'Калории' }).locator('input').fill('250');
+await p.locator('.sheet button.primary', { hasText: 'Сохранить' }).click(); await wait(500);
+check('«Быстро»: после «Сохранить» — карточка продукта на 100 г', /Тестовый перекус/.test(await p.locator('.sheet').innerText()) && /250/.test(await p.locator('.sheet .pcard').innerText()));
 await p.getByRole('button', { name: 'В тарелку' }).click(); await wait(300);
 check('в тарелке 2 продукта', (await p.locator('.platebar .pb-n').innerText()).trim() === '2');
 await p.locator('.platebar').click(); await wait(400);
@@ -262,20 +279,36 @@ await wait(1200);
 check('штрихкод: найден творог из OFF', /Творог 5%/.test(await p.locator('.sheet').innerText()));
 await shot('11-barcode', false);
 await p.keyboard.press('Escape'); await wait(300);
-await p.locator('.srcs button', { hasText: 'Штрихкод' }).click(); await wait(400);
+check('внизу «Добавить еду» нет кнопок «Штрихкод / Быстро ккал / Фото / Свой продукт»', await p.locator('.srcs').count() === 0);
+await p.locator('.sbar').click(); await wait(400);
 await p.locator('.scanner input[inputmode=numeric]').fill('5901234123457');
 await p.locator('.scanner button[type=submit]').click(); await wait(1000);
 check('штрихкод: неизвестный код предлагает создать продукт', await p.getByRole('button', { name: 'Создать продукт с этим кодом' }).count() === 1);
 
-/* быстрое добавление с алкоголем, перебор не показывается */
-await go('#/food/add?d=2026-10-16');
-await p.reload(); await wait(1500);
-await p.locator('.srcs button', { hasText: 'Быстро' }).click(); await wait(500);
-const qi = p.locator('.sheet .grid2 input');
-await qi.nth(4).fill('140');
-check('быстро: ккал из алкоголя (7 ккал/г)', (await qi.nth(0).getAttribute('placeholder')).replace(/\s/g, '') === '980');
+/* «Быстро» с ключом Claude: название → после паузы ИИ заполняет КБЖУ → правка → «Сохранить» → граммы → запись в обед */
+await p.evaluate(() => localStorage.setItem('journal.apiKey', 'sk-ant-test'));
+await go('#/food?d=2026-10-16');
+await p.locator('.qact', { hasText: 'Быстро' }).click(); await wait(600);
+check('«Быстро» в «Питании» открывает шторку своего продукта', await p.locator('.sheet[aria-label="Свой продукт"]').count() === 1 && /food\/add/.test(p.url()));
+check('поле названия в фокусе', await p.evaluate(() => !!(document.activeElement && document.activeElement.closest('.sheet') && document.activeElement.placeholder)));
+await p.locator('.sheet input').first().pressSequentially('греч', { delay: 60 }); await wait(500);
+await p.locator('.sheet input').first().pressSequentially('ка варёная', { delay: 60 });
+check('пока пишешь название — запроса к ИИ нет', aiCalls.length === 0, aiCalls.length);
+await wait(2600);
+const fv = (label) => p.locator('.sheet .fld', { hasText: label }).first().locator('input').inputValue();
+check('после паузы — один запрос по полному названию', aiCalls.length === 1 && /гречка варёная/.test(aiCalls[0]), aiCalls.length);
+check('ИИ заполнил ккал и БЖУ', await fv('Калории') === '110' && await fv('Белки, г') === '4,2' && await fv('Углеводы, г') === '21,3', [await fv('Калории'), await fv('Белки, г')]);
+check('подпись «Заполнено ИИ — проверь»', /Заполнено ИИ/.test(await p.locator('.sheet .fastst').innerText()));
+await shot('11c-fast', false);
+await p.locator('.sheet .fld', { hasText: 'Калории' }).locator('input').fill('115');
+await p.locator('.sheet input').first().pressSequentially(' ', { delay: 60 }); await wait(2000);
+check('после правки значений автозаполнение их не трогает', aiCalls.length === 1 && await fv('Калории') === '115');
+await p.locator('.sheet button.primary', { hasText: 'Сохранить' }).click(); await wait(600);
+const buck = (await idbList('foodItems')).find((f) => f.name === 'гречка варёная');
+check('продукт сохранён в свои: 115 ккал на 100 г, белок растительный', buck && buck.source === 'user' && buck.nutrients.kcal === 115 && buck.nutrients.protein_plant === 4.2, buck && buck.nutrients);
+await p.locator('.sheet .stepper2 input').fill('2500');
 await p.locator('.sheet button.primary').click(); await wait(800);
-check('запись с алкоголем', (await idbList('foodEntries')).some((e) => e.nutrients.alcohol === 140 && e.nutrients.kcal === 980));
+check('записано: 2500 г, 2875 ккал', (await idbList('foodEntries')).some((e) => e.date === '2026-10-16' && e.name === 'гречка варёная' && e.amount === 2500 && Math.round(e.nutrients.kcal) === 2875));
 await go('#/food?d=2026-10-16');
 check('перебор по умолчанию не показывается', await p.locator('.fbanner .over, .fbanner .rover').count() === 0);
 await shot('11b-no-overage');

@@ -184,6 +184,25 @@ export function kcalFromMacros(n) {
   return Math.round(p * KCAL_PER_G.protein + f * KCAL_PER_G.fat + c * KCAL_PER_G.carbs + a * KCAL_PER_G.alcohol);
 }
 
+/* Нутриенты своего продукта из формы «Быстро» (на 100 г). values — { ключ: число | null }, берутся числа ≥ 0;
+   без калорий они считаются из БЖУ. split — животный и растительный белок, которые предложил ИИ: доля
+   сохраняется и раскладывается на итоговый белок (если белок правили руками). null — калорий нет. */
+export function quickFoodNutrients(values, split) {
+  const n = {};
+  Object.keys(values || {}).forEach((k) => {
+    const v = values[k];
+    if (typeof v === 'number' && isFinite(v) && v >= 0) n[k] = v;
+  });
+  if (n.kcal == null && (n.protein || n.fat || n.carbs || n.alcohol)) n.kcal = kcalFromMacros(n);
+  if (n.kcal == null) return null;
+  const a = split ? Number(split.protein_animal) : NaN, pl = split ? Number(split.protein_plant) : NaN;
+  if (n.protein > 0 && a >= 0 && pl >= 0 && a + pl > 0) {
+    n.protein_animal = Math.round(a / (a + pl) * n.protein * 100) / 100;
+    n.protein_plant = Math.round((n.protein - n.protein_animal) * 100) / 100;
+  }
+  return n;
+}
+
 
 /* «Обычно в это время»: что чаще всего записывалось в окне ± windowMin минут от time за последние days дней
    до today; не меньше minCount раз. Возвращает последние записи этих продуктов, по убыванию частоты. */

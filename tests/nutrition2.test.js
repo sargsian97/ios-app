@@ -63,3 +63,28 @@ test('отчёт по нутриентам: среднее в день, стат
   assert.equal(completenessScore(r), Math.round(((750 / 1000) + (2.5 / 8) + 1) / 3 * 100));
   assert.equal(completenessScore({ rows: [] }), null);
 });
+
+test('«Быстро»: нутриенты своего продукта из формы', async () => {
+  const { quickFoodNutrients } = await import('../web/src/domain/nutrition.js');
+  /* как заполнил ИИ: белок по источникам остаётся */
+  assert.deepEqual(quickFoodNutrients({ kcal: 110, protein: 4, fat: 1, carbs: 21, fiber: 2 }, { protein_animal: 0, protein_plant: 4 }),
+    { kcal: 110, protein: 4, fat: 1, carbs: 21, fiber: 2, protein_animal: 0, protein_plant: 4 });
+  /* белок поправили руками: доля животного и растительного та же */
+  const n = quickFoodNutrients({ kcal: 200, protein: 20 }, { protein_animal: 3, protein_plant: 1 });
+  assert.equal(n.protein_animal, 15);
+  assert.equal(n.protein_plant, 5);
+  /* без калорий — из БЖУ */
+  assert.equal(quickFoodNutrients({ kcal: null, protein: 10, fat: 10, carbs: 10 }).kcal, 170);
+  /* нулевые калории — можно (вода, чай) */
+  assert.deepEqual(quickFoodNutrients({ kcal: 0, protein: 0, fat: 0, carbs: 0 }), { kcal: 0, protein: 0, fat: 0, carbs: 0 });
+  /* пусто или только нули без калорий — нечего сохранять */
+  assert.equal(quickFoodNutrients({}), null);
+  assert.equal(quickFoodNutrients(null), null);
+  assert.equal(quickFoodNutrients({ kcal: null, protein: 0, fat: 0 }), null);
+  /* отрицательные и нечисловые значения отбрасываются */
+  assert.deepEqual(quickFoodNutrients({ kcal: 50, protein: -3, fat: NaN, carbs: '7' }), { kcal: 50 });
+  /* без белка или без доли ИИ — разбивки нет */
+  assert.equal(quickFoodNutrients({ kcal: 50, protein: 0 }, { protein_animal: 1, protein_plant: 1 }).protein_animal, undefined);
+  assert.equal(quickFoodNutrients({ kcal: 50, protein: 5 }, { protein_animal: 0, protein_plant: 0 }).protein_animal, undefined);
+  assert.equal(quickFoodNutrients({ kcal: 50, protein: 5 }, null).protein_plant, undefined);
+});

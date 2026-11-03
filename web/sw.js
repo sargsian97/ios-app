@@ -1,6 +1,6 @@
 /* Service worker: приложение открывается без интернета.
    При каждом выпуске новой версии меняй VERSION — тогда телефон предложит обновиться. */
-const VERSION = '2026-11-02.3';
+const VERSION = '2026-11-03.1';
 const CACHE = 'journal-' + VERSION;
 const SHELL = [
   './',

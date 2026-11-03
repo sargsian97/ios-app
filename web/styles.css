@@ -118,6 +118,7 @@ input:focus-visible,textarea:focus-visible{outline:none}
 .grid4 input{padding:0 8px;text-align:center}
 .hint{font-size:13px;line-height:1.4;color:var(--muted);margin-top:8px}
 .hint.io{color:var(--ink);font-weight:500}
+.hint.fastst{margin:8px 0 12px;min-height:18px}
 .hint.warn,.warn,.danger-t{color:var(--warn)}
 .hint.ok{color:var(--ok)}
 .empty{color:var(--muted);text-align:center;padding:26px 12px;font-size:14px}

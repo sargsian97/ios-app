@@ -1,8 +1,8 @@
-/* Добавление еды: одно поле поиска (свои продукты, рецепты и история — сразу; Open Food Facts и USDA — после паузы),
+/* Добавление еды: одно поле поиска (свои продукты, рецепты и история — сразу; Open Food Facts и USDA — по Enter или кнопке),
    приём пищи и время чипами, «+» на строке записывает прошлую порцию сразу (с «Отменить»),
    карточка «КБЖУ на 100 г → граммы → записать», «тарелка» для нескольких продуктов,
-   быстрое добавление, штрихкод, фото еды через ИИ. */
-import { html, useApp, useData, useState, useEffect, useRef, navigate, goBack, todayYmd, takeKeyboard } from '../../core.js';
+   «Быстро» — свой продукт по названию (ИИ заполняет КБЖУ, правка, «Сохранить»), штрихкод, фото еды через ИИ. */
+import { html, useApp, useData, useState, useEffect, useRef, navigate, goBack, todayYmd, takeKeyboard, keyboardSoon } from '../../core.js';
 import { Sheet, Field, Toggle, SearchBox, Stepper } from '../../kit.js';
 import { Icon } from '../../icons.js';
 import { t, fmtNum } from '../../../i18n/index.js';
@@ -10,11 +10,11 @@ import { useEnergy, num, nowTime, per100Text, macroLine, amountText, Spinner, ME
 import { usePlate, plate } from '../../food/plate.js';
 import { dayBudget } from '../../food/budget.js';
 import { searchLocal, searchOnline, saveOnlineFood, recipeSummary, findBarcode, getUsdaKey, loadBasic, basicCache, searchBasic, saveBasicFood, savedBasicIds } from '../../../services/foodsearch/index.js';
-import { foodNutrients, servingAmount, recipePortion, dayTotals, recentItems, kcalFromMacros, hourlyGoTos, historyMatches, mealOf, mealDefaultTime, lastPortionOf, defaultPortion } from '../../../domain/nutrition.js';
+import { foodNutrients, servingAmount, recipePortion, dayTotals, recentItems, kcalFromMacros, quickFoodNutrients, hourlyGoTos, historyMatches, mealOf, mealDefaultTime, lastPortionOf, defaultPortion } from '../../../domain/nutrition.js';
 import { addDays } from '../../../domain/calc/index.js';
 import { scaleNutrients, roundNutrients } from '../../../data/models/nutrients.js';
 import { uid } from '../../../data/ids.js';
-import { aiPhoto, aiErrorKey, aiReady } from '../../../services/ai-food.js';
+import { aiFill, aiPhoto, aiErrorKey, aiReady } from '../../../services/ai-food.js';
 import { isArtifact } from '../../../services/env.js';
 import { artifactAiStatus } from '../../../services/ai-sample.js';
 import { Scanner } from './scanner.js';
@@ -226,7 +226,7 @@ export function FoodAdd({ route }) {
       right=${html`<button class="sbar" type="button" aria-label=${t('food.sc.scan')} onClick=${() => setScan(true)}><${Icon} name="barcode"/></button>`}/>
     <div class="aibtns">
       <button class="aibtn" onClick=${() => setPhoto(true)}><span class="ai-i"><${Icon} name="camera"/></span><span class="ai-t"><b>${t('food.photo.title')}</b><small>${t('food.ai.photoSub')}</small></span></button>
-      <button class="aibtn quick" onClick=${() => setQuick(true)}><span class="ai-i"><${Icon} name="bolt"/></span><span class="ai-t"><b>${t('food.qa.quick')}</b><small>${t('food.ai.quickSub')}</small></span></button>
+      <button class="aibtn quick" onClick=${() => { keyboardSoon(); setQuick(true); }}><span class="ai-i"><${Icon} name="bolt"/></span><span class="ai-t"><b>${t('food.qa.quick')}</b><small>${t('food.ai.quickSub')}</small></span></button>
     </div>
     <div class="pills sub" role="radiogroup">${FILTERS.map(([k, l]) => html`<button role="radio" aria-checked=${(filter === 'history' ? 'all' : filter) === k} class=${'pill' + ((filter === 'history' ? 'all' : filter) === k ? ' on' : '')} onClick=${() => setFilter(k)}>${k === 'all' && !s ? t('food.tab.recent') : t(l)}</button>`)}</div>
     ${msg ? html`<div class="banner">${msg}</div>` : null}
@@ -238,13 +238,9 @@ export function FoodAdd({ route }) {
 
     ${online.q && online.q === s ? html`<${OnlineResults} online=${online} energy=${energy} onPick=${pickOnline}/>` : null}
 
-    <div class="srcs">
-      ${s.length >= 2 && !(online.q === s && online.busy) ? html`<button class="netbtn" onClick=${() => searchNet()}><${Icon} name="globe" size=${18}/>${t('food.net.find')}</button>` : null}
-      <button onClick=${() => setScan(true)}>${t('food.sc.scan')}</button>
-      <button onClick=${() => setQuick(true)}>${t('food.sc.quick')}</button>
-      <button onClick=${() => setPhoto(true)}>${t('food.sc.photo')}</button>
-      <button onClick=${() => navigate('/food/new-food')}>${t('food.sc.new')}</button>
-    </div>
+    ${s.length >= 2 && !(online.q === s && online.busy) ? html`<div class="srcs">
+      <button class="netbtn" onClick=${() => searchNet()}><${Icon} name="globe" size=${18}/>${t('food.net.find')}</button>
+    </div>` : null}
     <div class="hint" style="text-align:center">${s ? t('food.net.hint') : t('food.addHint')}</div>
 
     ${p.items().length ? html`<button class="platebar" onClick=${() => setPlateOpen(true)}>
@@ -254,7 +250,7 @@ export function FoodAdd({ route }) {
     </button>` : null}
 
     <${ProductSheet} item=${item} date=${date} meal=${meal} onClose=${() => setItem(null)} onLog=${(it) => { setItem(null); logNow([it]); }} onPlate=${(it) => { setItem(null); plate.add(it); }}/>
-    <${QuickSheet} open=${quick} meal=${meal} onClose=${() => setQuick(false)} onLog=${(it) => { setQuick(false); logNow([it]); }} onPlate=${(it) => { setQuick(false); plate.add(it); }}/>
+    <${FastSheet} open=${quick} onClose=${() => setQuick(false)} onSaved=${(doc) => { setQuick(false); setItem({ kind: 'food', doc }); }}/>
     <${PhotoSheet} open=${photo} date=${date} onClose=${() => setPhoto(false)} onPlate=${(its) => { setPhoto(false); its.forEach((x) => plate.add(x)); }}/>
     <${PlateSheet} open=${plateOpen} date=${date} time=${time} meal=${meal} energy=${energy} onClose=${() => setPlateOpen(false)} onLog=${() => { setPlateOpen(false); logNow(plate.items()); }}/>
     ${scan ? html`<${Scanner} onCode=${onCode} onClose=${() => setScan(false)}/>` : null}
@@ -423,30 +419,109 @@ export function NutrientTable({ n }) {
   return html`<div class="ntable">${keys.map((k) => html`<div class="kv"><span>${nutrientLabel(k)}</span><span>${fmtNum(n[k], 2)} ${unitLabel((NUTRIENT_UNITS[k] || {}).unit || '')}</span></div>`)}</div>`;
 }
 
-/* ---------- быстрое добавление ---------- */
-function QuickSheet({ open, meal, onClose, onLog, onPlate }) {
-  const energy = useEnergy();
-  const [d, setD] = useState({});
-  useEffect(() => { if (open) setD({}); }, [open]);
+/* ---------- «Быстро»: свой продукт по названию — ИИ сам заполняет КБЖУ на 100 г, правка, «Сохранить» ---------- */
+const FAST_KEYS = ['kcal', 'protein', 'fat', 'carbs', 'fiber'];
+const FILL_PAUSE_MS = 1500; /* пауза в наборе названия, после которой ИИ заполняет значения */
+const FILL_MIN_CHARS = 3;
+const inputNum = (v) => String(Math.round(v * 10) / 10).replace('.', ',');
+
+/* Сохраняет продукт в «Мои продукты» и отдаёт его в onSaved (дальше — карточка: граммы → записать).
+   Пока значения не правили руками, каждое новое название после паузы заполняется заново;
+   правка значений останавливает автозаполнение, вернуть его — «Заполнить заново». */
+function FastSheet({ open, onClose, onSaved }) {
+  const { repos, store } = useApp();
+  const [name, setName] = useState('');
+  const [vals, setVals] = useState({});
+  const [split, setSplit] = useState(null);
+  const [ai, setAi] = useState({ busy: false, msg: '', filled: '' });
+  const [manual, setManual] = useState(false);
+  const [err, setErr] = useState('');
+  const nameRef = useRef(null);
+  const ctl = useRef(null);
+  const q = name.trim();
+  const ready = aiReady();
+
+  function stop() {
+    if (!ctl.current) return;
+    ctl.current.abort(); ctl.current = null;
+    setAi((x) => Object.assign({}, x, { busy: false, msg: '' }));
+  }
+
+  async function fill(text) {
+    const s = String(text || '').trim();
+    if (!s) return;
+    if (ctl.current) ctl.current.abort();
+    const c = new AbortController();
+    c.q = s; ctl.current = c;
+    setErr('');
+    setAi((x) => ({ busy: true, msg: t('food.fast.busy'), filled: x.filled }));
+    try {
+      const r = await aiFill(store, s, { signal: c.signal, today: todayYmd(), now: new Date().toISOString() });
+      if (ctl.current !== c) return;
+      const v = {};
+      FAST_KEYS.forEach((k) => { if (r.per100[k] != null) v[k] = inputNum(r.per100[k]); });
+      setVals(v);
+      setSplit(r.per100.protein_animal != null ? { protein_animal: r.per100.protein_animal, protein_plant: r.per100.protein_plant } : null);
+      setManual(false);
+      setAi({ busy: false, msg: r.note ? t('food.fast.doneNote', { note: r.note.replace(/[.\s]+$/, '') }) : t('food.fast.done'), filled: s });
+    } catch (e) {
+      if (ctl.current !== c) return;
+      setAi({ busy: false, msg: e && e.code === 'cancelled' ? '' : t(aiErrorKey(e), { period: e && e.period ? periodLabel(e.period) : '', limit: e && e.limit }), filled: s });
+    } finally { if (ctl.current === c) ctl.current = null; }
+  }
+
+  useEffect(() => {
+    if (open) {
+      setName(''); setVals({}); setSplit(null); setAi({ busy: false, msg: '', filled: '' }); setManual(false); setErr('');
+      takeKeyboard(nameRef.current);
+    }
+    return () => { if (ctl.current) { ctl.current.abort(); ctl.current = null; } };
+  }, [open]);
+
+  /* автозаполнение: новое название → прежний запрос отменяется, после паузы — новый */
+  useEffect(() => {
+    if (ctl.current && ctl.current.q !== q) stop();
+    if (!open || !ready || manual || q.length < FILL_MIN_CHARS || q === ai.filled) return;
+    const tm = setTimeout(() => fill(q), FILL_PAUSE_MS);
+    return () => clearTimeout(tm);
+  }, [open, q, manual]);
+
   if (!open) return null;
-  const set = (k, v) => setD(Object.assign({}, d, { [k]: v }));
-  const n = {};
-  ['protein', 'fat', 'carbs', 'alcohol'].forEach((k) => { if (num(d[k]) != null) n[k] = num(d[k]); });
-  n.kcal = num(d.kcal) != null ? (energy.units.energy === 'kj' ? num(d.kcal) / 4.184 : num(d.kcal)) : kcalFromMacros(n);
-  const it = { ref: { kind: 'quick', id: null }, name: (d.name || '').trim() || t('food.quick.name'), nutrients: n };
-  const ok = n.kcal > 0;
-  return html`<${Sheet} open=${true} onClose=${onClose} title=${t('food.quick.title')}>
-    <${Field} label=${t('food.quick.nameLabel')}><input value=${d.name || ''} placeholder=${t('food.quick.name')} onInput=${(e) => set('name', e.currentTarget.value)}/><//>
-    <div class="grid2" style="margin-top:12px">
-      <${Field} label=${energy.unit}><input inputmode="decimal" value=${d.kcal || ''} placeholder=${n.kcal ? fmtNum(n.kcal) : ''} onInput=${(e) => set('kcal', e.currentTarget.value)}/><//>
-      <${Field} label=${t('food.n.protein')}><input inputmode="decimal" value=${d.protein || ''} onInput=${(e) => set('protein', e.currentTarget.value)}/><//>
-      <${Field} label=${t('food.n.fat')}><input inputmode="decimal" value=${d.fat || ''} onInput=${(e) => set('fat', e.currentTarget.value)}/><//>
-      <${Field} label=${t('food.n.carbs')}><input inputmode="decimal" value=${d.carbs || ''} onInput=${(e) => set('carbs', e.currentTarget.value)}/><//>
-      <${Field} label=${t('food.n.alcohol')}><input inputmode="decimal" value=${d.alcohol || ''} onInput=${(e) => set('alcohol', e.currentTarget.value)}/><//>
+  const setV = (k, v) => { stop(); setVals((x) => Object.assign({}, x, { [k]: v })); setManual(true); setErr(''); };
+  const macros = { protein: num(vals.protein) || 0, fat: num(vals.fat) || 0, carbs: num(vals.carbs) || 0 };
+  const kcalHint = num(vals.kcal) == null && (macros.protein || macros.fat || macros.carbs) ? kcalFromMacros(macros) : null;
+
+  async function save() {
+    setErr('');
+    if (!q) { setErr(t('food.editor.needName')); return; }
+    const values = {};
+    FAST_KEYS.forEach((k) => { values[k] = num(vals[k]); });
+    const nutrients = quickFoodNutrients(values, split);
+    if (!nutrients) { setErr(t('food.editor.needKcal')); return; }
+    try {
+      const doc = await repos.food.create({ name: q, source: 'user', base: { amount: 100, unit: 'g' }, nutrients, labelFormat: 'per100' });
+      onSaved(doc);
+    } catch (e) { setErr(t('food.editor.invalid')); }
+  }
+
+  const field = (k) => html`<${Field} label=${nutrientLabel(k) + ', ' + unitLabel(NUTRIENT_UNITS[k].unit)}>
+    <input inputmode="decimal" value=${vals[k] ?? ''} placeholder=${k === 'kcal' && kcalHint != null ? fmtNum(kcalHint) : ''} onInput=${(e) => setV(k, e.currentTarget.value)}/><//>`;
+  const artifact = isArtifact();
+  const idle = ready ? t('food.fast.hint') : artifact ? t('ai.artifact.legacyFill') : t('food.photo.noKey');
+  return html`<${Sheet} open=${true} onClose=${onClose} title=${t('food.fast.title')}>
+    <${Field} label=${t('food.editor.name')}><input ref=${nameRef} value=${name} placeholder=${t('food.editor.namePh')} autocomplete="off" enterkeyhint="done"
+      onInput=${(e) => { setName(e.currentTarget.value); setErr(''); }}
+      onKeyDown=${(e) => { if (e.key === 'Enter') { e.preventDefault(); if (ready && q) fill(q); } }}/><//>
+    <div class=${'hint fastst' + (ai.msg ? ' io' : '')} aria-live="polite">${ai.msg || idle}${ai.busy ? html`<${Spinner}/>` : null}</div>
+    <div class="grid2">${FAST_KEYS.map(field)}</div>
+    <div class="hint">${t('food.fast.per100')}</div>
+    ${err ? html`<div class="banner warnb">${err}</div>` : null}
+    <button class="primary" style="width:100%;margin-top:12px" disabled=${ai.busy} onClick=${save}>${t('common.save')}</button>
+    <div class="linkrow">
+      ${ready ? (ai.busy ? html`<button class="linkbtn" onClick=${stop}>${t('food.photo.stop')}</button>`
+        : html`<button class="linkbtn" disabled=${!q} onClick=${() => fill(q)}>${ai.filled ? t('food.fast.refill') : t('food.fast.fill')}</button>`)
+      : artifact ? null : html`<button class="linkbtn" onClick=${() => { onClose(); navigate('/more/settings'); }}>${t('food.photo.toSettings')}</button>`}
     </div>
-    <div class="hint">${t('food.quick.hint')}</div>
-    <button class="primary" style="width:100%;margin-top:12px" disabled=${!ok} onClick=${() => onLog(it)}>${meal ? t('food.logTo', { m: t(MEAL_KEY[meal]) }) : t('food.logNow')}</button>
-    <div class="linkrow"><button class="linkbtn" disabled=${!ok} onClick=${() => onPlate(it)}>${t('food.toPlate')}</button></div>
   <//>`;
 }
 
